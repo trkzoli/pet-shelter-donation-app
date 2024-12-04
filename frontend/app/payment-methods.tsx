@@ -14,7 +14,7 @@ const { width, height } = Dimensions.get('window');
 const PaymentMethods: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { amount, tokens } = params; // Retrieve donation details
+  const { amount, tokens } = params; 
 
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
 
@@ -27,28 +27,25 @@ const PaymentMethods: React.FC = () => {
       resizeMode="stretch"
     >
       <View style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
 
-        {/* Title */}
         <Text style={styles.title}>Payment Methods</Text>
 
-        {/* Credit & Debit Card */}
-        <TouchableOpacity style={styles.cardOption}>
+        <TouchableOpacity style={styles.cardOption}
+          onPress={() => router.push('/add-card')}
+        >
           <Text style={styles.cardText}>Credit & Debit Card</Text>
           <Text style={styles.arrow}>›</Text>
         </TouchableOpacity>
 
-        {/* Divider */}
         <View style={styles.divider}>
           <View style={styles.line} />
           <Text style={styles.orText}>or</Text>
           <View style={styles.line} />
         </View>
 
-        {/* Other Payment Methods */}
         {paymentMethods.map((method) => (
           <TouchableOpacity
             key={method}
@@ -68,18 +65,17 @@ const PaymentMethods: React.FC = () => {
           </TouchableOpacity>
         ))}
 
-        {/* Proceed Button */}
         <TouchableOpacity
           style={styles.proceedButton}
           onPress={() => {
             if (selectedMethod) {
-              alert(`Proceeding with ${selectedMethod}`); // Replace with navigation logic
+              alert(`Proceeding with ${selectedMethod}`);
             } else {
               alert('Please select a payment method.');
             }
           }}
         >
-          <Text style={styles.proceedButtonText}>Proceed</Text>
+          <Text style={styles.proceedButtonText}>PROCEED</Text>
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -184,6 +180,7 @@ const styles = StyleSheet.create({
   proceedButton: {
     backgroundColor: '#704F38',
     paddingVertical: 15,
+    width: '100%',
     borderRadius: 50,
     alignItems: 'center',
     marginTop: 30,

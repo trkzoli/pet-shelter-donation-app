@@ -11,6 +11,7 @@ import {
   ImageBackground,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
+import NavBar from '../components/navigation/NavBar';
 
 const animals = [
   { id: '1', name: 'Buddy', breed: 'Chihuahua', sex: 'Male', type: 'Dogs', image: require('../assets/images/ds1.jpg') },
@@ -58,7 +59,6 @@ const HomePage: React.FC = () => {
       resizeMode="stretch"
     >
       <View style={styles.container}>
-        {/* Search Bar */}
         <View style={styles.searchBar}>
           <TextInput
             placeholder="Search by name, breed, or gender ..."
@@ -72,7 +72,6 @@ const HomePage: React.FC = () => {
           </View>
         </View>
 
-        {/* Category Filters */}
         <View style={styles.filters}>
           {['All', 'Dogs', 'Cats', 'Hamsters'].map((filter) => (
             <TouchableOpacity
@@ -102,14 +101,12 @@ const HomePage: React.FC = () => {
           ))}
         </View>
 
-        {/* Animal Grid */}
         <FlatList
           data={filteredAnimals}
           keyExtractor={(item) => item.id}
           numColumns={2}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              {/* Use the local image reference */}
               <Image source={item.image} style={styles.cardImage} />
               <View style={styles.overlay}>
                 <Text style={styles.overlayText}>{item.name}</Text>
@@ -137,55 +134,8 @@ const HomePage: React.FC = () => {
           )}
           contentContainerStyle={styles.grid}
         />
-
-        {/* Bottom Navigation */}
-        {/* Bottom Navigation */}
-        <View style={styles.bottomNav}>
-    {/* Home Button */}
-            <TouchableOpacity
-                style={styles.navButton}
-                onPress={() => router.push('/home')}
-            >
-                <View
-                style={[
-                    styles.navIconWrapper,
-                    pathname === '/home' && styles.activeNavIconWrapper, // Brown circle for active button
-                ]}
-                >
-                <Image source={require('../assets/images/home.png')} style={styles.navIcon} />
-                </View>
-            </TouchableOpacity>
-
-            {/* Pets Button */}
-            <TouchableOpacity
-                style={styles.navButton}
-                //onPress={() => router.push('/pets')}
-            >
-                <View
-                style={[
-                    styles.navIconWrapper,
-                    pathname === '/pets' && styles.activeNavIconWrapper, // Brown circle for active button
-                ]}
-                >
-                <Image source={require('../assets/images/pets.png')} style={styles.navIcon} />
-                </View>
-            </TouchableOpacity>
-
-            {/* Profile Button */}
-            <TouchableOpacity
-                style={styles.navButton}
-                //onPress={() => router.push('/profile')}
-            >
-                <View
-                style={[
-                    styles.navIconWrapper,
-                    pathname === '/profile' && styles.activeNavIconWrapper, // Brown circle for active button
-                ]}
-                >
-                <Image source={require('../assets/images/profile.png')} style={styles.navIcon} />
-                </View>
-            </TouchableOpacity>
-        </View>
+        <NavBar />
+        
       </View>
     </ImageBackground>
   );
@@ -286,47 +236,6 @@ const styles = StyleSheet.create({
   detailButtonText: {
     fontSize: 14,
     color: '#EDEDED',
-  },
-  bottomNav: {
-    backgroundColor: '#1F2029',
-    borderRadius: 50,
-    width: '90%',
-    height: 70,
-    position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  navIconWrapper: {
-    width: 40, // Circle dimensions
-    height: 40,
-    borderRadius: 20, // Fully round
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent', // Default transparent background
-  },
-  
-  activeNavIconWrapper: {
-    backgroundColor: '#704F38', // Brown background for the active button
-    width: 50, // Ensure the width stays consistent
-    height: 50, // Ensure the height stays consistent
-    borderRadius: 25, // Ensure the circular shape remains intact
-    elevation: 25, // Add elevation to lift the icon
-  },
-  
-  navIcon: {
-    width: 30,
-    height: 30,
-    resizeMode: 'contain',
-    tintColor: '#EDEDED', // Keep the icon white
   },
 });
 

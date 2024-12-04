@@ -27,13 +27,11 @@ const DetailsPage: React.FC = () => {
       resizeMode="stretch"
     >
       <View style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Main Pet Image */}
           <View style={styles.petImageContainer}>
             <Image
               source={image ? image : require('../assets/images/logo1brown.png')}
@@ -41,7 +39,6 @@ const DetailsPage: React.FC = () => {
             />
           </View>
 
-          {/* Pet Details */}
           <Text style={styles.petName}>{String(name)?.toUpperCase()}</Text>
           <View style={styles.petInfoRow}>
             <Text style={styles.petInfoText}>Breed: {breed}</Text>
@@ -52,7 +49,6 @@ const DetailsPage: React.FC = () => {
             <Text style={styles.petInfoText}>Gender: Male</Text>
           </View>
 
-          {/* Additional Details */}
           <Text style={styles.sectionTitle}>Shelter Name</Text>
           <Text style={styles.sectionText}>Happy Tails Shelter</Text>
 
@@ -65,7 +61,6 @@ const DetailsPage: React.FC = () => {
             incididunt ut labore et dolore magna aliqua.
           </Text>
 
-          {/* Image Row */}
           <FlatList
             data={[
                 require('../assets/images/placeholder.png'),
@@ -83,7 +78,6 @@ const DetailsPage: React.FC = () => {
           />
         </ScrollView>
 
-        {/* Action Button (Fixed at the Bottom) */}
         <View>
           <TouchableOpacity style={styles.actionButton}
             onPress={() => router.push('/donate')}>

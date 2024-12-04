@@ -23,9 +23,9 @@ const DonatePage: React.FC = () => {
   const [receiveAmount, setReceiveAmount] = useState('0.0');
   const [payCurrency] = useState('USD');
   const [receiveCurrency] = useState('PTK');
-  const [modalVisible, setModalVisible] = useState(false); // State for the modal visibility
+  const [modalVisible, setModalVisible] = useState(false);
 
-  // Conversion rate: $5 = 1 PTK
+  // $5 = 1 PTK
   const conversionRate = 5;
 
   const handlePayAmountChange = (value: string) => {
@@ -41,7 +41,6 @@ const DonatePage: React.FC = () => {
       style={styles.background}
       resizeMode="stretch"
     >
-      {/* KeyboardAvoidingView ensures inputs are visible when the keyboard opens */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -51,15 +50,13 @@ const DonatePage: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.container}>
-            {/* Back Button */}
+
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
 
-            {/* Title */}
             <Text style={styles.title}>Token Donation</Text>
 
-            {/* Token Info */}
             <View style={styles.tokenInfoContainer}>
               <Image
                 source={require('../assets/images/logo1brown.png')}
@@ -69,22 +66,19 @@ const DonatePage: React.FC = () => {
               <Text style={styles.tokenSubtitle}>1.0000 PTK (~$5.00)</Text>
             </View>
 
-            {/* Token Information Section */}
             <View style={styles.infoSection}>
               <TouchableOpacity
                 style={styles.infoButton}
-                onPress={() => setModalVisible(true)} // Open the modal
+                onPress={() => setModalVisible(true)}
               >
                 <Text style={styles.infoText}>Token Donation Information</Text>
                 <Text style={styles.infoIcon}>ℹ️</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Swap Section */}
             <View style={styles.swapContainer}>
               <Text style={styles.swapTitle}>Swap</Text>
 
-              {/* Input: Pay */}
               <View style={styles.swapRow}>
                 <TextInput
                   style={styles.input}
@@ -99,10 +93,8 @@ const DonatePage: React.FC = () => {
                 </View>
               </View>
 
-              {/* Swap Icon */}
               <Text style={styles.swapIcon}>⇅</Text>
 
-              {/* Input: Receive */}
               <View style={styles.swapRow}>
                 <TextInput
                   style={styles.input}
@@ -115,7 +107,6 @@ const DonatePage: React.FC = () => {
               </View>
             </View>
 
-            {/* Donate Button */}
             <TouchableOpacity  style={styles.donateButton}
                 onPress={() => router.push(`/payment-methods?amount=${payAmount}&tokens=${receiveAmount}`)}
             >
@@ -124,7 +115,6 @@ const DonatePage: React.FC = () => {
           </View>
         </ScrollView>
 
-        {/* Modal for Token Information */}
         <Modal
           animationType="fade"
           transparent
@@ -280,10 +270,14 @@ const styles = StyleSheet.create({
   },
   donateButton: {
     backgroundColor: '#704F38',
-    paddingVertical: 15,
-    borderRadius: 50,
-    alignItems: 'center',
-    marginHorizontal: 20,
+        borderRadius: 50,
+        width: '100%',
+        height: 60,
+        marginVertical: 20,
+        bottom: 20,
+        alignSelf: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
   },
   donateButtonText: {
     fontSize: 16,
@@ -298,7 +292,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: width * 0.8,
-    backgroundColor: '#704F38',
+    backgroundColor: '#1f2029',
     borderRadius: 15,
     padding: 20,
     alignItems: 'center',
@@ -319,7 +313,7 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#704F38',
+    color: '#1F2029',
   },
 });
 

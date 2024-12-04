@@ -23,7 +23,7 @@ const SignUpScreen: React.FC = () => {
   });
 
   if (!fontsLoaded) {
-    return null; // Render nothing until fonts are loaded
+    return null;
   }
 
   return (
@@ -33,21 +33,17 @@ const SignUpScreen: React.FC = () => {
       resizeMode="stretch"
     >
       <View style={styles.container}>
-        {/* Back Icon */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
 
-        {/* Logo */}
         <Image
           source={require('../assets/images/logo1brown.png')}
           style={styles.logo}
         />
 
-        {/* Title */}
         <Text style={styles.title}>CREATE ACCOUNT</Text>
 
-        {/* Input Fields */}
         <TextInput
           placeholder="Name"
           placeholderTextColor="#6B6B6B"
@@ -71,21 +67,17 @@ const SignUpScreen: React.FC = () => {
           style={styles.input}
         />
 
-        {/* Sign Up Button */}
         <TouchableOpacity style={styles.signupButton}>
           <Text style={styles.signupButtonText}>SIGN UP</Text>
         </TouchableOpacity>
 
-        {/* Terms & Privacy */}
         <Text style={styles.termsText}>
           By Signing Up, you agree to our{' '}
           <Text style={styles.linkText}>Terms & Privacy Policy</Text>
         </Text>
 
-        {/* Or Divider */}
         <Text style={styles.orText}>or</Text>
 
-        {/* Google Sign Up */}
         <TouchableOpacity style={styles.googleButton}>
           <Image
             source={require('../assets/images/gl1.png')}
@@ -93,7 +85,6 @@ const SignUpScreen: React.FC = () => {
           />
         </TouchableOpacity>
 
-        {/* Already Have an Account */}
         <Text style={styles.loginText}>
           Already have an account?{' '}
           <Text

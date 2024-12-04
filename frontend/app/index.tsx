@@ -13,11 +13,10 @@ const SplashScreenComponent: React.FC = () => {
 
   // Animation values
   const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoTranslateY = useRef(new Animated.Value(30)).current; // Logo starts slightly below
+  const logoTranslateY = useRef(new Animated.Value(30)).current; 
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(30)).current; // Title starts slightly below
+  const titleTranslateY = useRef(new Animated.Value(30)).current;
 
-  // Prevent the splash screen from auto-hiding
   useEffect(() => {
     SplashScreen.preventAutoHideAsync();
   }, []);
@@ -38,7 +37,7 @@ const SplashScreenComponent: React.FC = () => {
         useNativeDriver: true,
       }).start();
 
-      // Title animation (delayed slightly after the logo)
+      // Title animation
       Animated.timing(titleOpacity, {
         toValue: 1,
         duration: 1000,
@@ -57,12 +56,13 @@ const SplashScreenComponent: React.FC = () => {
       setTimeout(() => {
         SplashScreen.hideAsync();
         router.push('/welcome'); 
-      }, 3500); // Total duration of animations + small buffer
+      }, 3500);
     }
   }, [fontsLoaded]);
 
+  // Render nothing until fonts are loaded
   if (!fontsLoaded) {
-    return null; // Render nothing until fonts are loaded
+    return null; 
   }
 
   return (
@@ -76,8 +76,7 @@ const SplashScreenComponent: React.FC = () => {
         source={require('../assets/images/bgi.jpg')}
         style={styles.background}
         resizeMode="stretch"
-      >
-        {/* Animated Logo */}
+      >       
         <Animated.Image
           source={require('../assets/images/logo1brown.png')}
           style={[
@@ -88,7 +87,6 @@ const SplashScreenComponent: React.FC = () => {
             },
           ]}
         />
-        {/* Animated Title */}
         <Animated.Text
           style={[
             styles.title,
@@ -118,7 +116,7 @@ const styles = StyleSheet.create({
     width: width * 0.4,
     height: width * 0.4,
     resizeMode: 'contain',
-    marginBottom: -30, // Reduced space below the logo
+    marginBottom: -30,
   },
   title: {
     width: '100%',

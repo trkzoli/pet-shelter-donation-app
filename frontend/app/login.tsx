@@ -15,10 +15,7 @@ import { useRouter } from 'expo-router';
 const LoginScreen: React.FC = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // State for "Remember Me" checkbox
   const [rememberMe, setRememberMe] = useState(false);
-
-
 
   const [fontsLoaded] = useFonts({
     Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
@@ -28,7 +25,7 @@ const LoginScreen: React.FC = () => {
   });
 
   if (!fontsLoaded) {
-    return null; // Render nothing until fonts are loaded
+    return null;
   }
 
   return (
@@ -38,21 +35,17 @@ const LoginScreen: React.FC = () => {
       resizeMode="stretch"
     >
       <View style={styles.container}>
-        {/* Back Icon */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
 
-        {/* Logo */}
         <Image
           source={require('../assets/images/logo1brown.png')}
           style={styles.logo}
         />
 
-        {/* Title */}
         <Text style={styles.title}>Welcome Back!</Text>
 
-        {/* Input Fields */}
         <TextInput
           placeholder="Email"
           placeholderTextColor="#6B6B6B"
@@ -65,16 +58,15 @@ const LoginScreen: React.FC = () => {
           style={styles.input}
         />
 
-        {/* Remember Me and Forgot Password */}
         <View style={styles.optionsRow}>
           <TouchableOpacity
             style={styles.checkboxContainer}
-            onPress={() => setRememberMe(!rememberMe)} // Toggle the checkbox state
+            onPress={() => setRememberMe(!rememberMe)}
           >
             <View
               style={[
                 styles.checkbox,
-                rememberMe && styles.checkboxChecked, // Apply checked style if toggled
+                rememberMe && styles.checkboxChecked,
               ]}
             />
             <Text style={styles.rememberText}>Remember me</Text>
@@ -84,24 +76,21 @@ const LoginScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Log In Button */}
         <TouchableOpacity style={styles.loginButton}
             onPress={() => {
-                setIsLoggedIn(true); // Simulate login
-                router.push('/home'); // Navigate to the Home Page
+                setIsLoggedIn(true);
+                router.push('/home');
             }}
         >
           <Text style={styles.loginButtonText}>LOG IN</Text>
         </TouchableOpacity>
 
-        {/* Or Divider */}
         <View style={styles.divider}>
           <View style={styles.line} />
           <Text style={styles.orText}>or</Text>
           <View style={styles.line} />
         </View>
 
-        {/* Google Log In */}
         <TouchableOpacity style={styles.googleButton}>
           <Image
             source={require('../assets/images/gl1.png')}
@@ -184,8 +173,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   checkboxChecked: {
-    backgroundColor: '#704F38', // Brown background for checked state
-    borderColor: '#704F38', // Match the background color for checked state
+    backgroundColor: '#704F38',
+    borderColor: '#704F38', 
   },
   rememberText: {
     fontSize: 12,

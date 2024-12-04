@@ -11,6 +11,9 @@ export default function RootLayout() {
       <Stack.Screen name="details" options={{ title: "Details", headerShown: false }} />
       <Stack.Screen name="donate" options={{ title: "Donate", headerShown: false }} />
       <Stack.Screen name="payment-methods" options={{ title: "Payment Methods", headerShown: false }} />
+      <Stack.Screen name="add-card" options={{ title: "Add Card", headerShown: false }} />
+      <Stack.Screen name="profile" options={{ title: "Profile", headerShown: false }} />
+      <Stack.Screen name="owned-pets" options={{ title: "Owned Pets", headerShown: false }} />
     </Stack>
   );  
 }
