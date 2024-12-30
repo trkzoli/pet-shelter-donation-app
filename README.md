@@ -21,6 +21,6 @@ Technikai megvalósítás
 - **AR:** *ViroReact*
 
 Link a Figma design projekthez:
-- https://www.figma.com/design/BlR0PvuFG8RdR7Q0n1GORH/%C3%81llamvizsga?t=JZjy1tmAypefyxwK-1
+- https://www.figma.com/design/BlR0PvuFG8RdR7Q0n1GORH/%C3%81llamvizsga?node-id=0-1&t=WlmJs4M5lN7d9rE7-1
 
 > Fejlesztés alatt: *Török Zoltán*
