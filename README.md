@@ -1,4 +1,4 @@
-# (Applikáció Neve)
+# (Applikáció Neve - még nincs kiválasztva)
 
 
 ## Projekt rövid leírása
