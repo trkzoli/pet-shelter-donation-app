@@ -32,6 +32,7 @@ const DetailsPage: React.FC = () => {
         </TouchableOpacity>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Pet Image */}
           <View style={styles.petImageContainer}>
             <Image
               source={image ? image : require('../assets/images/logo1brown.png')}
@@ -39,35 +40,53 @@ const DetailsPage: React.FC = () => {
             />
           </View>
 
+          {/* Pet Name */}
           <Text style={styles.petName}>{String(name)?.toUpperCase()}</Text>
+
+          {/* Pet Info */}
           <View style={styles.petInfoRow}>
-            <Text style={styles.petInfoText}>Breed: {breed}</Text>
-            <Text style={styles.petInfoText}>Sex: {sex}</Text>
+            <Text style={styles.petInfoText}>
+              <Text style={styles.petInfoTitle}>Breed:</Text> {breed}
+            </Text>
           </View>
           <View style={styles.petInfoRow}>
-            <Text style={styles.petInfoText}>Age: 2 years</Text>
-            <Text style={styles.petInfoText}>Gender: Male</Text>
+            <Text style={styles.petInfoText}>
+              <Text style={styles.petInfoTitle}>Gender:</Text> {sex}
+            </Text>
           </View>
-
-          <Text style={styles.sectionTitle}>Shelter Name</Text>
-          <Text style={styles.sectionText}>Happy Tails Shelter</Text>
-
-          <Text style={styles.sectionTitle}>Location</Text>
-          <Text style={styles.sectionText}>1234 Doggo St., Petland</Text>
-
+          <View style={styles.petInfoRow}>
+            <Text style={styles.petInfoText}>
+              <Text style={styles.petInfoTitle}>Age:</Text> 2 years
+            </Text>
+          </View>
+          <View style={styles.petInfoRow}>
+            <Text style={styles.petInfoText}>
+              <Text style={styles.petInfoTitle}>Location:</Text> Happy Tails Shelter, 1234 Doggo St., Petland
+            </Text>
+          </View>
+          {/* Story */}
           <Text style={styles.sectionTitle}>Story</Text>
           <Text style={styles.sectionText}>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
             incididunt ut labore et dolore magna aliqua.
           </Text>
 
+          {/* Description */}
+          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={styles.sectionText}>
+            This pet is a loving companion who enjoys long walks, playtime, and cuddles.
+            They are the perfect addition to any family looking for a furry friend!
+          </Text>
+
+          {/* Gallery */}
+          <Text style={styles.sectionTitle}>Gallery</Text>
           <FlatList
             data={[
-                require('../assets/images/placeholder.png'),
-                require('../assets/images/placeholder.png'),
-                require('../assets/images/placeholder.png'),
-                require('../assets/images/placeholder.png'),
-                require('../assets/images/placeholder.png'),
+              require('../assets/images/placeholder.png'),
+              require('../assets/images/placeholder.png'),
+              require('../assets/images/placeholder.png'),
+              require('../assets/images/placeholder.png'),
+              require('../assets/images/placeholder.png'),
             ]}
             horizontal
             renderItem={({ item }) => (
@@ -78,10 +97,10 @@ const DetailsPage: React.FC = () => {
           />
         </ScrollView>
 
+        {/* Donate Button */}
         <View>
-          <TouchableOpacity style={styles.actionButton}
-            onPress={() => router.push('/donate')}>
-            <Text style={styles.actionButtonText}>DONATE / ADOPT</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/donate')}>
+            <Text style={styles.actionButtonText}>DONATE</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -90,106 +109,103 @@ const DetailsPage: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-    background: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-    },
-    container: {
-        flex: 1,
-        backgroundColor: 'transparent',
-        paddingTop: height * 0.05,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        
-    },
-    backButton: {
-        position: 'absolute',
-        top: 50,
-        left: 20,
-        color: '#1F2029',
-        zIndex: 10,
-    },
-      backButtonText: {
-        fontSize: 24,
-        fontFamily: 'PoppinsBold',
-        color: '#1F2029',
-      },
-      petImageContainer: {
-        alignItems: 'center',
-        marginTop: 50,
-        marginBottom: 10,
-      },
-      petImage: {
-        width: width * 0.6,
-        height: 250,
-        borderRadius: 25,
-        borderColor: '#704F38',
-        resizeMode: 'cover',
-        elevation: 5,
-      },
-      petName: {
-        fontSize: 28,
-        fontFamily: 'PoppinsBold',
-        textAlign: 'center',
-        color: '#1F2029',
-      },
-      petInfoRow: {
-        fontSize: 16,
-        fontFamily: 'PoppinsRegular',
-        justifyContent: 'space-between',
-        marginHorizontal: 20,
-        
-      },
-      petInfoText: {
-        fontSize: 16,
-        color: '#1F2029',
-      },
-    sectionTitle: {
-        fontSize: 18,
-        fontFamily: 'PoppinsBold',
-        marginTop: 5,
-        color: '#1F2029',
-        marginHorizontal: 20,
-    },
-    sectionText: {
-        fontSize: 16,
-        color: '#1F2029',
-        marginTop: -10,
-        marginBottom: 5,
-        marginHorizontal: 20,
-    },
-    imageRow: {
-        marginVertical: 20,
-        alignItems: 'center',
-        marginBottom: 100,
-        marginHorizontal: 20,
-
-    },
-    additionalImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 10,
-        marginRight: 10,
-    }, 
-    actionButton: {
-        backgroundColor: '#704F38',
-        borderRadius: 50,
-        width: '90%',
-        height: 60,
-        position: 'absolute',
-        bottom: 20,
-        alignSelf: 'center',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    actionButtonText: {
-        fontSize: 16,
-        fontFamily: 'PoppinsBold',
-        color: '#EDEDED',
-    },
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    paddingTop: height * 0.05,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  backButtonText: {
+    fontSize: 24,
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
+  },
+  petImageContainer: {
+    alignItems: 'center',
+    marginTop: 50,
+    marginBottom: 10,
+  },
+  petImage: {
+    width: width * 0.6,
+    height: 250,
+    borderRadius: 25,
+    resizeMode: 'cover',
+  },
+  petName: {
+    fontSize: 28,
+    fontFamily: 'PoppinsBold',
+    textAlign: 'center',
+    color: '#1F2029',
+  },
+  petInfoRow: {
+    marginHorizontal: 20,
+    marginVertical: -4,
+  },
+  petInfoText: {
+    fontSize: 16,
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+  },
+  petInfoTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsSemiBold',
+    color: '#1F2029',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'PoppinsBold',
+    marginTop: 15,
+    color: '#1F2029',
+    marginHorizontal: 20,
+  },
+  sectionText: {
+    fontSize: 16,
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+    marginHorizontal: 20,
+  },
+  imageRow: {
+    marginVertical: 20,
+    alignItems: 'center',
+    marginBottom: 100,
+    marginHorizontal: 20,
+  },
+  additionalImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  actionButton: {
+    backgroundColor: '#704F38',
+    borderRadius: 50,
+    width: '90%',
+    height: 60,
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#EDEDED',
+  },
 });
 
 export default DetailsPage;

@@ -231,33 +231,33 @@ const ShelterPetsManage: React.FC = () => {
             <TextInput
               placeholder="Name"
               style={styles.modalInput}
-              value={editableName}
+              value={Array.isArray(editableName) ? editableName.join(", ") : editableName ?? " "}
               onChangeText={setEditableName}
             />
             <TextInput
               placeholder="Breed"
               style={styles.modalInput}
-              value={editableBreed}
+              value={Array.isArray(editableBreed) ? editableBreed.join(", ") : editableBreed ?? ""}
               onChangeText={setEditableBreed}
             />
             <TextInput
               placeholder="Gender"
               style={styles.modalInput}
-              value={editableGender}
+              value={Array.isArray(editableGender) ? editableGender.join(", ") : editableGender ?? ""}
               onChangeText={setEditableGender}
             />
             <TextInput
               placeholder="Story"
               style={[styles.modalInput, { height: 80 }]}
               multiline
-              value={editableStory}
+              value={Array.isArray(editableStory) ? editableStory.join(", ") : editableStory ?? ""}
               onChangeText={setEditableStory}
             />
             <TextInput
               placeholder="Description"
               style={[styles.modalInput, { height: 80 }]}
               multiline
-              value={editableDescription}
+              value={Array.isArray(editableDescription) ? editableDescription.join(", ") : editableDescription ?? ""}
               onChangeText={setEditableDescription}
             />
 
@@ -280,8 +280,14 @@ const ShelterPetsManage: React.FC = () => {
         >
         <View style={styles.modalContainer}>
             <Image
-            source={typeof selectedImage === 'number' ? selectedImage : selectedImage}
-            style={styles.enlargedImage}
+              source={
+                selectedImage
+                  ? typeof selectedImage === "number"
+                    ? selectedImage
+                    : { uri: (selectedImage as { uri: string }).uri } // Biztosítjuk a helyes típust
+                  : require("../assets/images/placeholder.png") // Ha null, akkor alapértelmezett kép
+              }
+              style={styles.enlargedImage}
             />
             <TouchableOpacity
             style={styles.closeModalButton}
