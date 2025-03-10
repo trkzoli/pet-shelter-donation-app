@@ -6,14 +6,19 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ImageBackground,
-  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 
 const SignUpScreen: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+
+  const horizontalPadding = 20 * 2;
+  const availableWidth = width - horizontalPadding;
 
   const [fontsLoaded] = useFonts({
     Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
@@ -21,153 +26,170 @@ const SignUpScreen: React.FC = () => {
     PoppinsBold: require('../../assets/fonts/Poppins-Bold.ttf'),
     PoppinsSemiBold: require('../../assets/fonts/Poppins-SemiBold.ttf'),
   });
-
+  
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.mainContainer}>
 
-        <Image
-          source={require('../../assets/images/logo1brown.png')}
-          style={styles.logo}
-        />
-
-        <Text style={styles.title}>CREATE ACCOUNT</Text>
-
-        <TextInput
-          placeholder="Name"
-          placeholderTextColor="#6B6B6B"
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Email"
-          placeholderTextColor="#6B6B6B"
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Create Password"
-          placeholderTextColor="#6B6B6B"
-          secureTextEntry
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Confirm Password"
-          placeholderTextColor="#6B6B6B"
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <TouchableOpacity style={styles.signupButton}>
-          <Text style={styles.signupButtonText}>SIGN UP</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.termsText}>
-          By Signing Up, you agree to our{' '}
-          <Text style={styles.linkText}>Terms & Privacy Policy</Text>
-        </Text>
-
-        <Text style={styles.orText}>or</Text>
-
-        <TouchableOpacity style={styles.googleButton}>
+        <View style={styles.topContainer}>
           <Image
-            source={require('../../assets/images/gl1.png')}
-            style={styles.googleIcon}
+            source={require('../../assets/images/AOwner2.png')}
+            style={[
+              styles.topImage,
+              { width: width * 0.7, height: width * 0.7 },
+            ]}
           />
-        </TouchableOpacity>
-
-        <Text style={styles.loginText}>
-          Already have an account?{' '}
-          <Text
-            style={styles.linkText}
-            onPress={() => router.push('/login')}
+        </View>
+        <View style={styles.bottomContainer}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            Login
-          </Text>
-        </Text>
+            <TextInput
+              placeholder="Name"
+              placeholderTextColor="#6B6B6B"
+              style={[styles.input, { width: availableWidth * 0.9 }]}
+            />
+            <TextInput
+              placeholder="Email"
+              placeholderTextColor="#6B6B6B"
+              style={[styles.input, { width: availableWidth * 0.9 }]}
+            />
+            <TextInput
+              placeholder="Create Password"
+              placeholderTextColor="#6B6B6B"
+              secureTextEntry
+              style={[styles.input, { width: availableWidth * 0.9 }]}
+            />
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor="#6B6B6B"
+              secureTextEntry
+              style={[styles.input, { width: availableWidth * 0.9 }]}
+            />
+
+            <TouchableOpacity
+              style={[styles.signupButton, { width: availableWidth * 0.9 }]}
+              onPress={() => {/* your sign up handler */}}
+            >
+              <Text
+                style={[styles.signupButtonText, { fontSize: availableWidth * 0.045 }]}
+              >
+                SIGN UP
+              </Text>
+            </TouchableOpacity>
+
+            <Text
+              style={[
+                styles.termsText,
+                { width: availableWidth * 0.8, fontSize: availableWidth * 0.03 },
+              ]}
+            >
+              By Signing Up, you agree to our{' '}
+              <Text style={styles.linkText}>Terms & Privacy Policy</Text>
+            </Text>
+
+            <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
+              - Or Sign Up with -
+            </Text>
+
+            <View style={[styles.socialButtonsContainer, { width: availableWidth * 0.8 }]}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Image
+                  source={require('../../assets/images/gl1.png')}
+                  style={styles.socialIcon}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <Image
+                  source={require('../../assets/images/fb1.png')}
+                  style={styles.socialIcon}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <Image
+                  source={require('../../assets/images/x1.png')}
+                  style={styles.socialIcon}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
+              Already have an account?{' '}
+              <Text style={styles.linkText} onPress={() => router.push('/login')}>
+                Login
+              </Text>
+            </Text>
+          </ScrollView>
+        </View>
       </View>
-    </ImageBackground>
+    </SafeAreaView>
   );
 };
-
-const { width } = Dimensions.get('window');
-
+  
 const styles = StyleSheet.create({
-  background: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#E4E0E1',
   },
-  container: {
+  mainContainer: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  topContainer: {
+    flex: 0.3,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: 'transparent',
-  },
-  backIcon: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    color: '#1F2029',
-  },
-  backText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
-  },
-  logo: {
-    width: width * 0.2,
-    height: width * 0.2,
-    resizeMode: 'contain',
-    marginTop: 50,
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    justifyContent: 'center',
     marginBottom: 20,
+    marginTop: 5,
+  },
+  topImage: {
+    resizeMode: 'contain',
+    marginVertical: 10,
+  },
+  bottomContainer: {
+    flex: 0.7,
+    backgroundColor: '#E4E0E1',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
+    elevation: 10,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingTop: 30,
+    paddingBottom: 50,
   },
   input: {
     height: 50,
-    width: width * 0.80,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    borderWidth: 1,
+    color: '#1F2029',
+    borderBottomWidth: 1,
     borderColor: '#797979',
   },
   signupButton: {
-    width: width * 0.80,
     height: 50,
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 50,
+    borderRadius: 20,
     marginBottom: 15,
     paddingVertical: 12.5,
   },
   signupButtonText: {
-    fontSize: 16,
     fontFamily: 'PoppinsBold',
     color: '#EDEDED',
   },
   termsText: {
-    width: width * 0.60,
-    fontSize: 12,
     fontFamily: 'PoppinsRegular',
     textAlign: 'center',
     color: '#1F2029',
@@ -178,34 +200,33 @@ const styles = StyleSheet.create({
     color: '#1F2029',
   },
   orText: {
-    fontSize: 14,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
     marginBottom: 10,
+    marginTop: 20,
   },
-  googleButton: {
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  socialButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: '#EDEDED',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    //for Andorid
     elevation: 5,
-    //for IOS
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.2,
-    // shadowRadius: 3,
   },
-  googleIcon: {
+  socialIcon: {
     width: 30,
     height: 30,
     resizeMode: 'contain',
   },
   loginText: {
-    fontSize: 14,
+    marginTop: 10,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
   },

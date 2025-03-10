@@ -6,15 +6,21 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ImageBackground,
-  Dimensions,
+  SafeAreaView,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 
-const ShelterSignupScreen: React.FC = () => {
+const SignUpScreen: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  
+  const horizontalPadding = 20 * 2;
+  const availableWidth = width - horizontalPadding;
 
   const [fontsLoaded] = useFonts({
     Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
@@ -22,159 +28,186 @@ const ShelterSignupScreen: React.FC = () => {
     PoppinsBold: require('../../assets/fonts/Poppins-Bold.ttf'),
     PoppinsSemiBold: require('../../assets/fonts/Poppins-SemiBold.ttf'),
   });
-
+  
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.container}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
-            <Text style={styles.backText}>←</Text>
-          </TouchableOpacity>
-
+    <SafeAreaView style={[styles.safeArea, { width, height }]}>
+      <View style={styles.mainContainer}>
+     
+        <View style={styles.topContainer}>
           <Image
-            source={require('../../assets/images/logo1brown.png')}
-            style={styles.logo}
+            source={require('../../assets/images/AShelter2.png')}
+            style={[
+              styles.topImage,
+              { width: width * 0.7, height: width * 0.7 },
+            ]}
           />
-
-          <Text style={styles.title}>SIGN UP AS A SHELTER</Text>
-
-          {/* Form Fields */}
-          <TextInput
-            placeholder="Shelter Name"
-            placeholderTextColor="#6B6B6B"
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#6B6B6B"
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Phone Number"
-            placeholderTextColor="#6B6B6B"
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Create Password"
-            placeholderTextColor="#6B6B6B"
-            secureTextEntry
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Confirm Password"
-            placeholderTextColor="#6B6B6B"
-            secureTextEntry
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Shelter Address"
-            placeholderTextColor="#6B6B6B"
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Registration Number"
-            placeholderTextColor="#6B6B6B"
-            style={styles.input}
-          />
-
-          <TouchableOpacity style={styles.signupButton}>
-            <Text style={styles.signupButtonText}>SIGN UP</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.termsText}>
-            By Signing Up, you agree to our{' '}
-            <Text style={styles.linkText}>Terms & Privacy Policy</Text>
-          </Text>
         </View>
-      </ScrollView>
-    </ImageBackground>
+
+    
+        <View style={styles.bottomContainer}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 60}
+            style={{ flex: 1 }}
+          >
+          
+            <ScrollView
+              style={styles.inputScroll}
+              contentContainerStyle={styles.inputScrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <TextInput
+              placeholder="Shelter Name"
+              placeholderTextColor="#6B6B6B"
+              style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#6B6B6B"
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+              <TextInput
+                placeholder="Phone Number"
+                placeholderTextColor="#6B6B6B"
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+              <TextInput
+                placeholder="Create Password"
+                placeholderTextColor="#6B6B6B"
+                secureTextEntry
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+              <TextInput
+                placeholder="Confirm Password"
+                placeholderTextColor="#6B6B6B"
+                secureTextEntry
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+              <TextInput
+                placeholder="Shelter Address"
+                placeholderTextColor="#6B6B6B"
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+              <TextInput
+                placeholder="Registration Number"
+                placeholderTextColor="#6B6B6B"
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+              />
+            </ScrollView>
+            
+            <View style={styles.fixedFooter}>
+              <TouchableOpacity
+                style={[styles.signupButton, { width: availableWidth * 0.9 }]}
+                onPress={() => {
+                  
+                }}
+              >
+                <Text
+                  style={[
+                    styles.signupButtonText,
+                    { fontSize: availableWidth * 0.045 },
+                  ]}
+                >
+                  SIGN UP
+                </Text>
+              </TouchableOpacity>
+
+              <Text
+                style={[
+                  styles.termsText,
+                  { width: availableWidth * 0.8, fontSize: availableWidth * 0.03 },
+                ]}
+              >
+                By Signing Up, you agree to our{' '}
+                <Text style={styles.linkText}>Terms & Privacy Policy</Text>
+              </Text>
+
+
+              <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
+                Already have an account?{' '}
+                <Text style={styles.linkText} onPress={() => router.push('/login')}>
+                  Login
+                </Text>
+              </Text>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
-
-const { width } = Dimensions.get('window');
-
+  
 const styles = StyleSheet.create({
-  background: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#E4E0E1',
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 50,
-  },
-  container: {
+  mainContainer: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  topContainer: {
+    flex: 0.25,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: 'transparent',
-  },
-  backIcon: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    color: '#1F2029',
-  },
-  backText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
-  },
-  logo: {
-    width: width * 0.2,
-    height: width * 0.2,
-    resizeMode: 'contain',
-    marginTop:50,
-    
-  },
-  title: {
-    fontSize: 18,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    justifyContent: 'center',
     marginBottom: 20,
+    marginTop: 5,
+  },
+  topImage: {
+    resizeMode: 'contain',
+    marginVertical: 10,
+  },
+  bottomContainer: {
+    flex: 0.75,
+    backgroundColor: '#E4E0E1',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
+    elevation: 10,
+  },
+  inputScroll: {
+    flex: 1,
+  },
+  inputScrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingTop: 30,
+    paddingBottom: 10, 
   },
   input: {
     height: 50,
-    width: width * 0.80,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    borderWidth: 1,
+    color: '#1F2029',
+    borderBottomWidth: 1,
     borderColor: '#797979',
   },
+  fixedFooter: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
   signupButton: {
-    width: width * 0.80,
     height: 50,
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 50,
+    borderRadius: 20,
     marginBottom: 15,
     paddingVertical: 12.5,
   },
   signupButtonText: {
-    fontSize: 16,
     fontFamily: 'PoppinsBold',
     color: '#EDEDED',
   },
   termsText: {
-    width: width * 0.60,
-    fontSize: 12,
     fontFamily: 'PoppinsRegular',
     textAlign: 'center',
     color: '#1F2029',
@@ -184,6 +217,37 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
     color: '#1F2029',
   },
+  orText: {
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  socialButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EDEDED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+  },
+  socialIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  loginText: {
+    marginTop: 10,
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+  },
 });
 
-export default ShelterSignupScreen;
+export default SignUpScreen;

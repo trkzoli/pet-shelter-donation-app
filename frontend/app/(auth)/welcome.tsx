@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     paddingVertical: 12.5,
+    
   },
   buttonText: {
     fontFamily: 'PoppinsBold',

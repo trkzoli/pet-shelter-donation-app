@@ -6,20 +6,38 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ImageBackground,
-  Dimensions,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 
 const LoginScreen: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+
+  const horizontalPadding = 20 * 2;
+  const availableWidth = width - horizontalPadding;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
+  const [fontsLoaded] = useFonts({
+    Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
+    PoppinsRegular: require('../../assets/fonts/Poppins-Regular.ttf'),
+    PoppinsBold: require('../../assets/fonts/Poppins-Bold.ttf'),
+    PoppinsSemiBold: require('../../assets/fonts/Poppins-SemiBold.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   const handleLogin = () => {
-    // Hardcoded users
     const users = {
       shelter: { email: "shelter@example.com", password: "shelter123" },
       adopter: { email: "adopter@example.com", password: "adopter123" },
@@ -28,127 +46,135 @@ const LoginScreen: React.FC = () => {
     if (email === users.shelter.email && password === users.shelter.password) {
       router.push('/shelter-home');
     } else if (email === users.adopter.email && password === users.adopter.password) {
-      router.push('/home'); 
+      router.push('/home');
     } else {
-      alert("Invalid email or password. Please try again."); 
+      alert("Invalid email or password. Please try again.");
     }
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={[styles.safeArea, { width, height }]}>
+      <View style={styles.mainContainer}>
+       
+        <View style={[styles.topContainer, { flex: 0.25 }]}>
+          <Text style={[styles.topTitle, { fontSize: availableWidth * 0.08 }]}>
+            Hello, Welcome Back!
+          </Text>
+        </View>
 
-        <Image
-          source={require('../../assets/images/logo1brown.png')}
-          style={styles.logo}
-        />
-
-        <Text style={styles.title}>Welcome Back!</Text>
-
-        <TextInput
-          placeholder="Email"
-          placeholderTextColor="#6B6B6B"
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          placeholder="Password"
-          placeholderTextColor="#6B6B6B"
-          secureTextEntry
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <View style={styles.optionsRow}>
-          <TouchableOpacity
-            style={styles.checkboxContainer}
-            onPress={() => setRememberMe(!rememberMe)}
+      
+        <View style={[styles.bottomContainer, { flex: 0.75 }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 60}
+            style={{ flex: 1 }}
           >
-            <View
-              style={[
-                styles.checkbox,
-                rememberMe && styles.checkboxChecked,
-              ]}
-            />
-            <Text style={styles.rememberText}>Remember me</Text>
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
+            <ScrollView
+              contentContainerStyle={styles.inputScrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#6B6B6B"
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+                value={email}
+                onChangeText={setEmail}
+              />
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#6B6B6B"
+                secureTextEntry
+                style={[styles.input, { width: availableWidth * 0.9 }]}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <View style={[styles.optionsRow, { width: availableWidth * 0.9 }]}>
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() => setRememberMe(!rememberMe)}
+                >
+                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]} />
+                  <Text style={styles.rememberText}>Remember me</Text>
+                </TouchableOpacity>
+                <TouchableOpacity>
+                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+
+            <View style={styles.fixedFooter}>
+              <TouchableOpacity
+                style={[styles.loginButton, { width: availableWidth * 0.9 }]}
+                onPress={handleLogin}
+              >
+                <Text
+                  style={[styles.loginButtonText, { fontSize: availableWidth * 0.045 }]}
+                >
+                  LOG IN
+                </Text>
+              </TouchableOpacity>
+              <View style={[styles.divider, { width: availableWidth * 0.9 }]}>
+                <View style={styles.line} />
+                <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
+                  or
+                </Text>
+                <View style={styles.line} />
+              </View>
+              <TouchableOpacity style={styles.googleButton}>
+                <Image
+                  source={require('../../assets/images/gl1.png')}
+                  style={styles.googleIcon}
+                />
+              </TouchableOpacity>
+              <Text style={[styles.bottomLoginText, { fontSize: availableWidth * 0.035 }]}>
+                Already have an account?{' '}
+                <Text style={styles.linkText} onPress={() => router.push('/signup')}>
+                  Sign Up
+                </Text>
+              </Text>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>LOG IN</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.orText}>or</Text>
-          <View style={styles.line} />
-        </View>
-
-        <TouchableOpacity style={styles.googleButton}>
-          <Image
-            source={require('../../assets/images/gl1.png')}
-            style={styles.googleIcon}
-          />
-        </TouchableOpacity>
       </View>
-    </ImageBackground>
+    </SafeAreaView>
   );
 };
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
-  background: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#E4E0E1',
   },
-  container: {
+  mainContainer: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  topContainer: {
     alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: 'transparent',
-  },
-  backIcon: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    color: '#1F2029',
-  },
-  backText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
-  },
-  logo: {
-    width: width * 0.2,
-    height: width * 0.2,
-    resizeMode: 'contain',
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    justifyContent: 'center',
     marginBottom: 20,
+    marginTop: 5,
+  },
+  topTitle: {
+    fontFamily: 'Pacifico',
+    color: '#1F2029',
+  },
+  bottomContainer: {
+    backgroundColor: '#E4E0E1',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
+    elevation: 10,
+  },
+  inputScrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingTop: 30,
+    paddingBottom: 10,
   },
   input: {
     height: 50,
-    width: width * 0.80,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
@@ -161,7 +187,6 @@ const styles = StyleSheet.create({
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: width * 0.80,
     marginBottom: 20,
   },
   checkboxContainer: {
@@ -179,7 +204,7 @@ const styles = StyleSheet.create({
   },
   checkboxChecked: {
     backgroundColor: '#704F38',
-    borderColor: '#704F38', 
+    borderColor: '#704F38',
   },
   rememberText: {
     fontSize: 12,
@@ -191,8 +216,11 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
     color: '#1F2029',
   },
+  fixedFooter: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
   loginButton: {
-    width: width * 0.80,
     height: 50,
     backgroundColor: '#704F38',
     justifyContent: 'center',
@@ -202,14 +230,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12.5,
   },
   loginButtonText: {
-    fontSize: 16,
     fontFamily: 'PoppinsBold',
     color: '#EDEDED',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: width * 0.80,
     marginBottom: 20,
   },
   line: {
@@ -237,6 +263,16 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     resizeMode: 'contain',
+  },
+  bottomLoginText: {
+    fontSize: 14,
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+    marginTop: 10,
+  },
+  linkText: {
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
   },
 });
 

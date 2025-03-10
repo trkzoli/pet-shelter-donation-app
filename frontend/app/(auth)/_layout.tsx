@@ -5,6 +5,7 @@ export default function AuthLayout() {
     <Stack screenOptions={{
         headerStyle: {
           backgroundColor: '#E4E0E1', // Set your header background color here
+          
         },
         headerTintColor: '#1F2029', // Set the header text and icon color here
         headerTitleStyle: {
@@ -14,9 +15,9 @@ export default function AuthLayout() {
     >
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="choose-signup" options={{ title: "", headerShown: false}} />
-      <Stack.Screen name="signup" options={{ title: "Sign Up" }} />
-      <Stack.Screen name="signup-shelter" options={{ title: "Shelter Sign Up" }} />
-      <Stack.Screen name="login" options={{ title: "Log In" }} />
+      <Stack.Screen name="signup" options={{ title: "Create Your Account", headerShadowVisible: false }} />
+      <Stack.Screen name="signup-shelter" options={{ title: "Create Your Account", headerShadowVisible: false }} />
+      <Stack.Screen name="login" options={{ title: "", headerShadowVisible: false }} /> 
     </Stack>
   );
 }
