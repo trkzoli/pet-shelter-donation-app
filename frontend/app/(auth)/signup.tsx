@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,18 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 
 const SignUpScreen: React.FC = () => {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-
+  const { width } = useWindowDimensions();
   const horizontalPadding = 20 * 2;
   const availableWidth = width - horizontalPadding;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
@@ -30,102 +33,108 @@ const SignUpScreen: React.FC = () => {
   if (!fontsLoaded) {
     return null;
   }
+  
+  const handleSignUp = () => {
+    console.log('Signing up with:', email, password);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.mainContainer}>
-
-        <View style={styles.topContainer}>
+        {/* Back Arrow */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Top Image */}
           <Image
             source={require('../../assets/images/AOwner2.png')}
-            style={[
-              styles.topImage,
-              { width: width * 0.7, height: width * 0.7 },
-            ]}
+            style={[styles.topImage, { width: width * 0.7, height: width * 0.7 }]}
           />
-        </View>
-        <View style={styles.bottomContainer}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+          {/* Title */}
+          <Text style={[styles.topTitle, { fontSize: availableWidth * 0.08 }]}>
+            Sign Up
+          </Text>
+          
+          {/* Email Input Field */}
+          <TextInput
+            placeholder="Email"
+            placeholderTextColor="#6B6B6B"
+            style={[styles.input, { width: availableWidth * 0.9 }]}
+            value={email}
+            onChangeText={setEmail}
+          />
+          
+          {/* Password Input Field with Eye Icon inside */}
+          <View style={[styles.passwordContainer, { width: availableWidth * 0.9 }]}>
             <TextInput
-              placeholder="Name"
+              placeholder="Password"
               placeholderTextColor="#6B6B6B"
-              style={[styles.input, { width: availableWidth * 0.9 }]}
+              secureTextEntry={!passwordVisible}
+              style={[styles.input, { flex: 1, paddingRight: 40 }]}
+              value={password}
+              onChangeText={setPassword}
             />
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor="#6B6B6B"
-              style={[styles.input, { width: availableWidth * 0.9 }]}
-            />
-            <TextInput
-              placeholder="Create Password"
-              placeholderTextColor="#6B6B6B"
-              secureTextEntry
-              style={[styles.input, { width: availableWidth * 0.9 }]}
-            />
-            <TextInput
-              placeholder="Confirm Password"
-              placeholderTextColor="#6B6B6B"
-              secureTextEntry
-              style={[styles.input, { width: availableWidth * 0.9 }]}
-            />
-
             <TouchableOpacity
-              style={[styles.signupButton, { width: availableWidth * 0.9 }]}
-              onPress={() => {/* your sign up handler */}}
+              onPress={() => setPasswordVisible(!passwordVisible)}
+              style={styles.eyeIconContainer}
             >
-              <Text
-                style={[styles.signupButtonText, { fontSize: availableWidth * 0.045 }]}
-              >
-                SIGN UP
-              </Text>
+              <Ionicons name={passwordVisible ? 'eye' : 'eye-off'} size={20} color="#797979" />
             </TouchableOpacity>
-
-            <Text
-              style={[
-                styles.termsText,
-                { width: availableWidth * 0.8, fontSize: availableWidth * 0.03 },
-              ]}
-            >
-              By Signing Up, you agree to our{' '}
-              <Text style={styles.linkText}>Terms & Privacy Policy</Text>
+          </View>
+          <Text style={[styles.termsText, {fontSize: availableWidth * 0.03}]}>
+            By signing up, you agree to our{' '}
+            <Text style={styles.linkText}>Terms & Conditions</Text> and{' '}
+            <Text style={styles.linkText}>Privacy Policy</Text>.
+          </Text>
+          {/* Create Your Account Button */}
+          <TouchableOpacity
+            style={[styles.createAccountButton, { width: availableWidth * 0.9 }]}
+            onPress={handleSignUp}
+          >
+            <Text style={[styles.createAccountButtonText, { fontSize: availableWidth * 0.045 }]}>
+              Create Your Account
             </Text>
-
-            <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
-              - Or Sign Up with -
+          </TouchableOpacity>
+          
+          {/* Separator */}
+          <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
+            - Or continue with -
+          </Text>
+          
+          {/* Social Media Buttons Row */}
+          <View style={[styles.socialButtonsContainer, { width: availableWidth * 0.8 }]}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image
+                source={require('../../assets/images/gl1.png')}
+                style={styles.socialIcon}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image
+                source={require('../../assets/images/fb1.png')}
+                style={styles.socialIcon}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image
+                source={require('../../assets/images/x1.png')}
+                style={styles.socialIcon}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Already have an account */}
+          <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
+            Already have an account?{' '}
+            <Text style={styles.linkText} onPress={() => router.push('/login')}>
+              Login
             </Text>
-
-            <View style={[styles.socialButtonsContainer, { width: availableWidth * 0.8 }]}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Image
-                  source={require('../../assets/images/gl1.png')}
-                  style={styles.socialIcon}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Image
-                  source={require('../../assets/images/fb1.png')}
-                  style={styles.socialIcon}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Image
-                  source={require('../../assets/images/x1.png')}
-                  style={styles.socialIcon}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
-              Already have an account?{' '}
-              <Text style={styles.linkText} onPress={() => router.push('/login')}>
-                Login
-              </Text>
-            </Text>
-          </ScrollView>
-        </View>
+          </Text>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -138,25 +147,18 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
+    paddingHorizontal: 20,
   },
-  topContainer: {
-    flex: 0.3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    marginTop: 5,
+  backIcon: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
   },
-  topImage: {
-    resizeMode: 'contain',
-    marginVertical: 10,
-  },
-  bottomContainer: {
-    flex: 0.7,
-    backgroundColor: '#E4E0E1',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    overflow: 'hidden',
-    elevation: 10,
+  backText: {
+    fontSize: 24,
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
   },
   scrollContent: {
     flexGrow: 1,
@@ -164,19 +166,38 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 50,
   },
+  topImage: {
+    resizeMode: 'contain',
+    marginVertical: 10,
+  },
+  topTitle: {
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
+    marginBottom: 10,
+  },
   input: {
     height: 50,
     backgroundColor: '#E4E0E1',
-    borderRadius: 8,
     paddingHorizontal: 15,
-    marginBottom: 15,
+    marginBottom: 10,
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
     borderBottomWidth: 1,
     borderColor: '#797979',
   },
-  signupButton: {
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+    position: 'relative',
+  },
+  eyeIconContainer: {
+    position: 'absolute',
+    right: 10,
+    top: 15, 
+  },
+  createAccountButton: {
     height: 50,
     backgroundColor: '#AB886D',
     justifyContent: 'center',
@@ -185,31 +206,20 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingVertical: 12.5,
   },
-  signupButtonText: {
+  createAccountButtonText: {
     fontFamily: 'PoppinsBold',
     color: '#EDEDED',
-  },
-  termsText: {
-    fontFamily: 'PoppinsRegular',
-    textAlign: 'center',
-    color: '#1F2029',
-    marginBottom: 10,
-  },
-  linkText: {
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
   },
   orText: {
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
-    marginBottom: 10,
-    marginTop: 20,
+    marginBottom: 15,
   },
   socialButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   socialButton: {
     width: 40,
@@ -228,6 +238,18 @@ const styles = StyleSheet.create({
   loginText: {
     marginTop: 10,
     fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+  },
+  termsText: {
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginHorizontal: 10,
+    marginBottom: 10,
+  },
+  linkText: {
+    fontFamily: 'PoppinsBold',
     color: '#1F2029',
   },
 });
