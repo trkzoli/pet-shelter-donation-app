@@ -17,7 +17,7 @@ export default function AuthLayout() {
       <Stack.Screen name="choose-signup" options={{ title: "", headerShown: false}} />
       <Stack.Screen name="signup" options={{ title: "Create Your Account",headerShown: false }} />
       <Stack.Screen name="signup-shelter" options={{ title: "Create Your Account", headerShown: false }} />
-      <Stack.Screen name="login" options={{ title: "", headerShadowVisible: false }} /> 
+      <Stack.Screen name="login" options={{ title: "", headerShown: false }} /> 
     </Stack>
   );
 }

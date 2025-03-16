@@ -71,17 +71,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   activeNavIconWrapper: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     width: 50,
     height: 50,
     borderRadius: 25,
-    elevation: 5,
   },
   navIcon: {
     width: 30,
     height: 30,
     resizeMode: 'contain',
-    tintColor: '#EDEDED',
+    tintColor: '#E4E0E1',
   },
 });
 

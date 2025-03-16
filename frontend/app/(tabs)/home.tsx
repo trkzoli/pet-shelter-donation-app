@@ -5,10 +5,9 @@ import {
   Image,
   StyleSheet,
   FlatList,
-  Dimensions,
+  useWindowDimensions,
   TouchableOpacity,
   TextInput,
-  ImageBackground,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import NavBar from '../../components/navigation/NavBar';
@@ -24,11 +23,10 @@ const animals = [
   { id: '8', name: 'Nibbles', breed: 'Syrian', sex: 'Male', type: 'Hamsters', image: require('../../assets/images/hs1.jpg') },
 ];
 
-const { height } = Dimensions.get('window');
-
 const HomePage: React.FC = () => {
   const router = useRouter();
-  const pathname = usePathname(); 
+  const pathname = usePathname();
+  const { width, height } = useWindowDimensions();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredAnimals, setFilteredAnimals] = useState(animals);
@@ -36,29 +34,20 @@ const HomePage: React.FC = () => {
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-
     const filtered = animals.filter((animal) => {
       const matchesSearch =
         animal.name.toLowerCase().includes(text.toLowerCase()) ||
         animal.breed.toLowerCase().includes(text.toLowerCase()) ||
         animal.sex.toLowerCase().includes(text.toLowerCase());
-
-      const matchesFilter =
-        activeFilter === 'All' || animal.type === activeFilter;
-
+      const matchesFilter = activeFilter === 'All' || animal.type === activeFilter;
       return matchesSearch && matchesFilter;
     });
-
     setFilteredAnimals(filtered);
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
+    <View style={[styles.background, { width, height }]}>
+      <View style={[styles.container, { paddingTop: height * 0.05 }]}>
         <View style={styles.searchBar}>
           <TextInput
             placeholder="Search by name, breed, or gender ..."
@@ -76,10 +65,7 @@ const HomePage: React.FC = () => {
           {['All', 'Dogs', 'Cats', 'Hamsters'].map((filter) => (
             <TouchableOpacity
               key={filter}
-              style={[
-                styles.filterButtonTab,
-                filter === activeFilter && styles.activeFilter,
-              ]}
+              style={[styles.filterButtonTab, filter === activeFilter && styles.activeFilter]}
               onPress={() => {
                 setActiveFilter(filter);
                 setSearchQuery('');
@@ -89,12 +75,7 @@ const HomePage: React.FC = () => {
                 setFilteredAnimals(filtered);
               }}
             >
-              <Text
-                style={[
-                  styles.filterTextTab,
-                  filter === activeFilter && styles.activeFilterText,
-                ]}
-              >
+              <Text style={[styles.filterTextTab, filter === activeFilter && styles.activeFilterText]}>
                 {filter}
               </Text>
             </TouchableOpacity>
@@ -105,6 +86,7 @@ const HomePage: React.FC = () => {
           data={filteredAnimals}
           keyExtractor={(item) => item.id}
           numColumns={2}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.card}
@@ -121,50 +103,51 @@ const HomePage: React.FC = () => {
                 })
               }
             >
-              <Image source={item.image} style={styles.cardImage} />
+              <Image source={item.image} style={[styles.cardImage, { height: width * 0.4 }]} />
               <View style={styles.overlay}>
                 <Text style={styles.overlayText}>{item.name}</Text>
-                <Text style={styles.overlayText}>{item.breed}</Text>
-                <Text style={styles.overlayText}>{item.sex}</Text>
+                
               </View>
             </TouchableOpacity>
           )}
           contentContainerStyle={styles.grid}
         />
+
         <NavBar />
       </View>
-    </ImageBackground>
+    </View>
   );
 };
-
-const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor: '#E4E0E1',
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    paddingTop: height * 0.05,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '80%',
+    alignSelf: 'center',
+    width: '90%',
     borderWidth: 1,
     borderColor: '#797979',
     borderRadius: 10,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     marginVertical: 10,
+    paddingHorizontal: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 12,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
+    padding: 8,
   },
   filterButton: {
     paddingRight: 10,
@@ -173,6 +156,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     marginBottom: 10,
+    width: '100%',
   },
   filterButtonTab: {
     paddingVertical: 5,
@@ -189,23 +173,24 @@ const styles = StyleSheet.create({
     color: '#1F2029',
   },
   activeFilterText: {
-    color: '#FFFFFF',
+    color: '#E4E0E1',
     fontFamily: 'PoppinsBold',
   },
   grid: {
     flexGrow: 1,
     paddingBottom: 100,
+    paddingHorizontal: 10,
   },
   card: {
     flex: 1,
     margin: 8,
     borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
+    maxWidth: '48%',
   },
   cardImage: {
     width: '100%',
-    height: width * 0.4,
     resizeMode: 'cover',
   },
   overlay: {
@@ -213,13 +198,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', 
-    padding: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 5,
   },
   overlayText: {
-    fontSize: 8,
+    fontSize: 20,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
+    alignSelf: 'center',
   },
 });
 

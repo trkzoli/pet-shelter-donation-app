@@ -4,39 +4,33 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   TouchableOpacity,
   FlatList,
-  ImageBackground,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-
-const { width, height } = Dimensions.get('window');
 
 const DetailsPage: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-
   const { id, name, breed, sex, image } = params;
+  const { width, height } = useWindowDimensions();
 
   return (
-    <ImageBackground
-      source={require('../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
+    <View style={[styles.background, { width, height }]}>
+      <View style={[styles.container, { paddingTop: height * 0.05 }]}>
+        
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
           {/* Pet Image */}
           <View style={styles.petImageContainer}>
             <Image
               source={image ? image : require('../assets/images/logo1brown.png')}
-              style={styles.petImage}
+              style={[styles.petImage, { width: width * 0.6, height: 250 }]}
             />
           </View>
 
@@ -64,6 +58,7 @@ const DetailsPage: React.FC = () => {
               <Text style={styles.petInfoTitle}>Location:</Text> Happy Tails Shelter, 1234 Doggo St., Petland
             </Text>
           </View>
+
           {/* Story */}
           <Text style={styles.sectionTitle}>Story</Text>
           <Text style={styles.sectionText}>
@@ -89,6 +84,7 @@ const DetailsPage: React.FC = () => {
               require('../assets/images/placeholder.png'),
             ]}
             horizontal
+            showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
               <Image source={item} style={styles.additionalImage} />
             )}
@@ -104,34 +100,32 @@ const DetailsPage: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#E4E0E1',
   },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    paddingTop: height * 0.05,
   },
   scrollContent: {
     flexGrow: 1,
   },
   backButton: {
     position: 'absolute',
-    top: 50,
+    top: 20,
     left: 20,
     zIndex: 10,
   },
   backButtonText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   petImageContainer: {
     alignItems: 'center',
@@ -139,8 +133,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   petImage: {
-    width: width * 0.6,
-    height: 250,
     borderRadius: 25,
     resizeMode: 'cover',
   },
@@ -148,7 +140,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
-    color: '#1F2029',
+    color: '#AB886D',
   },
   petInfoRow: {
     marginHorizontal: 20,
@@ -157,24 +149,24 @@ const styles = StyleSheet.create({
   petInfoText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    color: '#2C3930',
   },
   petInfoTitle: {
     fontSize: 16,
     fontFamily: 'PoppinsSemiBold',
-    color: '#1F2029',
+    color: '#2C3930',
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
     marginTop: 15,
-    color: '#1F2029',
+    color: '#2C3930',
     marginHorizontal: 20,
   },
   sectionText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    color: '#2C3930',
     marginHorizontal: 20,
   },
   imageRow: {
@@ -190,8 +182,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   actionButton: {
-    backgroundColor: '#704F38',
-    borderRadius: 50,
+    backgroundColor: '#AB886D',
+    borderRadius: 20,
     width: '90%',
     height: 60,
     position: 'absolute',
@@ -204,7 +196,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
 });
 

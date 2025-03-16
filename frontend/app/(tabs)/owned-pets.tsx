@@ -4,18 +4,14 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   FlatList,
-  ImageBackground,
   ScrollView,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import NavBar from '../../components/navigation/NavBar';
 import { useRouter } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
-
-// Mock data for owned pets
 const ownedPets = [
   {
     id: '1',
@@ -30,7 +26,8 @@ const ownedPets = [
       otherMedications: 60,
     },
     story: 'Rex was rescued from a shelter. He is active and loves to play!',
-    description: 'Rex is a medium-sized dog with a golden coat. He is friendly, energetic, and loves to be around people. He enjoys fetch and long walks.',
+    description:
+      'Rex is a medium-sized dog with a golden coat. He is friendly, energetic, and loves to be around people. He enjoys fetch and long walks.',
     location: 'Happy Tails Shelter, 1234 Doggo St., Petland',
     additionalImages: [
       require('../../assets/images/placeholder.png'),
@@ -52,7 +49,8 @@ const ownedPets = [
       otherMedications: 50,
     },
     story: 'Bella is a loving dog who enjoys cuddles and walks.',
-    description: 'Bella is a large-sized Labrador with a shiny black coat. She is gentle, loyal, and perfect for a family. She enjoys swimming and playing with kids.',
+    description:
+      'Bella is a large-sized Labrador with a shiny black coat. She is gentle, loyal, and perfect for a family. She enjoys swimming and playing with kids.',
     location: 'Safe Haven Shelter, 5678 Puppy Rd., Dogville',
     additionalImages: [
       require('../../assets/images/placeholder.png'),
@@ -75,14 +73,21 @@ const getHeatmapColor = (percentage: number) => {
 };
 
 const OwnedPetsPage: React.FC = () => {
+  const { width, height } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
   const router = useRouter();
 
   const renderPetDetails = (pet: typeof ownedPets[0]) => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Pet Image */}
       <View style={styles.petImageContainer}>
-        <Image source={pet.image} style={styles.petImage} />
+        <Image
+          source={pet.image}
+          style={[
+            styles.petImage,
+            { width: width * 0.6, height: 250 },
+          ]}
+        />
       </View>
 
       {/* Pet Name */}
@@ -124,13 +129,15 @@ const OwnedPetsPage: React.FC = () => {
             ]}
           />
         </View>
-        <Text style={styles.progressPercentage}>{pet.donations}%</Text>
+        <Text style={styles.progressPercentage}>
+          {pet.donations}%
+        </Text>
       </View>
 
       {/* Donate Button */}
       <View style={styles.donationButtonContainer}>
         <TouchableOpacity
-          style={styles.donationButton}
+          style={[styles.donationButton,  {width: width * 0.5 , height: width * 0.15},] }
           onPress={() => router.push('/donate')}
         >
           <Image
@@ -155,7 +162,9 @@ const OwnedPetsPage: React.FC = () => {
             ]}
           />
         </View>
-        <Text style={styles.progressPercentage}>{pet.health.vaccination}%</Text>
+        <Text style={styles.progressPercentage}>
+          {pet.health.vaccination}%
+        </Text>
       </View>
       <View style={styles.progressBarContainer}>
         <Text style={styles.progressBarLabel}>Deparasitization</Text>
@@ -211,11 +220,7 @@ const OwnedPetsPage: React.FC = () => {
   );
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
+    <View style={[styles.background, { width, height }]}>
       <View style={styles.container}>
         {/* Scroll Indicator */}
         <View style={styles.scrollIndicatorContainer}>
@@ -244,27 +249,28 @@ const OwnedPetsPage: React.FC = () => {
             setActiveIndex(index);
           }}
           renderItem={({ item }) => (
-            <View style={styles.petCard}>{renderPetDetails(item)}</View>
+            <View style={[styles.petCard, { width, height }]}>
+              {renderPetDetails(item)}
+            </View>
           )}
         />
 
         {/* NavBar Integration */}
         <NavBar />
       </View>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#E4E0E1',
   },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    paddingTop: height * 0.05,
+    paddingTop: 20,
   },
   scrollIndicatorContainer: {
     flexDirection: 'row',
@@ -278,33 +284,29 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#797979',
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     marginHorizontal: 5,
   },
   activeScrollIndicator: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     borderWidth: 1,
-    borderColor: '#704F38',
+    borderColor: '#AB886D',
     borderRadius: 10,
     width: 13,
     height: 13,
   },
   petCard: {
-    width: width,
-    height: height,
     paddingHorizontal: 10,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 100,
   },
   petImageContainer: {
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   petImage: {
-    width: width * 0.6,
-    height: 250,
     borderRadius: 25,
     resizeMode: 'cover',
   },
@@ -312,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
-    color: '#1F2029',
+    color: '#AB886D',
   },
   petInfoRow: {
     marginHorizontal: 20,
@@ -355,7 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 1,
     borderColor: '#797979',
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     overflow: 'hidden',
   },
   progressBarFill: {
@@ -371,17 +373,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   donationButton: {
-    width: 60,
-    height: 60,
     borderRadius: 30,
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     justifyContent: 'center',
     alignItems: 'center',
   },
   donationButtonImage: {
-    width: 40,
-    height: 40,
-    tintColor: '#EDEDED',
+    width: 50,
+    height: 50,
+    tintColor: '#E4E0E1',
   },
   galleryContainer: {
     flexDirection: 'row',

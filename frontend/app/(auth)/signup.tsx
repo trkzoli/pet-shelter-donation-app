@@ -42,7 +42,7 @@ const SignUpScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.mainContainer}>
         {/* Back Arrow */}
-        <TouchableOpacity onPress={() => router.back()} style={styles.backIcon}>
+        <TouchableOpacity onPress={() => router.push('/choose-signup')} style={styles.backIcon}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
         <ScrollView
@@ -82,7 +82,7 @@ const SignUpScreen: React.FC = () => {
               onPress={() => setPasswordVisible(!passwordVisible)}
               style={styles.eyeIconContainer}
             >
-              <Ionicons name={passwordVisible ? 'eye' : 'eye-off'} size={20} color="#797979" />
+              <Ionicons name={passwordVisible ? 'eye' : 'eye-off'} size={width * 0.05} color="#797979" />
             </TouchableOpacity>
           </View>
           <Text style={[styles.termsText, {fontSize: availableWidth * 0.03}]}>

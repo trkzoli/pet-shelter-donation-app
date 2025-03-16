@@ -4,19 +4,15 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   TouchableOpacity,
-  ImageBackground,
   ScrollView,
   FlatList,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import NavBar from '../../components/navigation/NavBar';
 import SettingsModal from '../../components/Settings';
 
-const { width, height } = Dimensions.get('window');
-
-// Mock data 
 const ownedPets = [
   { id: '1', name: 'Rex', image: require('../../assets/images/placeholder.png') },
   { id: '2', name: 'Bella', image: require('../../assets/images/placeholder.png') },
@@ -27,6 +23,7 @@ const ownedPets = [
 
 const ProfilePage: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const [settingsVisible, setSettingsVisible] = useState(false);
 
   const toggleSettingsModal = () => {
@@ -34,12 +31,8 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
+    <View style={[styles.background, { width, height }]}>
+      <View style={[styles.container, { marginTop: height * 0.05 }]}>
         {/* Profile Section */}
         <View style={styles.profileContainer}>
           {/* Settings Button */}
@@ -106,7 +99,7 @@ const ProfilePage: React.FC = () => {
             <TouchableOpacity style={styles.actionButton}>
               <Text style={styles.actionButtonText}>Token Manager</Text>
               <Image
-                source={require('../../assets/images/logo1brown.png')}
+                source={require('../../assets/images/LogoWhite.png')}
                 style={styles.actionButtonIcon}
               />
             </TouchableOpacity>
@@ -127,20 +120,17 @@ const ProfilePage: React.FC = () => {
         {/* Bottom Navigation Bar */}
         <NavBar />
       </View>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+    backgroundColor: '#E4E0E1', 
   },
   container: {
     flex: 1,
-    marginTop: height * 0.05,
   },
   profileContainer: {
     alignItems: 'center',
@@ -212,7 +202,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   infoBox: {
-    borderColor: '#704F38',
+    borderColor: '#797979',
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
@@ -230,7 +220,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#704F38',
+    color: '#AB886D',
   },
   buttonsSection: {
     paddingHorizontal: 20,
@@ -254,6 +244,7 @@ const styles = StyleSheet.create({
     width: 25,
     height: 25,
     resizeMode: 'contain',
+    tintColor: '#AB886D',
   },
 });
 

@@ -4,21 +4,20 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
   ScrollView,
-  ImageBackground,
   Modal,
   Platform,
+  useWindowDimensions,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
-
 const DonatePage: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const [payAmount, setPayAmount] = useState('');
   const [receiveAmount, setReceiveAmount] = useState('0.0');
   const [modalVisible, setModalVisible] = useState(false);
@@ -35,11 +34,7 @@ const DonatePage: React.FC = () => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
+    <View style={[styles.background, { width, height }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -57,7 +52,7 @@ const DonatePage: React.FC = () => {
             {/* Logo and PetToken Information */}
             <View style={styles.tokenInfoContainer}>
               <Image
-                source={require('../../assets/images/logo1brown.png')}
+                source={require('../../assets/images/LogoWhite.png')}
                 style={styles.tokenLogo}
               />
               <Text style={styles.tokenTitle}>PetToken</Text>
@@ -100,7 +95,7 @@ const DonatePage: React.FC = () => {
               onPress={() => {
                 const usdValue = parseFloat(payAmount);
                 if (usdValue < 0.5 || isNaN(usdValue)) {
-                  setAlertVisible(true); // Show custom alert modal
+                  setAlertVisible(true);
                   return;
                 }
                 router.push(`../payment-methods?amount=${payAmount}&tokens=${receiveAmount}`);
@@ -119,7 +114,7 @@ const DonatePage: React.FC = () => {
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalBackground}>
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, { width: width * 0.8 }]}>
               <Text style={styles.modalText}>
                 The token donation system allows you to support a cause or organization using
                 digital currency. When you donate, your funds are converted into PetTokens, which
@@ -146,7 +141,7 @@ const DonatePage: React.FC = () => {
           onRequestClose={() => setAlertVisible(false)}
         >
           <View style={styles.alertBackground}>
-            <View style={styles.alertContainer}>
+            <View style={[styles.alertContainer, { width: width * 0.8 }]}>
               <Text style={styles.alertText}>Minimum donation amount is $0.5.</Text>
               <TouchableOpacity
                 style={styles.alertButton}
@@ -158,16 +153,14 @@ const DonatePage: React.FC = () => {
           </View>
         </Modal>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+    backgroundColor: '#E4E0E1', 
   },
   scrollContent: {
     flexGrow: 1,
@@ -178,7 +171,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   backButton: {
-    color: '#1F2029',
     position: 'absolute',
     top: 50,
     left: 20,
@@ -187,7 +179,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   tokenInfoContainer: {
     alignItems: 'center',
@@ -199,11 +191,12 @@ const styles = StyleSheet.create({
     height: 50,
     resizeMode: 'contain',
     marginTop: 20,
+    tintColor: '#AB886D',
   },
   tokenTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
   },
   tokenSubtitle: {
     fontSize: 14,
@@ -219,18 +212,18 @@ const styles = StyleSheet.create({
   infoIcon: {
     width: 30,
     height: 30,
-    color: '#1F2029',
     marginLeft: 10,
+    tintColor: '#2C3930',
   },
   infoText: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    color: '#2C3930',
   },
   swapContainer: {
     borderColor: '#797979',
-    backgroundColor: '#1F2029',
-    borderRadius: 10,
+    backgroundColor: '#3F4F44',
+    borderRadius: 20,
     padding: 20,
     marginBottom: 20,
     alignItems: 'center',
@@ -238,7 +231,7 @@ const styles = StyleSheet.create({
   swapTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     marginBottom: 10,
   },
   amountRow: {
@@ -254,7 +247,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     paddingLeft: 10,
   },
   currencyText: {
@@ -273,11 +266,11 @@ const styles = StyleSheet.create({
   tokenAmount: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   donateButton: {
-    backgroundColor: '#704F38',
-    borderRadius: 50,
+    backgroundColor: '#AB886D',
+    borderRadius: 20,
     width: '100%',
     height: 60,
     marginVertical: 20,
@@ -289,7 +282,7 @@ const styles = StyleSheet.create({
   donateButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   modalBackground: {
     flex: 1,
@@ -298,8 +291,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: width * 0.8,
-    backgroundColor: '#1f2029',
+    backgroundColor: '#3F4F44',
     borderRadius: 15,
     padding: 20,
     alignItems: 'center',
@@ -307,12 +299,12 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     textAlign: 'center',
     marginBottom: 20,
   },
   modalCloseButton: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#AB886D',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -320,7 +312,7 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#E4E0E1',
   },
   alertBackground: {
     flex: 1,
@@ -329,8 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   alertContainer: {
-    width: width * 0.8,
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
@@ -338,12 +329,12 @@ const styles = StyleSheet.create({
   alertText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#FF6F61', 
+    color: '#FFA725',
     textAlign: 'center',
     marginBottom: 15,
   },
   alertButton: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#AB886D',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -351,7 +342,7 @@ const styles = StyleSheet.create({
   alertButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#E4E0E1',
   },
 });
 

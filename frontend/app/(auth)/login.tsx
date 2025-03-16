@@ -1,29 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  Animated,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   SafeAreaView,
   KeyboardAvoidingView,
   ScrollView,
   Platform,
   useWindowDimensions,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 
 const LoginScreen: React.FC = () => {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-
+  const { width } = useWindowDimensions();
   const horizontalPadding = 20 * 2;
   const availableWidth = width - horizontalPadding;
 
+  // States for inputs and password visibility
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   const [fontsLoaded] = useFonts({
@@ -42,7 +45,6 @@ const LoginScreen: React.FC = () => {
       shelter: { email: "shelter@example.com", password: "shelter123" },
       adopter: { email: "adopter@example.com", password: "adopter123" },
     };
-
     if (email === users.shelter.email && password === users.shelter.password) {
       router.push('/shelter-home');
     } else if (email === users.adopter.email && password === users.adopter.password) {
@@ -53,94 +55,94 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { width, height }]}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.mainContainer}>
-       
-        <View style={[styles.topContainer, { flex: 0.25 }]}>
+        {/* Back Arrow */}
+        <TouchableOpacity onPress={() => router.push('/welcome')} style={styles.backIcon}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Animated Top Image */}
+          <Animated.Image
+            source={require('../../assets/images/lgdog.png')}
+            style={[
+              styles.topImage,
+              {
+                width: width * 0.7,
+                height: width * 0.7,
+              },
+            ]}
+          />
+          {/* Title */}
           <Text style={[styles.topTitle, { fontSize: availableWidth * 0.08 }]}>
-            Hello, Welcome Back!
+            Welcome, Friend!
           </Text>
-        </View>
-
-      
-        <View style={[styles.bottomContainer, { flex: 0.75 }]}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 60}
-            style={{ flex: 1 }}
+          
+          {/* Email Input Field */}
+          <TextInput
+            placeholder="Email"
+            placeholderTextColor="#6B6B6B"
+            style={[styles.input, { width: availableWidth * 0.9 }]}
+            value={email}
+            onChangeText={setEmail}
+          />
+          
+          {/* Password Input Field with Eye Icon inside */}
+          <View style={[styles.passwordContainer, { width: availableWidth * 0.9 }]}>
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor="#6B6B6B"
+              secureTextEntry={!passwordVisible}
+              style={[styles.input, { flex: 1, paddingRight: 40 }]}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)} style={styles.eyeIconContainer}>
+              <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={20} color="#797979" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* LOG IN Button */}
+          <TouchableOpacity
+            style={[styles.loginButton, { width: availableWidth * 0.9 }]}
+            onPress={handleLogin}
           >
-            <ScrollView
-              contentContainerStyle={styles.inputScrollContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <TextInput
-                placeholder="Email"
-                placeholderTextColor="#6B6B6B"
-                style={[styles.input, { width: availableWidth * 0.9 }]}
-                value={email}
-                onChangeText={setEmail}
-              />
-              <TextInput
-                placeholder="Password"
-                placeholderTextColor="#6B6B6B"
-                secureTextEntry
-                style={[styles.input, { width: availableWidth * 0.9 }]}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <View style={[styles.optionsRow, { width: availableWidth * 0.9 }]}>
-                <TouchableOpacity
-                  style={styles.checkboxContainer}
-                  onPress={() => setRememberMe(!rememberMe)}
-                >
-                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]} />
-                  <Text style={styles.rememberText}>Remember me</Text>
-                </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-
-            <View style={styles.fixedFooter}>
-              <TouchableOpacity
-                style={[styles.loginButton, { width: availableWidth * 0.9 }]}
-                onPress={handleLogin}
-              >
-                <Text
-                  style={[styles.loginButtonText, { fontSize: availableWidth * 0.045 }]}
-                >
-                  LOG IN
-                </Text>
-              </TouchableOpacity>
-              <View style={[styles.divider, { width: availableWidth * 0.9 }]}>
-                <View style={styles.line} />
-                <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
-                  or
-                </Text>
-                <View style={styles.line} />
-              </View>
-              <TouchableOpacity style={styles.googleButton}>
-                <Image
-                  source={require('../../assets/images/gl1.png')}
-                  style={styles.googleIcon}
-                />
-              </TouchableOpacity>
-              <Text style={[styles.bottomLoginText, { fontSize: availableWidth * 0.035 }]}>
-                Already have an account?{' '}
-                <Text style={styles.linkText} onPress={() => router.push('/signup')}>
-                  Sign Up
-                </Text>
-              </Text>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
+            <Text style={[styles.loginButtonText, { fontSize: availableWidth * 0.045 }]}>
+              LOG IN
+            </Text>
+          </TouchableOpacity>
+          
+          {/* Separator */}
+          <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
+            - Or continue with -
+          </Text>
+          
+          {/* Social Media Buttons Row */}
+          <View style={[styles.socialButtonsContainer, { width: availableWidth * 0.8 }]}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image source={require('../../assets/images/gl1.png')} style={styles.socialIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image source={require('../../assets/images/fb1.png')} style={styles.socialIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Image source={require('../../assets/images/x1.png')} style={styles.socialIcon} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Sign Up Link */}
+          <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
+            Don't have an account?{' '}
+            <Text style={styles.linkText} onPress={() => router.push('/choose-signup')}>
+              Sign Up
+            </Text>
+          </Text>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
 };
-
+  
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -148,84 +150,63 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
+    paddingHorizontal: 20,
   },
-  topContainer: {
+  backIcon: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  backText: {
+    fontSize: 24,
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    marginTop: 5,
+    paddingTop: 30,
+    paddingBottom: 50,
+  },
+  topImage: {
+    resizeMode: 'contain',
+    marginTop: 10,
+    marginBottom: -20,
   },
   topTitle: {
     fontFamily: 'Pacifico',
     color: '#1F2029',
-  },
-  bottomContainer: {
-    backgroundColor: '#E4E0E1',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    overflow: 'hidden',
-    elevation: 10,
-  },
-  inputScrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingTop: 30,
-    paddingBottom: 10,
+    marginBottom: 40,
   },
   input: {
     height: 50,
     backgroundColor: '#E4E0E1',
-    borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    borderWidth: 1,
+    color: '#1F2029',
+    borderBottomWidth: 1,
     borderColor: '#797979',
   },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  checkboxContainer: {
+  passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 15,
+    position: 'relative',
   },
-  checkbox: {
-    width: 16,
-    height: 16,
-    borderWidth: 1,
-    borderColor: '#797979',
-    borderRadius: 4,
-    marginRight: 8,
-    backgroundColor: 'transparent',
-  },
-  checkboxChecked: {
-    backgroundColor: '#704F38',
-    borderColor: '#704F38',
-  },
-  rememberText: {
-    fontSize: 12,
-    fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
-  },
-  forgotPasswordText: {
-    fontSize: 12,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
-  },
-  fixedFooter: {
-    alignItems: 'center',
-    paddingVertical: 20,
+  eyeIconContainer: {
+    position: 'absolute',
+    right: 10,
+    top: 15,
   },
   loginButton: {
     height: 50,
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 50,
+    borderRadius: 20,
     marginBottom: 15,
     paddingVertical: 12.5,
   },
@@ -233,42 +214,35 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
     color: '#EDEDED',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#EDEDED',
-  },
   orText: {
-    fontSize: 14,
     fontFamily: 'PoppinsRegular',
     color: '#6B6B6B',
-    marginHorizontal: 10,
+    marginBottom: 15,
   },
-  googleButton: {
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  socialButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: '#EDEDED',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
     elevation: 5,
   },
-  googleIcon: {
+  socialIcon: {
     width: 30,
     height: 30,
     resizeMode: 'contain',
   },
-  bottomLoginText: {
-    fontSize: 14,
+  loginText: {
+    marginTop: 10,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
-    marginTop: 10,
   },
   linkText: {
     fontFamily: 'PoppinsBold',

@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Pacifico',
-    color: '#1F2029',
+    color: '#493628',
     textAlign: 'center',
   },
 });
