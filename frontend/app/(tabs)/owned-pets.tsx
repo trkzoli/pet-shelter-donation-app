@@ -138,7 +138,7 @@ const OwnedPetsPage: React.FC = () => {
       <View style={styles.donationButtonContainer}>
         <TouchableOpacity
           style={[styles.donationButton,  {width: width * 0.5 , height: width * 0.15},] }
-          onPress={() => router.push('/donate')}
+          onPress={() => router.push('/payment/donate')}
         >
           <Image
             source={require('../../assets/images/donate.png')}
@@ -288,9 +288,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   activeScrollIndicator: {
-    backgroundColor: '#AB886D',
+    backgroundColor: '#493628',
     borderWidth: 1,
-    borderColor: '#AB886D',
+    borderColor: '#493628',
     borderRadius: 10,
     width: 13,
     height: 13,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
-    color: '#AB886D',
+    color: '#493628',
   },
   petInfoRow: {
     marginHorizontal: 20,

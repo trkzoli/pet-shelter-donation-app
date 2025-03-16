@@ -6,9 +6,8 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  Dimensions,
-  ImageBackground,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import ShelterNavBar from '../../components/navigation/shelterNavBar';
@@ -22,41 +21,43 @@ const animals = [
   { id: '6', name: 'Snowball', breed: 'Angora Cat', donations: 110, type: 'Cats', image: require('../../assets/images/cs2.jpg') },
   { id: '7', name: 'Nibbles', breed: 'Syrian Hamster', donations: 50, type: 'Hamsters', image: require('../../assets/images/hs1.jpg') },
 ];
+const allFilters = ['All', 'Dogs', 'Cats', 'Hamsters', 'Rabbits', 'Parrots', 'Fish'];
 
 const ShelterHome: React.FC = () => {
+  const { width, height } = useWindowDimensions();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredAnimals, setFilteredAnimals] = useState(animals);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const router = useRouter();
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-
     const filtered = animals.filter((animal) => {
       const matchesSearch =
         animal.name.toLowerCase().includes(text.toLowerCase()) ||
         animal.breed.toLowerCase().includes(text.toLowerCase());
-
-      const matchesFilter =
-        activeFilter === 'All' || animal.type === activeFilter;
-
+      const matchesFilter = activeFilter === 'All' || animal.type === activeFilter;
       return matchesSearch && matchesFilter;
     });
-
     setFilteredAnimals(filtered);
   };
 
-  return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <Text style={styles.title}>Shelter Dashboard</Text>
+  const handleFilterPress = (filter: string) => {
+    setActiveFilter(filter);
+    setSearchQuery('');
+    const filtered = animals.filter((animal) =>
+      filter === 'All' ? true : animal.type === filter
+    );
+    setFilteredAnimals(filtered);
+  };
 
-        {/* Search Bar */}
+  const displayedFilters = filtersExpanded ? allFilters : allFilters.slice(0, 4);
+
+  return (
+    <View style={[styles.background, { width, height }]}>
+      <View style={[styles.container, { paddingTop: height * 0.05 }]}>
+                {/* Search Bar */}
         <View style={styles.searchBar}>
           <TextInput
             placeholder="Search by pet name or breed..."
@@ -66,30 +67,20 @@ const ShelterHome: React.FC = () => {
             onChangeText={handleSearch}
           />
           <View style={styles.searchIconWrapper}>
-            <Image
-              source={require('../../assets/images/search.png')}
-              style={styles.searchIcon}
-            />
+            <Image source={require('../../assets/images/search.png')} style={{ width: 25, height: 25, tintColor: '#797979' }} />
           </View>
         </View>
 
         {/* Filters */}
-        <View style={styles.filters}>
-          {['All', 'Dogs', 'Cats', 'Hamsters'].map((filter) => (
+        <View style={styles.filtersContainer}>
+          {displayedFilters.map((filter) => (
             <TouchableOpacity
               key={filter}
               style={[
                 styles.filterButtonTab,
                 filter === activeFilter && styles.activeFilter,
               ]}
-              onPress={() => {
-                setActiveFilter(filter);
-                setSearchQuery('');
-                const filtered = animals.filter((animal) =>
-                  filter === 'All' ? true : animal.type === filter
-                );
-                setFilteredAnimals(filtered);
-              }}
+              onPress={() => handleFilterPress(filter)}
             >
               <Text
                 style={[
@@ -101,11 +92,22 @@ const ShelterHome: React.FC = () => {
               </Text>
             </TouchableOpacity>
           ))}
+          {allFilters.length > 4 && (
+            <TouchableOpacity
+              style={styles.moreButton}
+              onPress={() => setFiltersExpanded(!filtersExpanded)}
+            >
+              <Text style={styles.moreButtonText}>
+                {filtersExpanded ? 'Less ▲' : 'More ▼'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Animal List */}
         <FlatList
           data={filteredAnimals}
+          showsVerticalScrollIndicator={false}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.animalCard}>
@@ -117,20 +119,20 @@ const ShelterHome: React.FC = () => {
                   Donations: ${item.donations}
                 </Text>
                 <TouchableOpacity
-                    style={styles.manageButton}
-                    onPress={() =>
-                        router.push({
-                        pathname: '/shelter-pets-manage',
-                        params: {
-                            name: item.name,
-                            breed: item.breed,
-                            donations: item.donations,
-                            image: Image.resolveAssetSource(item.image).uri,
-                        },
-                        })
-                    }
-                    >
-                    <Text style={styles.manageButtonText}>Manage</Text>
+                  style={styles.manageButton}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/shelter-pets-manage',
+                      params: {
+                        name: item.name,
+                        breed: item.breed,
+                        donations: item.donations,
+                        image: Image.resolveAssetSource(item.image).uri,
+                      },
+                    })
+                  }
+                >
+                  <Text style={styles.manageButtonText}>Manage</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -141,69 +143,62 @@ const ShelterHome: React.FC = () => {
         {/* Navigation Bar */}
         <ShelterNavBar />
       </View>
-    </ImageBackground>
+    </View>
   );
 };
-
-const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor: '#E4E0E1', 
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-    paddingTop: height * 0.05,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#1F2029',
-    textAlign: 'center',
-    marginBottom: 10,
-    marginTop: 20,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'center',
     width: '80%',
     borderWidth: 1,
     borderColor: '#797979',
     borderRadius: 10,
-    backgroundColor: '#EDEDED',
-    marginBottom: 10,
+    backgroundColor: '#E4E0E1',
+    marginVertical: 10,
+    paddingHorizontal: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 12,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
-    paddingHorizontal: 10,
+    padding: 8,
   },
   searchIconWrapper: {
-    padding: 10,
+    paddingRight: 10,
   },
-  searchIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#797979',
-  },
+  
   filters: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     marginBottom: 10,
+    width: '100%',
   },
   filterButtonTab: {
     paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
     borderRadius: 25,
     backgroundColor: 'transparent',
+    alignContent: 'center',
+    justifyContent: 'center',
   },
   activeFilter: {
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
+    alignContent: 'center',
+    justifyContent: 'center',
   },
   filterTextTab: {
     fontSize: 14,
@@ -211,15 +206,18 @@ const styles = StyleSheet.create({
     color: '#1F2029',
   },
   activeFilterText: {
-    color: '#EDEDED',
+    color: '#E4E0E1',
     fontFamily: 'PoppinsBold',
+  
   },
   listContent: {
+    flexGrow: 1,
     paddingBottom: 100,
+    paddingHorizontal: 25,
   },
   animalCard: {
     flexDirection: 'row',
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     borderRadius: 15,
     marginBottom: 15,
     overflow: 'hidden',
@@ -238,7 +236,7 @@ const styles = StyleSheet.create({
   animalName: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
     marginBottom: 5,
   },
   animalBreed: {
@@ -250,11 +248,11 @@ const styles = StyleSheet.create({
   animalDonations: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#704F38',
+    color: '#AB886D',
     marginBottom: 10,
   },
   manageButton: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     borderRadius: 20,
     paddingVertical: 5,
     paddingHorizontal: 15,
@@ -263,7 +261,26 @@ const styles = StyleSheet.create({
   manageButtonText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#FFFFFF',
+    color: '#E4E0E1',
+  },
+  filtersContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 15,
+  },
+  moreButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    margin: 5,
+  },
+  moreButtonText: {
+    fontSize: 14,
+    fontFamily: 'PoppinsRegular',
+    color: '#797979',
   },
 });
 

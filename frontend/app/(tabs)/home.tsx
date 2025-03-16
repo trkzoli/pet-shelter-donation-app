@@ -37,8 +37,7 @@ const HomePage: React.FC = () => {
     const filtered = animals.filter((animal) => {
       const matchesSearch =
         animal.name.toLowerCase().includes(text.toLowerCase()) ||
-        animal.breed.toLowerCase().includes(text.toLowerCase()) ||
-        animal.sex.toLowerCase().includes(text.toLowerCase());
+        animal.breed.toLowerCase().includes(text.toLowerCase())
       const matchesFilter = activeFilter === 'All' || animal.type === activeFilter;
       return matchesSearch && matchesFilter;
     });
@@ -57,7 +56,7 @@ const HomePage: React.FC = () => {
             onChangeText={handleSearch}
           />
           <View style={styles.filterButton}>
-            <Image source={require('../../assets/images/search.png')} style={{ width: 25, height: 25 }} />
+            <Image source={require('../../assets/images/search.png')} style={{ width: 25, height: 25, tintColor: '#797979' }} />
           </View>
         </View>
 
@@ -165,7 +164,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   activeFilter: {
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
   },
   filterTextTab: {
     fontSize: 14,
@@ -198,7 +197,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(63, 79, 68, 0.6)',
     padding: 5,
   },
   overlayText: {

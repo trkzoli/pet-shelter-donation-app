@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
     marginTop: 30,
     marginBottom: 30,
     textAlign: 'center',

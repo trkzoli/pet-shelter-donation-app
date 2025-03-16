@@ -4,22 +4,22 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ImageBackground,
-  Dimensions,
   Image,
   Modal,
+  FlatList,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
-
 const PaymentMethods: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const params = useLocalSearchParams();
   const { amount, tokens } = params;
 
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
 
   const paymentMethods = [
     { name: 'PayPal', icon: require('../../assets/images/paypal.png') },
@@ -31,7 +31,7 @@ const PaymentMethods: React.FC = () => {
     if (selectedMethod) {
       setModalVisible(true);
     } else {
-      alert('Please select a payment method.');
+      setAlertVisible(true);
     }
   };
 
@@ -41,11 +41,7 @@ const PaymentMethods: React.FC = () => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
+    <View style={[styles.background, { width, height }]}>
       <View style={styles.container}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>←</Text>
@@ -54,7 +50,7 @@ const PaymentMethods: React.FC = () => {
         <Text style={styles.title}>Payment Methods</Text>
 
         {/* Credit & Debit Card Option */}
-        <TouchableOpacity style={styles.cardOption} onPress={() => router.push('../add-card')}>
+        <TouchableOpacity style={styles.cardOption} onPress={() => router.push('/payment/add-card')}>
           <Image source={require('../../assets/images/bankcard.png')} style={styles.cardIcon} />
           <Text style={styles.cardText}>Credit & Debit Card</Text>
           <Text style={styles.arrow}>›</Text>
@@ -62,7 +58,7 @@ const PaymentMethods: React.FC = () => {
 
         <View style={styles.divider}>
           <View style={styles.line} />
-          <Text style={styles.orText}>or</Text>
+          <Text style={[styles.orText, {fontSize: width * 0.03}]}>OR</Text> 
           <View style={styles.line} />
         </View>
 
@@ -101,7 +97,7 @@ const PaymentMethods: React.FC = () => {
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalBackground}>
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, { width: width * 0.8 }]}>
               <Text style={styles.modalTitle}>Confirm Payment</Text>
               <Text style={styles.modalText}>
                 You are about to pay <Text style={styles.boldText}>${amount}</Text> using{' '}
@@ -122,17 +118,33 @@ const PaymentMethods: React.FC = () => {
             </View>
           </View>
         </Modal>
+        <Modal
+          animationType="fade"
+          transparent
+          visible={alertVisible}
+          onRequestClose={() => setAlertVisible(false)}
+        >
+          <View style={styles.alertBackground}>
+            <View style={[styles.alertContainer, { width: width * 0.8 }]}>
+              <Text style={styles.alertText}>Please select a payment method.</Text>
+              <TouchableOpacity
+                style={styles.alertButton}
+                onPress={() => setAlertVisible(false)}
+              >
+                <Text style={styles.alertButtonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+    backgroundColor: '#E4E0E1', 
   },
   container: {
     flex: 1,
@@ -148,14 +160,14 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   title: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
     marginBottom: 30,
-    color: '#1F2029',
+    color: '#493628',
   },
   cardOption: {
     flexDirection: 'row',
@@ -194,7 +206,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#797979',
   },
   orText: {
-    fontSize: 16,
     fontFamily: 'PoppinsRegular',
     color: '#797979',
     marginHorizontal: 10,
@@ -220,7 +231,9 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   activePaymentOption: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
+    borderWidth: 1,
+    borderColor: '#AB886D',
   },
   radioCircle: {
     width: 20,
@@ -231,13 +244,15 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   radioSelected: {
-    backgroundColor: '#1F2029',
+    backgroundColor: '#AB886D',
+    borderWidth: 1,
+    borderColor: '#AB886D',
   },
   proceedButton: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     paddingVertical: 15,
     width: '100%',
-    borderRadius: 50,
+    borderRadius: 20,
     alignItems: 'center',
     marginTop: 30,
   },
@@ -253,8 +268,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: width * 0.8,
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
     borderRadius: 15,
     padding: 20,
     alignItems: 'center',
@@ -262,19 +276,19 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
-    color: '#FFFFFF',
+    color: '#E4E0E1',
     marginBottom: 10,
   },
   modalText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#FFFFFF',
+    color: '#E4E0E1',
     textAlign: 'center',
     marginBottom: 20,
   },
   boldText: {
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#AB886D',
   },
   modalButtonContainer: {
     flexDirection: 'row',
@@ -282,7 +296,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cancelButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#D6C0B3',
     padding: 10,
     borderRadius: 25,
     width: '45%',
@@ -291,10 +305,10 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#3F4F44',
   },
   okButton: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     padding: 10,
     borderRadius: 25,
     width: '45%',
@@ -303,8 +317,39 @@ const styles = StyleSheet.create({
   okButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#FFFFFF',
+    color: '#E4E0E1',
   },
+  alertBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertContainer: {
+    backgroundColor: '#3F4F44',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  alertText: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#FF6F61', 
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  alertButton: {
+    backgroundColor: '#D6C0B3',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  alertButtonText: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#3F4F44',
+  },
+  
 });
 
 export default PaymentMethods;

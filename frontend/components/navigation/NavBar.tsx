@@ -46,7 +46,7 @@ const NavigationBar: React.FC = () => {
 
 const styles = StyleSheet.create({
   bottomNav: {
-    backgroundColor: '#1F2029',
+    backgroundColor: 'rgba(63, 79, 68, 0.9)',
     borderRadius: 50,
     width: '90%',
     height: 70,

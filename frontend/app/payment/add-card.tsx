@@ -4,19 +4,17 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   TouchableOpacity,
   TextInput,
-  ImageBackground,
   ScrollView,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-const { width, height } = Dimensions.get('window');
-
 const AddCardPage: React.FC = () => {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const [cardNumber, setCardNumber] = useState('');
   const [nameOnCard, setNameOnCard] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -47,17 +45,16 @@ const AddCardPage: React.FC = () => {
       setModalVisible(true);
       return;
     }
-
     setPaymentSummaryVisible(true);
   };
 
   const handleCardNumberChange = (text: string) => {
-    const cleanedText = text.replace(/[^0-9]/g, ''); 
+    const cleanedText = text.replace(/[^0-9]/g, '');
     setCardNumber(cleanedText);
   };
 
   const handleExpiryDateChange = (text: string) => {
-    const cleanedText = text.replace(/[^0-9]/g, ''); 
+    const cleanedText = text.replace(/[^0-9]/g, '');
     if (cleanedText.length <= 2) {
       setExpiryDate(cleanedText);
     } else if (cleanedText.length <= 4) {
@@ -75,28 +72,22 @@ const AddCardPage: React.FC = () => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
+    <View style={[styles.background, { width, height }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.container}>
           {/* Back Button */}
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-
-          {/* Title */}
-          <Text style={styles.title}>Add Card</Text>
-
           {/* Card Image */}
           <View style={styles.cardContainer}>
             <Image
               source={require('../../assets/images/ccard.png')}
-              style={styles.cardImage}
+              style={{ width: width * 0.7, height: width * 0.7 }}
             />
           </View>
+
+          <Text style={styles.title}>Add Card</Text>
 
           {/* Payment Information Fields */}
           <View style={styles.inputContainer}>
@@ -164,10 +155,10 @@ const AddCardPage: React.FC = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { width: width * 0.8 }]}>
             <Text style={[styles.modalText, styles.errorText]}>{errorMessage}</Text>
             <TouchableOpacity
-              style={[styles.cancelButton]}
+              style={styles.cancelButton}
               onPress={() => setModalVisible(false)}
             >
               <Text style={styles.cancelButtonText}>Ok</Text>
@@ -184,7 +175,7 @@ const AddCardPage: React.FC = () => {
         onRequestClose={() => setPaymentSummaryVisible(false)}
       >
         <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { width: width * 0.8 }]}>
             <Text style={styles.modalTitle}>Confirm Payment</Text>
             <Text style={styles.modalText}>
               You will pay <Text style={styles.boldText}>$50</Text> and receive{' '}
@@ -204,16 +195,14 @@ const AddCardPage: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+    backgroundColor: '#E4E0E1',
   },
   scrollContent: {
     flexGrow: 1,
@@ -232,29 +221,25 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   title: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
-    marginTop: 70,
-    color: '#1F2029',
+    color: '#493628',
+    marginBottom: 20,
   },
   cardContainer: {
     alignItems: 'center',
-    marginBottom: 30,
-  },
-  cardImage: {
-    height: 200,
-    width: 250,
+    marginTop: 20,
   },
   inputContainer: {
     marginBottom: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#704F38',
+    borderColor: '#797979',
     borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -262,7 +247,7 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
     marginBottom: 10,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
   },
   doubleInputContainer: {
     flexDirection: 'row',
@@ -276,7 +261,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: -15,
-    
   },
   checkbox: {
     width: 20,
@@ -287,7 +271,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
-    
   },
   checkboxMark: {
     width: 20,
@@ -295,7 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   checkboxChecked: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
   },
   saveText: {
     fontSize: 16,
@@ -303,16 +286,16 @@ const styles = StyleSheet.create({
     color: '#797979',
   },
   proceedButton: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     paddingVertical: 15,
-    borderRadius: 50,
+    borderRadius: 20,
     alignItems: 'center',
     marginTop: 20,
   },
   proceedButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   modalBackground: {
     flex: 1,
@@ -321,8 +304,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: width * 0.8,
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
     borderRadius: 15,
     padding: 20,
     alignItems: 'center',
@@ -330,19 +312,19 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     marginBottom: 10,
   },
   modalText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     textAlign: 'center',
     marginBottom: 20,
   },
   boldText: {
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#AB886D',
   },
   modalButtonContainer: {
     flexDirection: 'row',
@@ -350,7 +332,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cancelButton: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#D6C0B3',
     padding: 10,
     borderRadius: 25,
     width: '45%',
@@ -359,10 +341,10 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#3F4F44',
   },
   okButton: {
-    backgroundColor: '#704F38',
+    backgroundColor: '#AB886D',
     padding: 10,
     borderRadius: 25,
     width: '45%',
@@ -371,10 +353,11 @@ const styles = StyleSheet.create({
   okButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   errorText: {
     color: '#FF6F61',
+    fontFamily: 'PoppinsBold',
   },
 });
 

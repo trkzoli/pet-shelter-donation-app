@@ -98,7 +98,7 @@ const DonatePage: React.FC = () => {
                   setAlertVisible(true);
                   return;
                 }
-                router.push(`../payment-methods?amount=${payAmount}&tokens=${receiveAmount}`);
+                router.push(`/payment/payment-methods?amount=${payAmount}&tokens=${receiveAmount}`);
               }}
             >
               <Text style={styles.donateButtonText}>PROCEED</Text>
@@ -213,12 +213,12 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     marginLeft: 10,
-    tintColor: '#2C3930',
+    tintColor: '#1F2029',
   },
   infoText: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#2C3930',
+    color: '#1F2029',
   },
   swapContainer: {
     borderColor: '#797979',
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderRadius: 10,
-    borderColor: '#797979',
+    borderColor: '#2C3930',
   },
   largeInput: {
     flex: 1,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalCloseButton: {
-    backgroundColor: '#AB886D',
+    backgroundColor: '#D6C0B3',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
+    color: '#3F4F44',
   },
   alertBackground: {
     flex: 1,
@@ -329,12 +329,12 @@ const styles = StyleSheet.create({
   alertText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#FFA725',
+    color: '#FF6F61',
     textAlign: 'center',
     marginBottom: 15,
   },
   alertButton: {
-    backgroundColor: '#AB886D',
+    backgroundColor: '#D6C0B3',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   alertButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
+    color: '#3F4F44',
   },
 });
 

@@ -18,7 +18,7 @@ export default function RootLayout() {
       <Stack.Screen name="shelter-pets-manage" options={{ title: "Manage Pets", headerShown: false }} />
 
       {/* 5️ DONATE ÉS PAYMENT FLOW */}
-      <Stack.Screen name="donate" options={{ headerShown: false }} />
+      <Stack.Screen name="payment" options={{ headerShown: false }} />
 
       {/* 6 BEÁLLÍTÁSOK PANEL */}
       <Stack.Screen name="settings" options={{ title: "Settings", presentation: "modal" }} />

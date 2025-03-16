@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0)',
   },
   overlayTouchable: {
     flex: 1,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: '65%',
-    backgroundColor: '#1f2029',
+    backgroundColor: '#3F4F44',
     paddingHorizontal: 20,
     paddingTop: 40,
     paddingBottom: 20,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     marginBottom: 20,
   },
   sectionHeader: {
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   sectionContent: {
     paddingVertical: 10,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   menuOptionText: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     marginBottom: 10,
   },
   logoutButton: {
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   },
   alertContainer: {
     width: '80%',
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
@@ -292,12 +292,12 @@ const styles = StyleSheet.create({
   alertText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#EDEDED',
+    color: '#E4E0E1',
     marginBottom: 20,
     textAlign: 'center',
   },
   alertButton: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#AB886D',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 25,
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   alertButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#E4E0E1',
   },
 });
 

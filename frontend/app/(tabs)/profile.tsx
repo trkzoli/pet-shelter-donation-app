@@ -147,6 +147,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     resizeMode: 'contain',
+    tintColor: '#797979',
   },
   profileImage: {
     width: 100,
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 20,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
   },
   profileSubtitle: {
     fontSize: 14,

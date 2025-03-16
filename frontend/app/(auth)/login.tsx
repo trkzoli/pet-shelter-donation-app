@@ -98,7 +98,7 @@ const LoginScreen: React.FC = () => {
               onChangeText={setPassword}
             />
             <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)} style={styles.eyeIconContainer}>
-              <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={20} color="#797979" />
+              <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={width * 0.05} color="#797979" />
             </TouchableOpacity>
           </View>
           
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   scrollContent: {
     flexGrow: 1,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   topTitle: {
     fontFamily: 'Pacifico',
-    color: '#1F2029',
+    color: '#493628',
     marginBottom: 40,
   },
   input: {
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   orText: {
     fontFamily: 'PoppinsRegular',
-    color: '#6B6B6B',
+    color: '#797979',
     marginBottom: 15,
   },
   socialButtonsContainer: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
   },
 });
 

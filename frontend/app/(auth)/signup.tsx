@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   scrollContent: {
     flexGrow: 1,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   topTitle: {
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
     marginBottom: 10,
   },
   input: {
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   orText: {
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    color: '#797979',
     marginBottom: 15,
   },
   socialButtonsContainer: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
   },
 });
 

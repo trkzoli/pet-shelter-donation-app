@@ -95,7 +95,7 @@ const DetailsPage: React.FC = () => {
 
         {/* Donate Button */}
         <View>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/donate')}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/payment/donate')}>
             <Text style={styles.actionButtonText}>DONATE</Text>
           </TouchableOpacity>
         </View>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'PoppinsBold',
     textAlign: 'center',
-    color: '#AB886D',
+    color: '#493628',
   },
   petInfoRow: {
     marginHorizontal: 20,
@@ -149,24 +149,24 @@ const styles = StyleSheet.create({
   petInfoText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#2C3930',
+    color: '#1F2029',
   },
   petInfoTitle: {
     fontSize: 16,
     fontFamily: 'PoppinsSemiBold',
-    color: '#2C3930',
+    color: '#1F2029',
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
     marginTop: 15,
-    color: '#2C3930',
+    color: '#1F2029',
     marginHorizontal: 20,
   },
   sectionText: {
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
-    color: '#2C3930',
+    color: '#1F2029',
     marginHorizontal: 20,
   },
   imageRow: {
