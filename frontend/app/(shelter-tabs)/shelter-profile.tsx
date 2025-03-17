@@ -4,16 +4,13 @@ import {
   Text,
   StyleSheet,
   Image,
-  Dimensions,
   TouchableOpacity,
   ScrollView,
   FlatList,
-  ImageBackground,
+  useWindowDimensions,
 } from 'react-native';
 import ShelterNavBar from '../../components/navigation/shelterNavBar';
 import SettingsModal from '../../components/Settings';
-
-const { width, height } = Dimensions.get('window');
 
 const managedPets = [
   { id: '1', name: 'Buddy', image: require('../../assets/images/ds1.jpg') },
@@ -22,6 +19,7 @@ const managedPets = [
 ];
 
 const ShelterProfile: React.FC = () => {
+  const { width, height } = useWindowDimensions();
   const [settingsVisible, setSettingsVisible] = useState(false);
 
   const toggleSettingsModal = () => {
@@ -29,13 +27,9 @@ const ShelterProfile: React.FC = () => {
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <View style={[styles.background, { width, height }]}>
+      <View style={[styles.container, { marginTop: height * 0.05 }]}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Settings Button */}
           <TouchableOpacity style={styles.settingsButton} onPress={toggleSettingsModal}>
             <Image source={require('../../assets/images/settings.png')} style={styles.settingsIcon} />
@@ -98,19 +92,17 @@ const ShelterProfile: React.FC = () => {
         {/* Bottom Navigation Bar */}
         <ShelterNavBar />
       </View>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#E4E0E1',
   },
   container: {
     flex: 1,
-    marginTop: height * 0.05,
   },
   scrollContainer: {
     paddingBottom: 100,
@@ -125,11 +117,12 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     resizeMode: 'contain',
+    tintColor: '#797979',
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 20,
     marginTop: 50,
+    marginBottom: 20,
   },
   profileImage: {
     width: 100,
@@ -141,7 +134,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 20,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
   },
   profileSubtitle: {
     fontSize: 14,
@@ -171,15 +164,15 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     padding: 10,
-    borderColor: '#797979',
     borderWidth: 1,
+    borderColor: '#797979',
     borderRadius: 10,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 20,
     fontFamily: 'PoppinsBold',
-    color: '#704F38',
+    color: '#AB886D',
   },
   statLabel: {
     fontSize: 14,
@@ -229,7 +222,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 16,
-    fontFamily: 'PoppinsBold',
+    fontFamily: 'PoppinsRegular',
     color: '#1F2029',
   },
 });

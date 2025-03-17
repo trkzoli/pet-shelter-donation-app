@@ -6,21 +6,17 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  Dimensions,
-  ImageBackground,
   ScrollView,
   FlatList,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
-const { width, height } = Dimensions.get('window');
-
-
 
 const ShelterPetsManage: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { width, height } = useWindowDimensions();
 
   const {
     name: initialName,
@@ -58,11 +54,11 @@ const ShelterPetsManage: React.FC = () => {
   
   const calculateTotalGoal = () => {
     const total =
-        parseInt(vaccinationCost || '0') +
-        parseInt(deparasitizationCost || '0') +
-        parseInt(otherMedicalCost || '0');
+      parseInt(vaccinationCost || '0') +
+      parseInt(deparasitizationCost || '0') +
+      parseInt(otherMedicalCost || '0');
     setTotalDonationGoal(total);
-    };
+  };
 
   const toggleDetails = () => {
     setIsDetailsExpanded(!isDetailsExpanded);
@@ -76,16 +72,12 @@ const ShelterPetsManage: React.FC = () => {
 
   const handleEditSave = () => {
     setIsEditing(false);
-    // Logic to save changes
+    // Logic to save changes if needed
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/images/bgi.jpg')}
-      style={styles.background}
-      resizeMode="stretch"
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <View style={[styles.background, { width, height }]}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingTop: height * 0.05 }]} showsVerticalScrollIndicator={false} >
         {/* Back Button */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>←</Text>
@@ -93,10 +85,10 @@ const ShelterPetsManage: React.FC = () => {
 
         {/* Pet Image */}
         <View style={styles.imageContainer}>
-            <Image
-                source={image ? { uri: image } : require('../assets/images/placeholder.png')}
-                style={styles.petImage}
-            />
+          <Image
+            source={image ? { uri: image } : require('../assets/images/placeholder.png')}
+            style={[styles.petImage, { width: width * 0.4, height: width * 0.5 }]}
+          />
           <TouchableOpacity style={styles.changePictureButton}>
             <Text style={styles.changePictureText}>Change Picture</Text>
           </TouchableOpacity>
@@ -113,15 +105,12 @@ const ShelterPetsManage: React.FC = () => {
               {isDetailsExpanded ? 'Hide Details ▲' : 'Show Details ▼'}
             </Text>
           </TouchableOpacity>
-
           {isDetailsExpanded && (
             <View>
               <Text style={styles.petBreed}>Story</Text>
               <Text style={styles.plainText}>{editableStory}</Text>
-
               <Text style={styles.petBreed}>Description</Text>
               <Text style={styles.plainText}>{editableDescription}</Text>
-
               {/* Edit Button */}
               <TouchableOpacity
                 style={styles.editButton}
@@ -135,50 +124,59 @@ const ShelterPetsManage: React.FC = () => {
 
         {/* Health Costs */}
         <View style={styles.healthContainer}>
-            <Text style={styles.healthTitle}>Health Costs</Text>
-            <TextInput
-                placeholder="Vaccination Cost"
-                style={styles.input}
-                keyboardType="numeric"
-                value={vaccinationCost}
-                onChangeText={setVaccinationCost}
-            />
-            <TextInput
-                placeholder="Deparasitization Cost"
-                style={styles.input}
-                keyboardType="numeric"
-                value={deparasitizationCost}
-                onChangeText={setDeparasitizationCost}
-            />
-            <TextInput
-                placeholder="Other Medical Cost"
-                style={styles.input}
-                keyboardType="numeric"
-                value={otherMedicalCost}
-                onChangeText={setOtherMedicalCost}
-            />
-            <View style={styles.totalGoalContainer}>
-                <Text style={styles.totalGoalText}>Monthly Donation Goal: ${totalDonationGoal}</Text>
-                <TouchableOpacity style={styles.calculateButton} onPress={calculateTotalGoal}>
-                <Text style={styles.calculateButtonText}>Recalculate</Text>
-                </TouchableOpacity>
-            </View>
+          <Text style={styles.healthTitle}>Health Costs</Text>
+          <TextInput
+            placeholder="Vaccination Cost"
+            style={styles.input}
+            keyboardType="numeric"
+            value={vaccinationCost}
+            onChangeText={setVaccinationCost}
+          />
+          <TextInput
+            placeholder="Deparasitization Cost"
+            style={styles.input}
+            keyboardType="numeric"
+            value={deparasitizationCost}
+            onChangeText={setDeparasitizationCost}
+          />
+          <TextInput
+            placeholder="Other Medical Cost"
+            style={styles.input}
+            keyboardType="numeric"
+            value={otherMedicalCost}
+            onChangeText={setOtherMedicalCost}
+          />
+          <View style={styles.totalGoalContainer}>
+            <Text style={styles.totalGoalText}>
+              Monthly Donation Goal: ${totalDonationGoal}
+            </Text>
+            <TouchableOpacity style={styles.calculateButton} onPress={calculateTotalGoal}>
+              <Text style={styles.calculateButtonText}>Recalculate</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Gallery */}
         <View style={styles.mediaContainer}>
           <Text style={styles.sectionTitle}>Gallery</Text>
           <FlatList
             data={uploadedMedia}
             horizontal
+            showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => index.toString()}
             renderItem={({ item, index }) => (
-                <TouchableOpacity
-                    onPress={() => setSelectedImage(typeof item === 'number' ? item : { uri: item } )}
-                    >
-                    <Image source={item} style={styles.mediaImage} />
-                    </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  setSelectedImage(
+                    typeof item === 'number' ? item : { uri: item }
+                  )
+                }
+              >
+                <Image source={item} style={styles.mediaImage} />
+              </TouchableOpacity>
             )}
             contentContainerStyle={styles.imageRow}
-            />
+          />
           <View style={styles.mediaActions}>
             <TouchableOpacity
               style={styles.addMediaButton}
@@ -194,27 +192,28 @@ const ShelterPetsManage: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Save Changes Button */}
         <TouchableOpacity
-            style={styles.saveButton}
-            onPress={() => {
-                // Logic to save changes (send data to an API or update state)
-                console.log('Changes saved:', {
-                name: editableName,
-                breed: editableBreed,
-                gender: editableGender,
-                story: editableStory,
-                description: editableDescription,
-                vaccinationCost,
-                deparasitizationCost,
-                otherMedicalCost,
-                totalDonationGoal,
-                uploadedMedia,
-                });
-                router.push('/shelter-home');
-            }}
-            >
-            <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
+          style={styles.saveButton}
+          onPress={() => {
+            console.log('Changes saved:', {
+              name: editableName,
+              breed: editableBreed,
+              gender: editableGender,
+              story: editableStory,
+              description: editableDescription,
+              vaccinationCost,
+              deparasitizationCost,
+              otherMedicalCost,
+              totalDonationGoal,
+              uploadedMedia,
+            });
+            router.push('/shelter-home');
+          }}
+        >
+          <Text style={styles.saveButtonText}>Save Changes</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Modal for Editing */}
@@ -227,89 +226,115 @@ const ShelterPetsManage: React.FC = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Pet Details</Text>
-
             <TextInput
               placeholder="Name"
               style={styles.modalInput}
-              value={Array.isArray(editableName) ? editableName.join(", ") : editableName ?? " "}
+              value={
+                Array.isArray(editableName)
+                  ? editableName.join(', ')
+                  : editableName ?? ''
+              }
               onChangeText={setEditableName}
             />
             <TextInput
               placeholder="Breed"
               style={styles.modalInput}
-              value={Array.isArray(editableBreed) ? editableBreed.join(", ") : editableBreed ?? ""}
+              value={
+                Array.isArray(editableBreed)
+                  ? editableBreed.join(', ')
+                  : editableBreed ?? ''
+              }
               onChangeText={setEditableBreed}
             />
             <TextInput
               placeholder="Gender"
               style={styles.modalInput}
-              value={Array.isArray(editableGender) ? editableGender.join(", ") : editableGender ?? ""}
+              value={
+                Array.isArray(editableGender)
+                  ? editableGender.join(', ')
+                  : editableGender ?? ''
+              }
               onChangeText={setEditableGender}
             />
             <TextInput
               placeholder="Story"
               style={[styles.modalInput, { height: 80 }]}
               multiline
-              value={Array.isArray(editableStory) ? editableStory.join(", ") : editableStory ?? ""}
+              value={
+                Array.isArray(editableStory)
+                  ? editableStory.join(', ')
+                  : editableStory ?? ''
+              }
               onChangeText={setEditableStory}
             />
             <TextInput
               placeholder="Description"
               style={[styles.modalInput, { height: 80 }]}
               multiline
-              value={Array.isArray(editableDescription) ? editableDescription.join(", ") : editableDescription ?? ""}
+              value={
+                Array.isArray(editableDescription)
+                  ? editableDescription.join(', ')
+                  : editableDescription ?? ''
+              }
               onChangeText={setEditableDescription}
             />
-
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setIsEditing(false)}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setIsEditing(false)}
+              >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveButton} onPress={handleEditSave}>
+              <TouchableOpacity
+                style={styles.modalSaveButton}
+                onPress={handleEditSave}
+              >
                 <Text style={styles.modalSaveText}>OK</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Modal for Enlarged Image */}
       <Modal
         visible={!!selectedImage}
         transparent
         animationType="fade"
         onRequestClose={() => setSelectedImage(null)}
-        >
+      >
         <View style={styles.modalContainer}>
-            <Image
-              source={
-                selectedImage
-                  ? typeof selectedImage === "number"
-                    ? selectedImage
-                    : { uri: (selectedImage as { uri: string }).uri } // Biztosítjuk a helyes típust
-                  : require("../assets/images/placeholder.png") // Ha null, akkor alapértelmezett kép
-              }
-              style={styles.enlargedImage}
-            />
-            <TouchableOpacity
+          <Image
+            source={
+              selectedImage
+                ? typeof selectedImage === 'number'
+                  ? selectedImage
+                  : { uri: (selectedImage as { uri: string }).uri }
+                : require('../assets/images/placeholder.png')
+            }
+            style={[styles.enlargedImage, { width: width * 0.8, height: width * 0.8 }]}
+          />
+          <TouchableOpacity
             style={styles.closeModalButton}
             onPress={() => setSelectedImage(null)}
-            >
+          >
             <Text style={styles.closeModalButtonText}>Close</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
-        </Modal>
-    </ImageBackground>
+      </Modal>
+    </View>
   );
-}
+};
+
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#E4E0E1',
   },
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: height * 0.05,
+    paddingTop: 20,
     paddingBottom: 50,
   },
   backButton: {
@@ -320,21 +345,19 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#797979',
   },
   imageContainer: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 40,
   },
   petImage: {
-    width: width * 0.4,
-    height: width * 0.5,
     borderRadius: 20,
     resizeMode: 'cover',
   },
   changePictureButton: {
     marginTop: 10,
-    backgroundColor: '#1F2029',
+    backgroundColor: '#AB886D',
     borderRadius: 20,
     paddingVertical: 5,
     paddingHorizontal: 15,
@@ -342,10 +365,10 @@ const styles = StyleSheet.create({
   changePictureText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   detailsContainer: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     borderRadius: 15,
     padding: 20,
     elevation: 5,
@@ -360,7 +383,7 @@ const styles = StyleSheet.create({
   petName: {
     fontSize: 24,
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
+    color: '#493628',
   },
   petBreed: {
     fontSize: 18,
@@ -370,26 +393,37 @@ const styles = StyleSheet.create({
   petDonations: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#704F38',
+    color: '#493628',
     marginBottom: 10,
   },
   expandDetailsText: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    color: '#797979',
   },
-  editableInput: {
-    backgroundColor: '#EDEDED',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
+  plainText: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    borderWidth: 1,
-    borderColor: '#797979',
+    color: '#1F2029',
+    marginBottom: 10,
+  },
+  editButton: {
+    backgroundColor: '#AB886D',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  editButtonText: {
+    color: '#E4E0E1',
+    fontFamily: 'PoppinsBold',
+    fontSize: 14,
   },
   healthContainer: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#E4E0E1',
     borderRadius: 15,
     padding: 20,
     marginBottom: 20,
@@ -402,7 +436,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  
   input: {
     height: 50,
     backgroundColor: 'transparent',
@@ -423,21 +456,26 @@ const styles = StyleSheet.create({
   totalGoalText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#704F38',
+    color: '#493628',
   },
   calculateButton: {
-    backgroundColor: '#1F2029',
-    borderRadius: 25,
+    backgroundColor: '#AB886D',
+    borderRadius: 20,
     paddingVertical: 5,
     paddingHorizontal: 10,
   },
   calculateButtonText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   mediaContainer: {
     marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
   },
   imageRow: {
     marginVertical: 20,
@@ -456,16 +494,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   addMediaButton: {
-    backgroundColor: '#1F2029',
+    backgroundColor: '#3F4F44',
     borderRadius: 25,
     paddingVertical: 10,
     paddingHorizontal: 30,
-    
   },
   addMediaButtonText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   removeMediaButton: {
     backgroundColor: '#FF6F61',
@@ -476,17 +513,14 @@ const styles = StyleSheet.create({
   removeMediaButtonText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
-  
   enlargedImage: {
-    width: width * 0.8,
-    height: width * 0.8,
     borderRadius: 20,
   },
   closeModalButton: {
     marginTop: 20,
-    backgroundColor: '#1F2029',
+    backgroundColor: '#AB886D',
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -494,7 +528,7 @@ const styles = StyleSheet.create({
   closeModalButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
   actionsContainer: {
     alignItems: 'center',
@@ -502,8 +536,8 @@ const styles = StyleSheet.create({
   saveButton: {
     width: '100%',
     height: 50,
-    backgroundColor: '#704F38',
-    borderRadius: 25,
+    backgroundColor: '#AB886D',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
@@ -511,7 +545,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#FFFFFF',
+    color: '#E4E0E1',
   },
   deleteButton: {
     width: '100%',
@@ -524,7 +558,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     fontFamily: 'PoppinsBold',
-    color: '#FFFFFF',
+    color: '#E4E0E1',
   },
   modalContainer: {
     flex: 1,
@@ -534,7 +568,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '80%',
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#3F4F44',
     borderRadius: 15,
     padding: 20,
     elevation: 5,
@@ -543,7 +577,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'PoppinsBold',
     marginBottom: 15,
-    color: '#1F2029',
+    color: '#E4E0E1',
     textAlign: 'center',
   },
   modalInput: {
@@ -556,13 +590,14 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsRegular',
     borderWidth: 1,
     borderColor: '#797979',
+    color: '#E4E0E1',
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   modalCancelButton: {
-    backgroundColor: '#FF6F61',
+    backgroundColor: '#D6C0B3',
     borderRadius: 15,
     padding: 10,
     flex: 1,
@@ -570,7 +605,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalSaveButton: {
-    backgroundColor: '#1F2029',
+    backgroundColor: '#AB886D',
     borderRadius: 15,
     padding: 10,
     flex: 1,
@@ -580,39 +615,14 @@ const styles = StyleSheet.create({
   modalCancelText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#3F4F44',
   },
   modalSaveText: {
     fontSize: 14,
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
-  plainText: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
-    marginBottom: 10,
-  },
-  editButton: {
-    backgroundColor: '#1F2029',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 10,
-  },
-  editButtonText: {
-    color: '#EDEDED',
-    fontFamily: 'PoppinsBold',
-    fontSize: 14,
-  },
-    sectionTitle: {
-        fontSize: 18,
-        fontFamily: 'PoppinsBold',
-        color: '#1F2029',
-    },
+ 
 });
 
 export default ShelterPetsManage;
