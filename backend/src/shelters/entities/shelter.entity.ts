@@ -1,7 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Pet } from '../../pets/entities/pet.entity';
 
-@Entity('users')
-export class User {
+@Entity('shelters')
+export class Shelter {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -14,14 +15,20 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ default: false })
-  isShelter: boolean;
+  @Column({ nullable: true })
+  description: string;
+
+  @Column({ nullable: true })
+  address: string;
+
+  @Column({ nullable: true })
+  phone: string;
 
   @Column({ nullable: true })
   profileImage: string;
 
-  @Column({ default: 0 })
-  tokenBalance: number;
+  @OneToMany(() => Pet, pet => pet.shelter)
+  pets: Pet[];
 
   @CreateDateColumn()
   createdAt: Date;
