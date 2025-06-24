@@ -1,4 +1,4 @@
-// src/users/users.service.ts
+
 import {
   Injectable,
   NotFoundException,
@@ -52,9 +52,6 @@ export class UsersService {
     private readonly uploadsService: UploadsService,
   ) {}
 
-  /**
-   * Get user profile by ID
-   */
   async getProfile(userId: string): Promise<ProfileResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -69,9 +66,6 @@ export class UsersService {
     });
   }
 
-  /**
-   * Update user profile
-   */
   async updateProfile(
     userId: string,
     updateProfileDto: UpdateProfileDto,
@@ -108,9 +102,6 @@ export class UsersService {
     });
   }
 
-  /**
-   * Calculate profile completion percentage
-   */
   calculateProfileCompletion(user: User): number {
     if (user.role === UserRole.SHELTER) {
       return 0;
@@ -135,9 +126,6 @@ export class UsersService {
     return Math.round((filledFields / totalFields) * 100);
   }
 
-  /**
-   * Force recalculate profile completion (debug/fix method)
-   */
   async forceRecalculateProfile(userId: string): Promise<ProfileResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -156,9 +144,6 @@ export class UsersService {
     });
   }
 
-  /**
-   * Get PawPoints balance and summary
-   */
   async getPawPointsBalance(userId: string): Promise<PawPointsResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -198,9 +183,6 @@ export class UsersService {
     };
   }
 
-  /**
-   * Get PawPoints transaction history
-   */
   async getPawPointsHistory(
     userId: string,
     limit: number = 50,
@@ -232,9 +214,6 @@ export class UsersService {
     );
   }
 
-  /**
-   * Check adoption eligibility
-   */
   async checkAdoptionEligibility(userId: string): Promise<AdoptionEligibilityResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -299,17 +278,14 @@ export class UsersService {
     };
   }
 
-  /**
-   * Update user's profile image
-   */
   async updateProfileImage(userId: string, file: Express.Multer.File): Promise<ProfileResponseDto> {
-    // 1. Upload to Cloudinary
+    
     const result = await this.uploadsService.uploadSingleImage(
       file,
       UploadType.PROFILE_IMAGE,
       userId,
     );
-    // 2. Save URL to user profile
+    
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -319,22 +295,18 @@ export class UsersService {
     user.profileImage = result.secureUrl;
     const updatedUser = await this.userRepository.save(user);
 
-    // Return DTO as before!
     return plainToClass(ProfileResponseDto, updatedUser, {
       excludeExtraneousValues: true,
     });
   }
 
-  /**
-   * Update user's profile image via base64 data
-   */
   async uploadProfileImageBase64(
     userId: string,
     base64Data: string,
     mimeType: string,
     filename: string,
   ): Promise<ProfileResponseDto> {
-    // 1. Upload to Cloudinary using base64 method
+    
     const result = await this.uploadsService.uploadBase64Image(
       base64Data,
       UploadType.PROFILE_IMAGE,
@@ -343,7 +315,7 @@ export class UsersService {
       userId,
     );
 
-    // 2. Save URL to user profile
+    
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -353,15 +325,13 @@ export class UsersService {
     user.profileImage = result.secureUrl;
     const updatedUser = await this.userRepository.save(user);
 
-    // Return DTO
+    
     return plainToClass(ProfileResponseDto, updatedUser, {
       excludeExtraneousValues: true,
     });
   }
 
-  /**
-   * Get supported pets for a donor
-   */
+  
   async getSupportedPets(userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -375,7 +345,7 @@ export class UsersService {
       throw new ForbiddenException('Only donors can have supported pets');
     }
 
-    // Get pets that user has donated to
+    
     const donations: SupportedPet[] = await this.donationRepository
       .createQueryBuilder('donation')
       .innerJoinAndSelect('donation.pet', 'pet')
@@ -400,9 +370,7 @@ export class UsersService {
     return donations;
   }
 
-  /**
-   * Check if user exists and is active
-   */
+  
   async validateUser(userId: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },

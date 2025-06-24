@@ -1,4 +1,4 @@
-// src/donations/donations.module.ts (Updated for Payments Integration)
+
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -11,7 +11,7 @@ import { Pet } from '../pets/entities/pet.entity';
 import { Campaign } from '../campaigns/entities/campaign.entity';
 import { Shelter } from '../shelters/entities/shelter.entity';
 import { CampaignsModule } from '../campaigns/campaigns.module';
-import { PaymentsModule } from '../payments/payments.module'; // New integration
+import { PaymentsModule } from '../payments/payments.module'; 
 
 @Module({
   imports: [
@@ -23,12 +23,12 @@ import { PaymentsModule } from '../payments/payments.module'; // New integration
       Campaign,
       Shelter,
     ]),
-    ConfigModule, // For Stripe configuration
-    forwardRef(() => CampaignsModule), // For campaign donation integration
-    forwardRef(() => PaymentsModule), // For payment processing integration
+    ConfigModule, 
+    forwardRef(() => CampaignsModule), 
+    forwardRef(() => PaymentsModule), 
   ],
   controllers: [DonationsController],
   providers: [DonationsService],
-  exports: [DonationsService], // Export for use in other modules
+  exports: [DonationsService], 
 })
 export class DonationsModule {}

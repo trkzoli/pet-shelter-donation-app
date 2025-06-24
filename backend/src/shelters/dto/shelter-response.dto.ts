@@ -1,4 +1,4 @@
-// src/shelters/dto/shelter-response.dto.ts
+
 import { Expose, Transform, Type } from 'class-transformer';
 import {
   PetSpecialization,
@@ -105,7 +105,6 @@ export class ShelterResponseDto {
   @Expose()
   updatedAt: Date;
 
-  // User information - properly transformed
   @Expose()
   @Type(() => UserInfoDto)
   user?: UserInfoDto;

@@ -35,7 +35,6 @@ export class PawPointTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // User relation
   @ManyToOne(() => User)
   @JoinColumn()
   user: User;
@@ -43,17 +42,14 @@ export class PawPointTransaction {
   @Column()
   userId: string;
 
-  // Points change (positive or negative)
   @Column({ type: 'int' })
   @IsNumber()
   points: number;
 
-  // Transaction type
   @Column({ type: 'enum', enum: TransactionType })
   @IsEnum(TransactionType)
   type: TransactionType;
 
-  // Related donation (optional)
   @ManyToOne(() => Donation, { nullable: true })
   @JoinColumn()
   relatedDonation?: Donation;
@@ -61,7 +57,6 @@ export class PawPointTransaction {
   @Column({ nullable: true })
   relatedDonationId?: string;
 
-  // Related pet (optional)
   @ManyToOne(() => Pet, { nullable: true })
   @JoinColumn()
   relatedPet?: Pet;
@@ -69,21 +64,17 @@ export class PawPointTransaction {
   @Column({ nullable: true })
   relatedPetId?: string;
 
-  // Description
   @Column({ type: 'text' })
   @IsString()
   description: string;
 
-  // Balance after transaction
   @Column({ type: 'int' })
   @IsNumber()
   balanceAfter: number;
 
-  // Timestamp
   @CreateDateColumn()
   createdAt: Date;
 
-  // Helper methods
   static createDonationTransaction(
     userId: string,
     points: number,
@@ -156,7 +147,7 @@ export class PawPointTransaction {
   ): PawPointTransaction {
     const transaction = new PawPointTransaction();
     transaction.userId = userId;
-    transaction.points = -Math.abs(points); // Ensure negative
+    transaction.points = -Math.abs(points); 
     transaction.type = TransactionType.SPENT;
     transaction.description = reason;
     transaction.balanceAfter = balanceAfter;

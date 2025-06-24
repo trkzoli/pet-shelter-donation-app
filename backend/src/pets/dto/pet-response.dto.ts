@@ -1,8 +1,7 @@
-// src/pets/dto/pet-response.dto.ts
+
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { PetType, PetGender, PetStatus, MonthlyGoals, DonationDistribution } from '../entities/pet.entity';
 
-// Simplified shelter info for pet responses
 export class ShelterInfoDto {
   @Expose()
   id: string;
@@ -37,7 +36,6 @@ export class ShelterInfoDto {
   hasContact: boolean;
 }
 
-// Basic pet response for lists
 export class PetListDto {
   @Expose()
   id: string;
@@ -133,7 +131,6 @@ export class PetListDto {
   isEditable: boolean;
 }
 
-// Detailed pet response for individual pet views
 export class PetDetailDto extends PetListDto {
   @Expose()
   currentMonthDistribution: DonationDistribution;
@@ -144,7 +141,6 @@ export class PetDetailDto extends PetListDto {
   @Expose()
   updatedAt: Date;
 
-  // Calculated fields
   @Expose()
   @Transform(({ obj }) => {
     const goals = obj.monthlyGoals;
@@ -179,7 +175,6 @@ export class PetDetailDto extends PetListDto {
     other: { goal: number; current: number; percentage: number };
   };
 
-  // Days until goals reset
   @Expose()
   @Transform(({ obj }) => {
     if (!obj.goalsLastReset) return 31;
@@ -195,10 +190,7 @@ export class PetDetailDto extends PetListDto {
   declare status: PetStatus;
 }
 
-// Shelter's pet management view
 export class ShelterPetDto extends PetDetailDto {
-  // Include draft/removed pets for shelter view
-  // Show if pet can be edited
   @Expose()
   @Transform(({ obj }) => {
     const twentyFourHours = 24 * 60 * 60 * 1000;
@@ -206,7 +198,6 @@ export class ShelterPetDto extends PetDetailDto {
   })
   canEdit: boolean;
 
-  // Show if pet can be published
   @Expose()
   @Transform(({ obj }) => {
     return obj.status === 'draft' && 
@@ -215,13 +206,11 @@ export class ShelterPetDto extends PetDetailDto {
   })
   canPublish: boolean;
 
-  // Show adoption requests count
   @Expose()
   @Transform(({ obj }) => obj.adoptionRequests?.length || 0)
   adoptionRequestsCount: number;
 }
 
-// Pagination response
 export class PetListResponseDto {
   @Expose()
   @Type(() => PetListDto)
@@ -236,7 +225,7 @@ export class PetListResponseDto {
   };
 }
 
-// Monthly goals summary for shelter dashboard
+
 export class MonthlyGoalsSummaryDto {
   @Expose()
   @Transform(({ obj }) => {

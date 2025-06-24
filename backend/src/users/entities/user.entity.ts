@@ -73,7 +73,6 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Authentication fields
   @Column({ unique: true })
   @IsEmail()
   email: string;
@@ -93,7 +92,6 @@ export class User {
   @Matches(/^\+?[\d\s-()]+$/, { message: 'Invalid phone number format' })
   phone?: string;
 
-  // Address fields
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
@@ -140,13 +138,11 @@ export class User {
   @IsString()
   isFenced?: string;
 
-  // Additional housing information
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
   housingOwnership?: string;
 
-  // Pet experience fields
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
@@ -167,7 +163,6 @@ export class User {
   @IsString()
   petExperience?: string;
 
-  // Lifestyle fields
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
@@ -183,20 +178,18 @@ export class User {
   @IsString()
   whyAdopt?: string;
 
-  // Profile image
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
   profileImage?: string;
 
-  // Profile completion (calculated field)
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   @IsNumber()
   @Min(0)
   @Max(100)
   profileCompleteness: number;
 
-  // PawPoints and donations
+    
   @Column({ default: 0 })
   @IsNumber()
   @Min(0)
@@ -207,7 +200,6 @@ export class User {
   @Min(0)
   totalDonated: number;
 
-  // Email verification
   @Column({ default: false })
   @IsBoolean()
   emailVerified: boolean;
@@ -219,7 +211,6 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   verificationCodeExpiry?: Date;
 
-  // Password reset
   @Column({ nullable: true })
   @Exclude()
   resetToken?: string;
@@ -227,19 +218,17 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   resetTokenExpiry?: Date;
 
-  // User role
   @Column({ type: 'enum', enum: UserRole })
   @IsEnum(UserRole)
   role: UserRole;
 
-  // Timestamps
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relations (to be defined in other entities)
+
   @OneToOne(() => Shelter, shelter => shelter.user)
   shelter?: Shelter;
 
@@ -252,7 +241,7 @@ export class User {
   @OneToMany(() => AdoptionRequest, request => request.user)
   adoptionRequests: AdoptionRequest[];
 
-  // Hooks
+  
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
@@ -281,7 +270,7 @@ export class User {
       'whyAdopt',
     ];
 
-    // Only calculate for donors
+    
     if (this.role === UserRole.DONOR) {
       const filledFields = requiredFields.filter(field => {
         const value = this[field as keyof User];
@@ -289,7 +278,7 @@ export class User {
       });
       this.profileCompleteness = Math.round((filledFields.length / requiredFields.length) * 100);
       
-      // Debug log for profile completion calculation
+      
       console.log('🔍 BACKEND Profile Completion:', {
         requiredFields: requiredFields.length,
         filledFields: filledFields.length,
@@ -297,25 +286,25 @@ export class User {
         filledFieldNames: filledFields
       });
     } else {
-      // Shelters have different profile requirements, handled in Shelter entity
+      
       this.profileCompleteness = 0;
     }
   }
 
-  // Helper methods
+  
   async validatePassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.password);
   }
 
   generateVerificationCode(): void {
     this.verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
-    this.verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    this.verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
   }
 
   generateResetToken(): string {
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     this.resetToken = token;
-    this.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    this.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
     return token;
   }
 

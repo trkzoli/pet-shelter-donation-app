@@ -1,4 +1,4 @@
-// src/success-stories/success-stories.controller.ts
+
 import {
   Controller,
   Get,
@@ -44,15 +44,7 @@ import {
 export class SuccessStoriesController {
   constructor(private readonly successStoriesService: SuccessStoriesService) {}
 
-  // ==================== CREATE SUCCESS STORIES (Shelter Only) ====================
-
-  /**
-   * Create a general success story
-   * POST /success-stories
-   * 
-   * Creates any type of success story for a pet
-   * Available to: Shelter admins only
-   */
+ 
   @Post()
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -77,13 +69,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.createSuccessStory(req.user.shelterId, createDto);
   }
 
-  /**
-   * Create adoption success story
-   * POST /success-stories/adoption
-   * 
-   * Creates adoption success story (internal or external)
-   * Available to: Shelter admins only
-   */
+  
   @Post('adoption')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -104,13 +90,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.createAdoptionSuccessStory(req.user.shelterId, createDto);
   }
 
-  /**
-   * Create deceased pet story
-   * POST /success-stories/deceased
-   * 
-   * Creates compassionate story when pet passes away
-   * Available to: Shelter admins only
-   */
+  
   @Post('deceased')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -131,13 +111,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.createDeceasedStory(req.user.shelterId, createDto);
   }
 
-  /**
-   * Create error/refund story
-   * POST /success-stories/error
-   * 
-   * Creates error story for listing mistakes (triggers refunds)
-   * Available to: Shelter admins only
-   */
+  
   @Post('error')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -158,15 +132,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.createErrorStory(req.user.shelterId, createDto);
   }
 
-  // ==================== GET SUCCESS STORIES ====================
-
-  /**
-   * Get all success stories (public/admin view)
-   * GET /success-stories
-   * 
-   * Returns paginated list of all success stories with filters
-   * Available to: All authenticated users
-   */
+  
   @Get()
   @ApiOperation({ 
     summary: 'Get all success stories',
@@ -193,13 +159,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getSuccessStories(filters);
   }
 
-  /**
-   * Get user's success stories (their supported pets)
-   * GET /success-stories/mine
-   * 
-   * Returns success stories for pets the user has supported
-   * Available to: All authenticated users
-   */
+  
   @Get('mine')
   @ApiOperation({ 
     summary: 'Get my success stories',
@@ -224,13 +184,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getUserSuccessStories(req.user.userId, filters);
   }
 
-  /**
-   * Get shelter's success stories
-   * GET /success-stories/shelter
-   * 
-   * Returns success stories for the current shelter's pets
-   * Available to: Shelter admins only
-   */
+  
   @Get('shelter')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -257,13 +211,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getShelterSuccessStories(req.user.shelterId, filters);
   }
 
-  /**
-   * Get single success story details
-   * GET /success-stories/:id
-   * 
-   * Returns detailed information about a specific success story
-   * Available to: All authenticated users
-   */
+  
   @Get(':id')
   @ApiOperation({ 
     summary: 'Get success story details',
@@ -283,15 +231,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getSuccessStory(storyId);
   }
 
-  // ==================== NOTIFICATION MANAGEMENT ====================
-
-  /**
-   * Get notification status for success story
-   * GET /success-stories/:id/notifications
-   * 
-   * Returns notification delivery status for a success story
-   * Available to: All authenticated users
-   */
+  
   @Get(':id/notifications')
   @ApiOperation({ 
     summary: 'Get notification status',
@@ -307,13 +247,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getNotificationStatus(storyId);
   }
 
-  /**
-   * Mark notification as sent (internal use)
-   * POST /success-stories/:id/notifications/:userId/sent
-   * 
-   * Marks notification as sent for specific user (used by notification service)
-   * Available to: All authenticated users (internal use)
-   */
+  
   @Post(':id/notifications/:userId/sent')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -337,13 +271,7 @@ export class SuccessStoriesController {
     };
   }
 
-  /**
-   * Get pending notifications for success story
-   * GET /success-stories/:id/notifications/pending
-   * 
-   * Returns users who still need to receive notifications
-   * Available to: All authenticated users (internal use)
-   */
+  
   @Get(':id/notifications/pending')
   @ApiOperation({ 
     summary: 'Get pending notifications',
@@ -369,15 +297,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getPendingNotifications(storyId);
   }
 
-  // ==================== STATISTICS ====================
-
-  /**
-   * Get success story statistics
-   * GET /success-stories/stats/overview
-   * 
-   * Returns overall success story statistics
-   * Available to: All authenticated users
-   */
+  
   @Get('stats/overview')
   @ApiOperation({ 
     summary: 'Get success story statistics',
@@ -403,13 +323,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getSuccessStoryStats(shelterId);
   }
 
-  /**
-   * Get shelter's success story statistics
-   * GET /success-stories/stats/shelter
-   * 
-   * Returns current shelter's success story statistics
-   * Available to: Shelter admins only
-   */
+  
   @Get('stats/shelter')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -436,15 +350,7 @@ export class SuccessStoriesController {
     return this.successStoriesService.getSuccessStoryStats(req.user.shelterId);
   }
 
-  // ==================== UTILITY ENDPOINTS ====================
-
-  /**
-   * Resend notifications for success story (admin/debug)
-   * POST /success-stories/:id/resend-notifications
-   * 
-   * Manually trigger notification resend for a success story
-   * Available to: Shelter admins only (for their stories)
-   */
+  
   @Post(':id/resend-notifications')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -462,7 +368,6 @@ export class SuccessStoriesController {
     @Param('id', ParseUUIDPipe) storyId: string,
     @Request() req
   ): Promise<{ success: boolean; message: string; pendingCount: number }> {
-    // Get pending notifications
     const pendingUsers = await this.successStoriesService.getPendingNotifications(storyId);
     
     if (pendingUsers.length === 0) {
@@ -473,8 +378,7 @@ export class SuccessStoriesController {
       };
     }
 
-    // TODO: In Phase 12, integrate with notification service to actually resend
-    // For now, just return status
+   
     return {
       success: true,
       message: `${pendingUsers.length} notifications queued for resend`,

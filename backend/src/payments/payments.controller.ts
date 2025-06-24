@@ -1,4 +1,4 @@
-// src/payments/payments.controller.ts
+
 import {
   Controller,
   Post,
@@ -50,10 +50,6 @@ export class PaymentsController {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Create payment intent for donation
-   * POST /payments/create-intent
-   */
   @Post('create-intent')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DONOR)
@@ -93,10 +89,6 @@ export class PaymentsController {
     );
   }
 
-  /**
-   * Confirm payment after successful payment
-   * POST /payments/confirm
-   */
   @Post('confirm')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DONOR)
@@ -133,9 +125,6 @@ export class PaymentsController {
     return await this.paymentsService.confirmPayment(userId, confirmPaymentDto);
   }
 
-  /**
-   * Process refund for donation (Admin only)
-   */
   @Post('refund')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SHELTER) // Only shelters can process refunds
@@ -176,9 +165,6 @@ export class PaymentsController {
     );
   }
 
-  /**
-   * Stripe webhook endpoint (OPTIONAL - for production use)
-   */
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -227,9 +213,6 @@ export class PaymentsController {
     return { received: true };
   }
 
-  /**
-   * Get Stripe publishable key
-   */
   @Get('config')
   @ApiOperation({ 
     summary: 'Get payment configuration',
@@ -255,9 +238,6 @@ export class PaymentsController {
     };
   }
 
-  /**
-   * Health check for payment service
-   */
   @Get('health')
   @ApiOperation({ 
     summary: 'Payment service health check',
@@ -314,9 +294,6 @@ export class PaymentsController {
     }
   }
 
-  /**
-   * Get payment methods for user (future feature)
-   */
   @Get('methods')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -354,8 +331,7 @@ export class PaymentsController {
   async getPaymentMethods(
     @GetUser('id') userId: string,
   ): Promise<{ methods: any[] }> {
-    // TODO: Implement saved payment methods feature
-    // For now, return empty array as this is a future enhancement
+    
     this.logger.log(`Getting payment methods for user ${userId} (not implemented yet)`);
     
     return {
@@ -363,9 +339,6 @@ export class PaymentsController {
     };
   }
 
-  /**
-   * Save payment method for user (future feature)
-   */
   @Post('methods')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -385,7 +358,7 @@ export class PaymentsController {
     @GetUser('id') userId: string,
     @Body() saveMethodDto: { paymentMethodId: string },
   ): Promise<{ success: boolean; message: string }> {
-    // TODO: Implement saved payment methods feature
+    
     this.logger.log(`Saving payment method for user ${userId}: ${saveMethodDto.paymentMethodId} (not implemented yet)`);
     return {
       success: false,
@@ -393,12 +366,10 @@ export class PaymentsController {
     };
   }
 
-  /**
-   * Fix corrupted donation data for a specific pet (Development/Debug only)
-   */
+  
   @Post('fix-pet-donations/:petId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SHELTER) // Only shelters can fix data
+  @Roles(UserRole.SHELTER) 
   @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Fix corrupted donation data for a pet',
@@ -441,12 +412,10 @@ export class PaymentsController {
     }
   }
 
-  /**
-   * Clean up corrupted donation data (Development/Debug only)
-   */
+  
   @Post('cleanup-donations/:petId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SHELTER) // Only shelters can clean data
+  @Roles(UserRole.SHELTER)
   @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Clean up corrupted donation data',
@@ -466,14 +435,14 @@ export class PaymentsController {
   ): Promise<{ success: boolean; message: string; deletedRecords?: number }> {
     try {
       if (options.recalculateFromScratch) {
-        // Use the fix method to recalculate correctly from existing donations
+        
         await this.paymentsService.fixCorruptedDonationData(petId);
         return {
           success: true,
           message: 'Pet donation data recalculated from actual donation records',
         };
       } else {
-        // Clean up by deleting records and resetting totals
+
         const result = await this.paymentsService.cleanupCorruptedData(
           petId, 
           options.deleteDonations || false

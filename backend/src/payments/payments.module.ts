@@ -1,4 +1,4 @@
-// src/payments/payments.module.ts
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -21,10 +21,10 @@ import { Shelter } from '../shelters/entities/shelter.entity';
       Campaign,
       Shelter,
     ]),
-    ConfigModule, // For Stripe configuration
+    ConfigModule, 
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],
-  exports: [PaymentsService], // Export for use in donations module
+  exports: [PaymentsService], 
 })
 export class PaymentsModule {}

@@ -1,4 +1,4 @@
-// src/notifications/notifications.service.ts
+
 import { Injectable, Logger } from '@nestjs/common';
 import { MailConfigService } from './config/mail.config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,7 +10,6 @@ import { AdoptionRequest } from '../adoptions/entities/adoption-request.entity';
 import { Donation } from '../donations/entities/donation.entity';
 import { SuccessStory } from '../success-stories/entities/success-story.entity';
 
-// Email template interfaces
 export interface VerificationEmailData {
   userName: string;
   verificationCode: string;
@@ -105,11 +104,6 @@ export class NotificationsService {
     private readonly donationRepository: Repository<Donation>,
   ) {}
 
-  // ==================== EMAIL VERIFICATION ====================
-
-  /**
-   * Send email verification code
-   */
   async sendVerificationEmail(email: string, userName: string, verificationCode: string): Promise<void> {
     const emailData: VerificationEmailData = {
       userName,
@@ -124,9 +118,6 @@ export class NotificationsService {
     this.logger.log(`Verification email sent to ${email}`);
   }
 
-  /**
-   * Generate verification email template
-   */
   private generateVerificationEmailTemplate(data: VerificationEmailData): string {
     return `
       <!DOCTYPE html>
@@ -178,11 +169,6 @@ export class NotificationsService {
     `;
   }
 
-  // ==================== PASSWORD RESET ====================
-
-  /**
-   * Send password reset email
-   */
   async sendPasswordResetEmail(email: string, userName: string, resetToken: string): Promise<void> {
     const emailData: PasswordResetEmailData = {
       userName,
@@ -198,9 +184,6 @@ export class NotificationsService {
     this.logger.log(`Password reset email sent to ${email}`);
   }
 
-  /**
-   * Send password reset notification (simple notification without reset functionality)
-   */
   async sendPasswordResetNotification(email: string, userName: string): Promise<void> {
     const subject = 'Password Reset Request - Pawner';
     const html = this.generatePasswordResetNotificationTemplate(userName);
@@ -209,9 +192,6 @@ export class NotificationsService {
     this.logger.log(`Password reset notification sent to ${email}`);
   }
 
-  /**
-   * Generate password reset email template
-   */
   private generatePasswordResetEmailTemplate(data: PasswordResetEmailData): string {
     return `
       <!DOCTYPE html>
@@ -263,9 +243,6 @@ export class NotificationsService {
     `;
   }
 
-  /**
-   * Generate simple password reset notification template (without reset functionality)
-   */
   private generatePasswordResetNotificationTemplate(userName: string): string {
     return `
       <!DOCTYPE html>
@@ -319,13 +296,7 @@ export class NotificationsService {
     `;
   }
 
-  // ==================== ADOPTION REQUEST EMAIL ====================
-
-  /**
-   * Send adoption request email to shelter
-   */
   async sendAdoptionRequestEmail(adoptionRequestId: string): Promise<void> {
-    // Get adoption request with all related data
     const adoptionRequest = await this.adoptionRequestRepository.findOne({
       where: { id: adoptionRequestId },
       relations: ['user', 'pet', 'pet.shelter', 'pet.shelter.user'],
@@ -335,7 +306,6 @@ export class NotificationsService {
       throw new Error(`Adoption request ${adoptionRequestId} not found`);
     }
 
-    // Get donation history for this user and pet
     const donations = await this.donationRepository.find({
       where: {
         userId: adoptionRequest.user.id,
@@ -403,9 +373,6 @@ export class NotificationsService {
     this.logger.log(`Adoption request email sent for pet ${adoptionRequest.pet.name} to ${adoptionRequest.pet.shelter.user.email}`);
   }
 
-  /**
-   * Generate adoption request email template
-   */
   private generateAdoptionRequestEmailTemplate(data: AdoptionRequestEmailData): string {
     return `
       <!DOCTYPE html>
@@ -585,11 +552,7 @@ export class NotificationsService {
     `;
   }
 
-  // ==================== SUCCESS STORY NOTIFICATIONS ====================
-
-  /**
-   * Send success story notification to user
-   */
+  
   async sendSuccessStoryNotification(
     userId: string,
     petId: string,
@@ -621,9 +584,7 @@ export class NotificationsService {
     this.logger.log(`Success story email sent to ${user.email} for pet ${pet.name} (${storyType})`);
   }
 
-  /**
-   * Get success story message based on type
-   */
+
   private getSuccessStoryMessage(
     storyType: 'adopted_internal' | 'adopted_external' | 'deceased' | 'error',
     petName: string,
@@ -649,9 +610,7 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Get success story email subject
-   */
+
   private getSuccessStorySubject(
     storyType: 'adopted_internal' | 'adopted_external' | 'deceased' | 'error',
     petName: string
@@ -672,9 +631,7 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Generate success story email template
-   */
+
   private generateSuccessStoryEmailTemplate(data: SuccessStoryEmailData): string {
     const isHappyNews = data.storyType.includes('adopted');
     const iconEmoji = '';
@@ -764,11 +721,7 @@ export class NotificationsService {
     `;
   }
 
-  // ==================== UTILITY METHODS ====================
 
-  /**
-   * Send email using configured transporter
-   */
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
     if (!this.mailConfigService.isConfigured()) {
       this.logger.error('Mail service not configured - skipping email send');
@@ -794,15 +747,12 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Send bulk success story notifications
-   */
+
   async sendBulkSuccessStoryNotifications(
     petId: string,
     storyType: 'adopted_internal' | 'adopted_external' | 'deceased' | 'error',
     adopter?: { name: string; city: string }
   ): Promise<void> {
-    // Get all users who donated to this pet
     const donations = await this.donationRepository.find({
       where: { petId },
       relations: ['user'],
@@ -813,7 +763,6 @@ export class NotificationsService {
 
     this.logger.log(`Sending ${storyType} notifications to ${uniqueUserIds.length} users for pet ${petId}`);
 
-    // Send notifications to all supporters
     const notifications = uniqueUserIds.map(userId =>
       this.sendSuccessStoryNotification(userId, petId, storyType, adopter)
     );
@@ -826,9 +775,7 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Health check for notification service
-   */
+
   async healthCheck(): Promise<{ 
     status: 'healthy' | 'unhealthy'; 
     mail: { configured: boolean; config: any };
@@ -846,7 +793,7 @@ export class NotificationsService {
         };
       }
 
-      // Test mail connection
+      
       const transporter = this.mailConfigService.getTransporter();
       await transporter.verify();
 

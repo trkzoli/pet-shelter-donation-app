@@ -1,4 +1,4 @@
-// src/donations/donations.service.ts (Updated for Campaign Integration)
+
 import {
   Injectable,
   NotFoundException,
@@ -57,16 +57,14 @@ export class DonationsService {
     });
   }
 
-  /**
-   * Create a payment intent for donation (Updated for campaigns)
-   */
+ 
   async createPaymentIntent(
     userId: string,
     createDonationDto: CreateDonationDto,
   ): Promise<PaymentIntentDto> {
     const { amount, type, petId, campaignId } = createDonationDto;
 
-    // Validate minimum and maximum amounts
+    
     if (amount < 1) {
       throw new BadRequestException('Minimum donation amount is $1');
     }
@@ -74,7 +72,7 @@ export class DonationsService {
       throw new BadRequestException('Maximum donation amount is $10,000');
     }
 
-    // Validate target exists and is eligible
+    
     let platformFeePercentage: number;
     let targetEntity: Pet | Campaign;
     let shelterAmount: number;
@@ -90,7 +88,7 @@ export class DonationsService {
       }
 
       targetEntity = pet;
-      platformFeePercentage = 10; // 10% for pet donations
+      platformFeePercentage = 10; 
     } else if (type === DonationType.CAMPAIGN) {
       const campaign = await this.campaignRepository.findOne({
         where: { id: campaignId, status: CampaignStatus.ACTIVE },
@@ -111,15 +109,15 @@ export class DonationsService {
       throw new BadRequestException('Invalid donation type');
     }
 
-    // Calculate fees and amounts
+    
     const platformFee = (amount * platformFeePercentage) / 100;
     shelterAmount = amount - platformFee;
     const pawPointsToEarn = this.calculatePawPoints(amount);
 
     try {
-      // Create Stripe payment intent
+      
       const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: Math.round(amount * 100), 
         currency: 'usd',
         metadata: {
           userId,
@@ -130,7 +128,7 @@ export class DonationsService {
         },
       });
 
-      // Create pending donation record
+      
       const donation = new Donation();
       donation.userId = userId;
       donation.petId = type === DonationType.PET ? petId : undefined;
@@ -159,9 +157,7 @@ export class DonationsService {
     }
   }
 
-  /**
-   * Confirm donation after successful payment (Updated for campaigns)
-   */
+  
   async confirmDonation(
     userId: string,
     confirmDto: ConfirmDonationDto,
@@ -169,7 +165,7 @@ export class DonationsService {
     const { paymentIntentId } = confirmDto;
 
     return await this.dataSource.transaction(async manager => {
-      // Find pending donation without locking first
+      
       const donation = await manager.findOne(Donation, {
         where: {
           paymentIntentId,
@@ -183,36 +179,36 @@ export class DonationsService {
         throw new NotFoundException('Donation not found or already processed');
       }
 
-      // Lock the donation row specifically to prevent concurrent processing
+
       await manager.query(
         'SELECT id FROM donations WHERE id = $1 FOR UPDATE',
         [donation.id]
       );
 
       try {
-        // Verify payment with Stripe
+        
         const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
         if (paymentIntent.status !== 'succeeded') {
           throw new BadRequestException('Payment not completed');
         }
 
-        // Update donation status
+        
         donation.status = DonationStatus.COMPLETED;
 
-        // Process based on donation type
+        
         if (donation.type === DonationType.PET && donation.pet) {
-          // Update pet donation tracking
+          
           await this.processPetDonation(manager, donation);
         } else if (donation.type === DonationType.CAMPAIGN && donation.campaignId) {
-          // Update campaign progress using campaigns service
+          
           await this.campaignsService.processCampaignDonation(
             donation.campaignId,
             donation.amount,
           );
         }
 
-        // Add PawPoints to user
+        
         await this.addPawPoints(
           manager,
           userId,
@@ -222,10 +218,10 @@ export class DonationsService {
           donation.id,
         );
 
-        // Save donation
+        
         const savedDonation = await manager.save(Donation, donation);
 
-        // Transform to response DTO
+        
         return this.toDonationResponseDto(savedDonation);
       } catch (error) {
         console.error('Error confirming donation:', error);
@@ -234,9 +230,7 @@ export class DonationsService {
     });
   }
 
-  /**
-   * Process pet donation (existing logic)
-   */
+  
   private async processPetDonation(
     manager: any,
     donation: Donation,
@@ -246,21 +240,21 @@ export class DonationsService {
     if (!pet) {
       throw new NotFoundException('Pet not found for donation');
     }
-    // Check if monthly goals exist and reset if needed
+    
     if (pet.goalsLastReset) {
       const daysSinceReset = Math.floor(
         (Date.now() - pet.goalsLastReset.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (daysSinceReset >= 31) {
-        // Reset monthly goals and current donations
+        
         pet.currentMonthDonations = 0;
         pet.goalsLastReset = new Date();
         await manager.save(Pet, pet);
       }
     }
 
-    // Distribute donation across monthly goal categories
+    
     if (pet.monthlyGoals) {
       const totalGoals = Object.values(pet.monthlyGoals).reduce(
         (sum: number, goal: number) => sum + goal,
@@ -277,7 +271,7 @@ export class DonationsService {
 
         donation.distribution = distribution;
 
-        // Update pet's current month distribution
+        
         if (!pet.currentMonthDistribution) {
           pet.currentMonthDistribution = { vaccination: 0, food: 0, medical: 0, other: 0 };
         }
@@ -289,11 +283,11 @@ export class DonationsService {
       }
     }
 
-    // Calculate new totals
+
     const newTotalDonationsReceived = (parseFloat(pet.totalDonationsReceived?.toString() || '0')) + donation.amount;
     const newCurrentMonthDonations = (parseFloat(pet.currentMonthDonations?.toString() || '0')) + donation.amount;
 
-    // Update pet totals using update instead of save to avoid INSERT issues
+    
     await manager.update(Pet, { id: pet.id }, {
       totalDonationsReceived: newTotalDonationsReceived,
       currentMonthDonations: newCurrentMonthDonations,
@@ -301,16 +295,12 @@ export class DonationsService {
     });
   }
 
-  /**
-   * Calculate PawPoints earned (1 point per $25)
-   */
+  
   private calculatePawPoints(amount: number): number {
     return Math.floor(amount / 25);
   }
 
-  /**
-   * Add PawPoints to user account
-   */
+  
   private async addPawPoints(
     manager: any,
     userId: string,
@@ -322,16 +312,16 @@ export class DonationsService {
   ): Promise<void> {
     if (points <= 0) return;
 
-    // Update user's PawPoints balance
+    
     await manager.increment(User, { id: userId }, 'pawPoints', points);
 
-    // Get user's updated balance
+    
     const user = await manager.findOne(User, {
       where: { id: userId },
       select: ['pawPoints'],
     });
 
-    // Create transaction record
+    
     const transaction = manager.create(PawPointTransaction, {
       userId,
       points,
@@ -345,18 +335,14 @@ export class DonationsService {
     await manager.save(PawPointTransaction, transaction);
   }
 
-  /**
-   * Transform donation to response DTO
-   */
+  
   private toDonationResponseDto(donation: Donation): DonationResponseDto {
     return plainToClass(DonationResponseDto, donation, {
       excludeExtraneousValues: true,
     });
   }
 
-  /**
-   * Get user's donation history with pagination
-   */
+  
   async getDonationHistory(
     userId: string,
     page: number = 1,
@@ -383,11 +369,9 @@ export class DonationsService {
     };
   }
 
-  /**
-   * Get pets supported by user
-   */
+  
   async getSupportedPets(userId: string): Promise<SupportedPetDto[]> {
-    // First get all completed pet donations for this user
+    
     const donations = await this.donationRepository.find({
       where: {
         userId,
@@ -398,7 +382,7 @@ export class DonationsService {
       order: { createdAt: 'DESC' },
     });
 
-    // Group by pet ID to get unique pets with aggregated data
+    
     const petMap = new Map();
     
     donations.forEach(donation => {
@@ -426,12 +410,12 @@ export class DonationsService {
       }
     });
 
-    // Filter out adopted pets - they will be shown as success stories by the frontend
+    
     const activePets = Array.from(petMap.values()).filter(petData => 
       petData.pet.status !== 'adopted'
     );
 
-    // Convert to SupportedPetDto format
+
     return activePets.map(petData => ({
       id: petData.pet.id,
       name: petData.pet.name,
@@ -454,14 +438,14 @@ export class DonationsService {
       },
       currentMonthProgress: {
         vaccination: (() => {
-          // If currentMonthDistribution is zero but we have total donations, calculate from total
+          
           if ((petData.pet.currentMonthDistribution?.vaccination || 0) === 0 && petData.pet.totalDonationsReceived > 0) {
             const totalGoals = (petData.pet.monthlyGoals?.vaccination || 0) + 
                               (petData.pet.monthlyGoals?.food || 0) + 
                               (petData.pet.monthlyGoals?.medical || 0) + 
                               (petData.pet.monthlyGoals?.other || 0);
             if (totalGoals > 0) {
-              // Use shelter amount (90% of total donations) for calculation
+              
               const shelterAmount = petData.pet.totalDonationsReceived * 0.9;
               return (shelterAmount * (petData.pet.monthlyGoals?.vaccination || 0)) / totalGoals;
             }
@@ -475,7 +459,7 @@ export class DonationsService {
                               (petData.pet.monthlyGoals?.medical || 0) + 
                               (petData.pet.monthlyGoals?.other || 0);
             if (totalGoals > 0) {
-              // Use shelter amount (90% of total donations) for calculation
+              
               const shelterAmount = petData.pet.totalDonationsReceived * 0.9;
               return (shelterAmount * (petData.pet.monthlyGoals?.food || 0)) / totalGoals;
             }
@@ -489,7 +473,7 @@ export class DonationsService {
                               (petData.pet.monthlyGoals?.medical || 0) + 
                               (petData.pet.monthlyGoals?.other || 0);
             if (totalGoals > 0) {
-              // Use shelter amount (90% of total donations) for calculation
+              
               const shelterAmount = petData.pet.totalDonationsReceived * 0.9;
               return (shelterAmount * (petData.pet.monthlyGoals?.medical || 0)) / totalGoals;
             }
@@ -503,7 +487,7 @@ export class DonationsService {
                               (petData.pet.monthlyGoals?.medical || 0) + 
                               (petData.pet.monthlyGoals?.other || 0);
             if (totalGoals > 0) {
-              // Use shelter amount (90% of total donations) for calculation
+              
               const shelterAmount = petData.pet.totalDonationsReceived * 0.9;
               return (shelterAmount * (petData.pet.monthlyGoals?.other || 0)) / totalGoals;
             }
@@ -533,7 +517,7 @@ export class DonationsService {
         pawPointsEarned: Math.floor(petData.totalDonated / 10), // Assuming 1 point per $10
       },
       canRequestAdoption: petData.donationCount > 0,
-      // Add missing fields that frontend expects
+      
       description: petData.pet.description || `${petData.pet.name} is a wonderful ${petData.pet.gender?.toLowerCase() || 'pet'} looking for a loving home.`,
       story: petData.pet.story || `${petData.pet.name} has been supported by generous donors like you and is making great progress!`,
       additionalImages: petData.pet.additionalImages || [],
@@ -543,11 +527,9 @@ export class DonationsService {
     }));
   }
 
-  /**
-   * Get success stories for user's supported pets
-   */
+  
   async getUserSuccessStories(userId: string): Promise<any[]> {
-    // Get all pets user has donated to that are now adopted
+    
     const donations = await this.donationRepository.find({
       where: {
         userId,
@@ -557,7 +539,7 @@ export class DonationsService {
       relations: ['pet', 'pet.shelter', 'pet.shelter.user'],
     });
 
-    // Group by pet ID and filter for adopted pets
+    
     const petMap = new Map();
     
     donations.forEach(donation => {
@@ -585,7 +567,7 @@ export class DonationsService {
       }
     });
 
-    // Get success stories from database to determine who adopted each pet
+    
     const petIds = Array.from(petMap.keys());
     
     const successStories = await this.dataSource.manager.find(SuccessStory, {
@@ -598,25 +580,23 @@ export class DonationsService {
       successStoryMap.set(story.petId, story);
     });
 
-    // Convert to success story format
+    
     return Array.from(petMap.values()).map(petData => {
       const successStory = successStoryMap.get(petData.pet.id);
       const isAdopter = successStory?.adopterId === userId;
       
-      // Different messages and PawPoints based on whether user is the adopter
+
       let message: string;
       let pawPointsEarned: number;
       let storyType: string;
 
       if (isAdopter) {
-        // User adopted this pet - different message, no bonus points
         message = `Congratulations! You saved ${petData.pet.name}'s life by adopting them. Thank you for giving them a loving forever home!`;
-        pawPointsEarned = 0; // Adopters don't get bonus points
+        pawPointsEarned = 0; 
         storyType = 'adopter_success';
       } else {
-        // User supported but someone else adopted - thank them for their help
         message = `Great news! ${petData.pet.name} has found their forever home! Your support of $${Number(petData.totalDonated).toFixed(2)} helped make this possible.`;
-        pawPointsEarned = 1; // Standard 1 PawPoint bonus for non-adopters
+        pawPointsEarned = 1; 
         storyType = 'supporter_success';
       }
 
@@ -636,9 +616,7 @@ export class DonationsService {
     });
   }
 
-  /**
-   * Get donation statistics for user
-   */
+  
   async getDonationStats(userId: string): Promise<DonationStatsDto> {
     const stats = await this.donationRepository
       .createQueryBuilder('donation')
@@ -668,9 +646,7 @@ export class DonationsService {
     });
   }
 
-  /**
-   * Get donation by ID
-   */
+  
   async getDonationById(userId: string, donationId: string): Promise<DonationResponseDto> {
     const donation = await this.donationRepository.findOne({
       where: { id: donationId, userId },
@@ -684,9 +660,7 @@ export class DonationsService {
     return this.toDonationResponseDto(donation);
   }
 
-  /**
-   * Get user donations for a specific pet
-   */
+  
   async getUserPetDonations(userId: string, petId: string): Promise<DonationResponseDto[]> {
     const donations = await this.donationRepository.find({
       where: { 
@@ -701,9 +675,7 @@ export class DonationsService {
     return donations.map(donation => this.toDonationResponseDto(donation));
   }
 
-  /**
-   * Get PawPoints summary for user
-   */
+  
   async getPawPointsSummary(userId: string): Promise<{
     totalEarned: number;
     currentBalance: number;
@@ -741,9 +713,7 @@ export class DonationsService {
     };
   }
 
-  /**
-   * Refund a donation (Admin/Support function)
-   */
+  
   async refundDonation(
     donationId: string,
     refundDto: RefundDonationDto,
@@ -758,30 +728,26 @@ export class DonationsService {
         throw new NotFoundException('Donation not found or cannot be refunded');
       }
 
-      // Lock the donation row specifically to prevent concurrent processing
       await manager.query(
         'SELECT id FROM donations WHERE id = $1 FOR UPDATE',
         [donation.id]
       );
 
       try {
-        // Process Stripe refund
         await this.stripe.refunds.create({
           payment_intent: donation.paymentIntentId,
           reason: 'requested_by_customer',
         });
 
-        // Update donation status
         donation.status = DonationStatus.REFUNDED;
         donation.refundReason = refundDto.reason;
         donation.refundedAt = new Date();
 
-        // Deduct PawPoints from user (if they still have enough)
         const user = donation.user;
         if (user.pawPoints >= donation.pawPointsEarned) {
           await manager.decrement(User, { id: user.id }, 'pawPoints', donation.pawPointsEarned);
 
-          // Get user's updated balance after deduction
+          
           const updatedUser = await manager.findOne(User, {
             where: { id: user.id },
             select: ['pawPoints'],
@@ -791,7 +757,7 @@ export class DonationsService {
             throw new NotFoundException('User not found after balance update');
           }
 
-          // Create negative transaction record
+          
           const transaction = manager.create(PawPointTransaction, {
             userId: user.id,
             points: -donation.pawPointsEarned,
@@ -804,7 +770,7 @@ export class DonationsService {
           await manager.save(PawPointTransaction, transaction);
         }
 
-        // Award bonus PawPoint for the inconvenience
+        
         await this.addPawPoints(
           manager,
           user.id,
@@ -814,7 +780,7 @@ export class DonationsService {
           donation.id,
         );
 
-        // Update pet totals if it was a pet donation
+        
         if (donation.pet) {
           const pet = donation.pet;
           pet.totalDonationsReceived = Math.max(0, pet.totalDonationsReceived - donation.amount);
@@ -822,7 +788,7 @@ export class DonationsService {
           await manager.save(Pet, pet);
         }
 
-        // Save donation
+        
         await manager.save(Donation, donation);
       } catch (error) {
         console.error('Error processing refund:', error);

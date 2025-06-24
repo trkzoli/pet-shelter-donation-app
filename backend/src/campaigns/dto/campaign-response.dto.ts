@@ -1,4 +1,4 @@
-// src/campaigns/dto/campaign-response.dto.ts
+
 import { Expose, Transform, Type } from 'class-transformer';
 import { CampaignPriority, CampaignStatus } from '../entities/campaign.entity';
 
@@ -48,7 +48,7 @@ export class CampaignResponseDto {
   @Type(() => Date)
   completedAt?: Date;
 
-  // Virtual fields
+
   @Expose()
   @Transform(({ obj }) => {
     if (obj.goalAmount === 0) return 0;
@@ -71,7 +71,7 @@ export class CampaignResponseDto {
   })
   isActive: boolean;
 
-  // Shelter information
+
   @Expose()
   shelterName?: string;
 

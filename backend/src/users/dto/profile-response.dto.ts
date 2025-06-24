@@ -1,4 +1,4 @@
-// src/users/dto/profile-response.dto.ts
+
 import { Exclude, Expose, Transform } from 'class-transformer';
 import {
   UserRole,
@@ -93,7 +93,7 @@ export class ProfileResponseDto {
   @Expose()
   profileImage?: string;
 
-  // Exclude sensitive fields
+  
   @Exclude()
   password: string;
 

@@ -56,7 +56,6 @@ export class Donation {
   @Column()
   userId: string;
 
-  // Pet relation (optional - either pet or campaign)
   @ManyToOne(() => Pet, { nullable: true })
   @JoinColumn()
   pet?: Pet;
@@ -64,7 +63,6 @@ export class Donation {
   @Column({ nullable: true })
   petId?: string;
 
-  // Campaign relation (optional - either pet or campaign)
   @ManyToOne(() => Campaign, { nullable: true })
   @JoinColumn()
   campaign?: Campaign;
@@ -72,7 +70,6 @@ export class Donation {
   @Column({ nullable: true })
   campaignId?: string;
 
-  // Donation details
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   @IsNumber()
   @Min(1)
@@ -87,7 +84,6 @@ export class Donation {
   @IsEnum(DonationType)
   type: DonationType;
 
-  // Stripe payment information
   @Column()
   @IsString()
   paymentIntentId: string;
@@ -96,13 +92,11 @@ export class Donation {
   @IsEnum(DonationStatus)
   status: DonationStatus;
 
-  // Distribution tracking (for pet donations)
   @Column({ type: 'jsonb', nullable: true })
   @IsOptional()
   @IsJSON()
   distribution?: DonationDistribution;
 
-  // Platform fee tracking
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   @IsNumber()
   @Min(0)
@@ -113,7 +107,6 @@ export class Donation {
   @Min(0)
   platformFeePercentage: number;
 
-  // Refund information
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
@@ -122,27 +115,22 @@ export class Donation {
   @Column({ type: 'timestamp', nullable: true })
   refundedAt?: Date;
 
-  // Timestamps
   @CreateDateColumn()
   createdAt: Date;
 
   @Column({ nullable: true })
   stripeChargeId?: string;
 
-  // Helper methods
   calculatePawPoints(): number {
-    // 1 PawPoint per $25 donated
     return Math.floor(this.amount / 25);
   }
 
   calculatePlatformFee(): void {
     if (this.type === DonationType.PET) {
-      // Pet donations: 10% platform fee
       this.platformFeePercentage = 10;
       this.platformFee = this.amount * 0.1;
     } else {
-      // Campaign fees are calculated based on priority and duration
-      // This would be set by the service layer based on campaign details
+        
     }
   }
 

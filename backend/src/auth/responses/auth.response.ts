@@ -1,4 +1,3 @@
-// src/auth/responses/auth.response.ts
 export interface AuthResponse {
   user: {
     id: string;

@@ -1,4 +1,4 @@
-// src/notifications/notifications.controller.ts
+
 import { Controller, Get, Post, Body, Param, UseGuards, Request, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
@@ -7,7 +7,6 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
-// DTOs for API requests
 export class TestEmailDto {
   email: string;
   type: 'verification' | 'password-reset' | 'adoption-request' | 'success-story';
@@ -29,15 +28,7 @@ export class SendSuccessStoryDto {
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  // ==================== HEALTH CHECK ====================
 
-  /**
-   * Health check for notification service
-   * GET /notifications/health
-   * 
-   * Tests mail configuration and connectivity
-   * Available to: All authenticated users
-   */
   @Get('health')
   @ApiOperation({ 
     summary: 'Check notification service health',
@@ -65,16 +56,7 @@ export class NotificationsController {
     return this.notificationsService.healthCheck();
   }
 
-  // ==================== EMAIL VERIFICATION ====================
 
-  /**
-   * Send verification email (internal use)
-   * POST /notifications/verification
-   * 
-   * Sends verification code email to user
-   * Used internally by auth service
-   * Available to: System/Internal use only
-   */
   @Post('verification')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -98,16 +80,7 @@ export class NotificationsController {
     };
   }
 
-  // ==================== PASSWORD RESET ====================
 
-  /**
-   * Send password reset email (internal use)
-   * POST /notifications/password-reset
-   * 
-   * Sends password reset link to user
-   * Used internally by auth service
-   * Available to: System/Internal use only
-   */
   @Post('password-reset')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -131,16 +104,7 @@ export class NotificationsController {
     };
   }
 
-  // ==================== ADOPTION REQUESTS ====================
 
-  /**
-   * Send adoption request email to shelter (internal use)
-   * POST /notifications/adoption-request/:requestId
-   * 
-   * Sends detailed adoption request email to shelter
-   * Used internally by adoption service
-   * Available to: System/Internal use only
-   */
   @Post('adoption-request/:requestId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -160,15 +124,7 @@ export class NotificationsController {
     };
   }
 
-  // ==================== SUCCESS STORIES ====================
 
-  /**
-   * Send success story notification (shelter only)
-   * POST /notifications/success-story
-   * 
-   * Sends success story notification to all pet supporters
-   * Available to: Shelter admins only
-   */
   @Post('success-story')
   @Roles(UserRole.SHELTER)
   @UseGuards(RolesGuard)
@@ -194,14 +150,7 @@ export class NotificationsController {
     };
   }
 
-  /**
-   * Send individual success story notification (internal use)
-   * POST /notifications/success-story/individual
-   * 
-   * Sends success story notification to specific user
-   * Used internally by other services
-   * Available to: System/Internal use only
-   */
+
   @Post('success-story/individual')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -231,15 +180,7 @@ export class NotificationsController {
     };
   }
 
-  // ==================== TESTING ENDPOINTS (Development Only) ====================
-
-  /**
-   * Test email templates (development only)
-   * POST /notifications/test
-   * 
-   * Sends test emails for template verification
-   * Available to: All authenticated users in development
-   */
+  
   @Post('test')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 

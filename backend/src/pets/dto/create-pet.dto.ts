@@ -1,4 +1,3 @@
-// src/pets/dto/create-pet.dto.ts
 import {
   IsString,
   IsNumber,
@@ -15,10 +14,9 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { PetType, PetGender } from '../entities/pet.entity';
-import { MonthlyGoalsDto, SetMonthlyGoalsDto } from './monthly-goals.dto';
+import { MonthlyGoalsDto } from './monthly-goals.dto';
 
 export class CreatePetDto {
-  // Basic information
   @IsString()
   @MinLength(1, { message: 'Pet name is required' })
   @MaxLength(100, { message: 'Pet name cannot exceed 100 characters' })
@@ -39,7 +37,6 @@ export class CreatePetDto {
   @IsEnum(PetType, { message: 'Pet type must be dog or cat' })
   type: PetType;
 
-  // Medical information
   @IsBoolean()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
@@ -67,7 +64,6 @@ export class CreatePetDto {
   })
   spayedNeutered: boolean;
 
-  // Adoption details
   @IsNumber()
   @Min(0, { message: 'Adoption fee cannot be negative' })
   @Max(10000, { message: 'Adoption fee cannot exceed $10,000' })
@@ -84,7 +80,6 @@ export class CreatePetDto {
   @MaxLength(5000, { message: 'Story cannot exceed 5000 characters' })
   story?: string;
 
-  // Images (main image is required)
   @IsString({ message: 'Main image is required' })
   mainImage: string;
 
@@ -93,7 +88,6 @@ export class CreatePetDto {
   @IsString({ each: true })
   additionalImages?: string[];
 
-  // Verification (optional)
   @IsOptional()
   @IsString()
   @MaxLength(50, { message: 'Microchip number cannot exceed 50 characters' })
@@ -103,20 +97,15 @@ export class CreatePetDto {
   @IsString()
   vetRecords?: string;
 
-  // Monthly goals (required for publishing)
   @IsObject()
   @ValidateNested()
   @Type(() => MonthlyGoalsDto)
   monthlyGoals: MonthlyGoalsDto;
 }
 
-// Re-export from monthly-goals.dto.ts for convenience
-export { SetMonthlyGoalsDto } from './monthly-goals.dto';
-
-// DTO for pet removal
 export class RemovePetDto {
   @IsEnum(['deceased', 'other'], {
-    message: 'Reason must be either "deceased" or "other"'
+    message: 'Reason must be either "deceased" or "other"',
   })
   reason: 'deceased' | 'other';
 
@@ -126,7 +115,6 @@ export class RemovePetDto {
   explanation?: string;
 }
 
-// DTO for adoption confirmation
 export class ConfirmAdoptionDto {
   @IsOptional()
   @IsString()

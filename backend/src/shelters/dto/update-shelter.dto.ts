@@ -1,4 +1,4 @@
-// src/shelters/dto/update-shelter.dto.ts
+
 import {
   IsString,
   IsOptional,
@@ -60,7 +60,6 @@ export class UpdateShelterDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    // Handle frontend sending capitalized values
     if (typeof value === 'string') {
       const lowerValue = value.toLowerCase();
       if (lowerValue === 'dogs') return PetSpecialization.DOGS;
@@ -96,13 +95,12 @@ export class UpdateShelterDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    // If it's a string, convert to a simple format that backend can handle
     if (typeof value === 'string') {
       return { general: value };
     }
     return value;
   })
-  operatingHours?: any; // Accept both string and object formats
+  operatingHours?: any;
 
   @IsOptional()
   @ValidateIf((o) => o.website && o.website.trim() !== '')

@@ -67,7 +67,6 @@ export class Pet {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Shelter relation
   @ManyToOne(() => Shelter)
   @JoinColumn()
   shelter: Shelter;
@@ -75,7 +74,6 @@ export class Pet {
   @Column()
   shelterId: string;
 
-  // Basic information
   @Column()
   @IsString()
   @MinLength(1)
@@ -100,7 +98,6 @@ export class Pet {
   @IsEnum(PetType)
   type: PetType;
 
-  // Medical information
   @Column({ default: false })
   @IsBoolean()
   vaccinated: boolean;
@@ -113,7 +110,6 @@ export class Pet {
   @IsBoolean()
   spayedNeutered: boolean;
 
-  // Adoption details
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   @IsNumber()
   @Min(0)
@@ -131,7 +127,6 @@ export class Pet {
   @MaxLength(5000)
   story?: string;
 
-  // Images
   @Column()
   @IsString()
   mainImage: string;
@@ -141,7 +136,6 @@ export class Pet {
   @ArrayMaxSize(10)
   additionalImages: string[];
 
-  // Verification
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
@@ -152,7 +146,6 @@ export class Pet {
   @IsString()
   vetRecords?: string;
 
-  // Monthly goals (JSON)
   @Column({ type: 'jsonb', default: { vaccination: 0, food: 0, medical: 0, other: 0 } })
   @IsJSON()
   monthlyGoals: MonthlyGoals;
@@ -160,7 +153,6 @@ export class Pet {
   @Column({ type: 'timestamp', nullable: true })
   goalsLastReset?: Date;
 
-  // Donation tracking
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   @IsNumber()
   @Min(0)
@@ -171,12 +163,10 @@ export class Pet {
   @Min(0)
   currentMonthDonations: number;
 
-  // Donation distribution for current month
   @Column({ type: 'jsonb', default: { vaccination: 0, food: 0, medical: 0, other: 0 } })
   @IsJSON()
   currentMonthDistribution: DonationDistribution;
 
-  // Status
   @Column({ type: 'enum', enum: PetStatus, default: PetStatus.DRAFT })
   @IsEnum(PetStatus)
   status: PetStatus;
@@ -184,14 +174,12 @@ export class Pet {
   @Column({ type: 'timestamp', nullable: true })
   publishedAt?: Date;
 
-  // Timestamps
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relations (to be defined in other entities)
   @OneToMany(() => Donation, (donation) => donation.pet)
   donations: Donation[];
 
@@ -201,7 +189,6 @@ export class Pet {
   @OneToMany(() => SuccessStory, (story) => story.pet)
   successStories: SuccessStory[];
 
-  // Virtual fields
   get isEditable(): boolean {
     const twentyFourHours = 24 * 60 * 60 * 1000;
     return Date.now() - this.createdAt.getTime() < twentyFourHours;
@@ -221,7 +208,6 @@ export class Pet {
     return Math.round((this.currentMonthDonations / this.totalMonthlyGoal) * 100);
   }
 
-  // Hooks
   @BeforeInsert()
   @BeforeUpdate()
   validateImages() {
@@ -242,12 +228,9 @@ export class Pet {
   }
 
   @BeforeUpdate()
-  checkEditability() {
-    // This should be handled at the service level with proper checks
-    // Only allow certain fields to be updated after 24 hours
-  }
+  checkEditability() {}
 
-  // Helper methods
+ 
   canBeEdited(): boolean {
     return this.isEditable;
   }
@@ -291,7 +274,7 @@ export class Pet {
   distributeDonation(amount: number): DonationDistribution {
     const total = this.totalMonthlyGoal;
     if (total === 0) {
-      // Equal distribution if no goals set
+
       const quarter = amount / 4;
       return {
         vaccination: quarter,
@@ -301,7 +284,6 @@ export class Pet {
       };
     }
 
-    // Distribute proportionally to goal amounts
     return {
       vaccination: (amount * this.monthlyGoals.vaccination) / total,
       food: (amount * this.monthlyGoals.food) / total,

@@ -1,5 +1,4 @@
-// src/config/database.config.ts
-// src/config/database.config.ts
+
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const getDatabaseConfig = (): TypeOrmModuleOptions => ({

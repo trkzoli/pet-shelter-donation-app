@@ -1,4 +1,3 @@
-// src/uploads/config/cloudinary.config.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
@@ -18,9 +17,6 @@ export class CloudinaryConfigService {
     this.initializeCloudinary();
   }
 
-  /**
-   * Initialize Cloudinary with configuration
-   */
   private initializeCloudinary(): void {
     const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
@@ -42,38 +38,29 @@ export class CloudinaryConfigService {
     this.logger.log(`Cloudinary initialized with cloud: ${cloudName}`);
   }
 
-  /**
-   * Get Cloudinary instance
-   */
   getCloudinary() {
     return cloudinary;
   }
 
-  /**
-   * Get upload presets for different content types
-   */
   getUploadPresets() {
     return {
-      // Pet images - optimized for viewing
       petImages: {
         folder: 'pets',
         transformation: [
           { width: 800, height: 600, crop: 'limit', quality: 'auto:good' },
-          { format: 'auto' }, // Auto-select best format (WebP/AVIF when supported)
+          { format: 'auto' }, 
         ],
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
       },
-      // Profile images - circular crop optimized
       profileImages: {
         folder: 'profiles',
         transformation: [
           { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' },
-          { radius: 'max' }, // Circular crop
+          { radius: 'max' }, 
           { format: 'auto' },
         ],
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
       },
-      // Campaign images - banner optimized
       campaignImages: {
         folder: 'campaigns',
         transformation: [
@@ -82,20 +69,17 @@ export class CloudinaryConfigService {
         ],
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
       },
-      // Documents - no transformation, preserve original
       documents: {
         folder: 'documents',
-        resource_type: 'raw', // For PDFs and other documents
+        resource_type: 'raw', 
         allowed_formats: ['pdf', 'doc', 'docx'],
       },
-      // Verification documents - secure folder
       verification: {
         folder: 'verification',
-        resource_type: 'auto', // Auto-detect images vs documents
-        access_mode: 'authenticated', // Secure access
+        resource_type: 'auto', 
+        access_mode: 'authenticated', 
         allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
       },
-      // Adoption proof images
       adoptionProof: {
         folder: 'adoption-proof',
         transformation: [
@@ -107,9 +91,7 @@ export class CloudinaryConfigService {
     };
   }
 
-  /**
-   * Get transformation settings for different image sizes
-   */
+  
   getImageTransformations() {
     return {
       thumbnail: { width: 150, height: 150, crop: 'fill', quality: 'auto:low' },
@@ -120,9 +102,7 @@ export class CloudinaryConfigService {
     };
   }
 
-  /**
-   * Generate secure URLs with transformations
-   */
+  
   generateSecureUrl(publicId: string, transformation?: any): string {
     return cloudinary.url(publicId, {
       secure: true,
@@ -130,9 +110,7 @@ export class CloudinaryConfigService {
     });
   }
 
-  /**
-   * Generate multiple size variants of an image
-   */
+  
   generateImageVariants(publicId: string): Record<string, string> {
     const transformations = this.getImageTransformations();
     const variants: Record<string, string> = {};
@@ -144,9 +122,7 @@ export class CloudinaryConfigService {
     return variants;
   }
 
-  /**
-   * Validate Cloudinary configuration
-   */
+  
   async validateConfiguration(): Promise<boolean> {
     try {
       // Test upload with a small data URI
@@ -157,7 +133,7 @@ export class CloudinaryConfigService {
         public_id: 'config-test',
       });
 
-      // Clean up test image
+      
       await cloudinary.uploader.destroy(result.public_id);
       this.logger.log('Cloudinary configuration validated successfully');
       return true;

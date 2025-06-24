@@ -1,12 +1,10 @@
-// src/success-stories/dto/success-story.dto.ts
+
 import { IsEnum, IsOptional, IsString, IsUUID, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { SuccessStoryType } from '../entities/success-story.entity';
 import { Type } from 'class-transformer'; 
 
-// ==================== CREATE DTOs ====================
 
-// For pet info
 export class PetInfoDto {
   @ApiProperty()
   id: string;
@@ -24,7 +22,6 @@ export class PetInfoDto {
   mainImage: string;
 }
 
-// For adopter info
 export class AdopterInfoDto {
   @ApiProperty()
   id: string;
@@ -36,7 +33,6 @@ export class AdopterInfoDto {
   city: string;
 }
 
-// For notification status summary
 export class NotificationStatusSummaryDto {
   @ApiProperty()
   sent: number;
@@ -150,8 +146,6 @@ export class CreateErrorStoryDto {
   errorReason: string;
 }
 
-// ==================== RESPONSE DTOs ====================
-
 export class SuccessStoryResponseDto {
   @ApiProperty({ description: 'Success story ID', example: 'uuid-story-id' })
   id: string;
@@ -221,8 +215,6 @@ export class UserSuccessStoryDto {
 }
 
 
-// ==================== FILTER DTOs ====================
-
 export class SuccessStoryFiltersDto {
   @ApiProperty({
     description: 'Filter by story type',
@@ -269,8 +261,6 @@ export class SuccessStoryFiltersDto {
   @IsOptional()
   offset?: number = 0;
 }
-
-// ==================== BULK OPERATION DTOs ====================
 
 export class BulkNotificationDto {
   @ApiProperty({

@@ -1,4 +1,4 @@
-// src/success-stories/success-stories.service.ts
+
 import {
   Injectable,
   NotFoundException,
@@ -47,16 +47,12 @@ export class SuccessStoriesService {
     private readonly adoptionRequestRepository: Repository<AdoptionRequest>,
   ) {}
 
-  // ==================== CREATE SUCCESS STORIES ====================
-
-  /**
-   * Create a general success story
-   */
+  
   async createSuccessStory(
     shelterId: string,
     createDto: CreateSuccessStoryDto
   ): Promise<SuccessStoryResponseDto> {
-    // Verify pet belongs to shelter
+    
     const pet = await this.petRepository.findOne({
       where: { id: createDto.petId },
       relations: ['shelter'],
@@ -70,7 +66,7 @@ export class SuccessStoriesService {
       throw new ForbiddenException('You can only create success stories for your own pets');
     }
 
-    // Get all users who donated to this pet
+    
     const donations = await this.donationRepository.find({
       where: { petId: createDto.petId },
       select: ['userId'],
@@ -78,7 +74,7 @@ export class SuccessStoriesService {
 
     const affectedUserIds = [...new Set(donations.map(d => d.userId))];
 
-    // Create success story
+    
     const successStory = this.successStoryRepository.create({
       petId: createDto.petId,
       type: createDto.type,
@@ -90,16 +86,14 @@ export class SuccessStoriesService {
 
     const savedStory = await this.successStoryRepository.save(successStory);
 
-    // Award PawPoints to affected users
+    
     await this.awardPawPoints(savedStory);
 
     this.logger.log(`Success story created for pet ${createDto.petId} (${createDto.type})`);
     return this.mapToResponseDto(savedStory);
   }
 
-  /**
-   * Create adoption success story
-   */
+  
   async createAdoptionSuccessStory(
     shelterId: string,
     createDto: CreateAdoptionSuccessStoryDto
@@ -114,9 +108,7 @@ export class SuccessStoriesService {
     return this.createSuccessStory(shelterId, storyDto);
   }
 
-  /**
-   * Create deceased pet story
-   */
+  
   async createDeceasedStory(
     shelterId: string,
     createDto: CreateDeceasedStoryDto
@@ -129,9 +121,7 @@ export class SuccessStoriesService {
     return this.createSuccessStory(shelterId, storyDto);
   }
 
-  /**
-   * Create error story (with refunds)
-   */
+  
   async createErrorStory(
     shelterId: string,
     createDto: CreateErrorStoryDto
@@ -144,17 +134,13 @@ export class SuccessStoriesService {
 
     const result = await this.createSuccessStory(shelterId, storyDto);
 
-    // TODO: In Phase 12, integrate with payments to process refunds
+    
     this.logger.log(`Error story created for pet ${createDto.petId} - refunds may be needed`);
 
     return result;
   }
 
-  // ==================== GET SUCCESS STORIES ====================
-
-  /**
-   * Get all success stories (admin/public view)
-   */
+  
   async getSuccessStories(filters: SuccessStoryFiltersDto): Promise<{
     stories: SuccessStoryResponseDto[];
     total: number;
@@ -166,7 +152,7 @@ export class SuccessStoriesService {
       .leftJoinAndSelect('pet.shelter', 'shelter')
       .orderBy('story.createdAt', 'DESC');
 
-    // Apply filters
+    
     if (filters.type) {
       query.andWhere('story.type = :type', { type: filters.type });
     }
@@ -179,7 +165,7 @@ export class SuccessStoriesService {
       query.andWhere('pet.shelterId = :shelterId', { shelterId: filters.shelterId });
     }
 
-    // Pagination
+    
     const total = await query.getCount();
     const stories = await query
       .skip(filters.offset || 0)
@@ -197,9 +183,7 @@ export class SuccessStoriesService {
     };
   }
 
-  /**
-   * Get success stories for a specific user (their supported pets)
-   */
+  
   async getUserSuccessStories(userId: string, filters: SuccessStoryFiltersDto): Promise<{
     stories: UserSuccessStoryDto[];
     total: number;
@@ -212,7 +196,7 @@ export class SuccessStoriesService {
       .where('story.affectedUserIds @> :userId', { userId: JSON.stringify([userId]) })
       .orderBy('story.createdAt', 'DESC');
 
-    // Apply filters
+    
     if (filters.type) {
       query.andWhere('story.type = :type', { type: filters.type });
     }
@@ -221,7 +205,7 @@ export class SuccessStoriesService {
       query.andWhere('story.petId = :petId', { petId: filters.petId });
     }
 
-    // Pagination
+    
     const total = await query.getCount();
     const stories = await query
       .skip(filters.offset || 0)
@@ -239,9 +223,7 @@ export class SuccessStoriesService {
     };
   }
 
-  /**
-   * Get single success story details
-   */
+  
   async getSuccessStory(storyId: string): Promise<SuccessStoryResponseDto> {
     const story = await this.successStoryRepository.findOne({
       where: { id: storyId },
@@ -255,9 +237,7 @@ export class SuccessStoriesService {
     return this.mapToResponseDto(story);
   }
 
-  /**
-   * Get success stories for a shelter
-   */
+  
   async getShelterSuccessStories(
     shelterId: string,
     filters: SuccessStoryFiltersDto
@@ -270,11 +250,7 @@ export class SuccessStoriesService {
     return this.getSuccessStories(filtersWithShelter);
   }
 
-  // ==================== NOTIFICATION MANAGEMENT ====================
-
-  /**
-   * Get notification status for a success story
-   */
+  
   async getNotificationStatus(storyId: string): Promise<NotificationStatusDto> {
     const story = await this.successStoryRepository.findOne({
       where: { id: storyId },
@@ -293,13 +269,11 @@ export class SuccessStoriesService {
       totalUsers,
       notificationsSent,
       notificationsPending,
-      errors: [], // Could track specific errors in future
+      errors: [],
     };
   }
 
-  /**
-   * Mark notification as sent for a user
-   */
+  
   async markNotificationSent(storyId: string, userId: string): Promise<void> {
     const story = await this.successStoryRepository.findOne({
       where: { id: storyId },
@@ -315,9 +289,7 @@ export class SuccessStoriesService {
     this.logger.log(`Notification marked as sent for user ${userId} on story ${storyId}`);
   }
 
-  /**
-   * Get users who still need notifications
-   */
+  
   async getPendingNotifications(storyId: string): Promise<User[]> {
     const story = await this.successStoryRepository.findOne({
       where: { id: storyId },
@@ -341,11 +313,7 @@ export class SuccessStoriesService {
     });
   }
 
-  // ==================== STATISTICS ====================
-
-  /**
-   * Get success story statistics
-   */
+  
   async getSuccessStoryStats(shelterId?: string): Promise<{
     totalStories: number;
     adoptions: number;
@@ -393,11 +361,7 @@ export class SuccessStoriesService {
     };
   }
 
-  // ==================== PRIVATE METHODS ====================
-
-  /**
-   * Award PawPoints to users affected by success story
-   */
+  
   private async awardPawPoints(story: SuccessStory): Promise<void> {
     const bonusPoints = story.getBonusPoints();
     
@@ -410,16 +374,13 @@ export class SuccessStoriesService {
     });
 
     for (const user of users) {
-      // Special case: for internal adoptions, don't give bonus to the adopter
       if (story.type === SuccessStoryType.ADOPTED_INTERNAL && user.id === story.adopterId) {
         continue;
       }
 
-      // Update user's PawPoints
       user.pawPoints += bonusPoints;
       await this.userRepository.save(user);
 
-      // Create transaction record
       const transaction = this.pawPointTransactionRepository.create({
         userId: user.id,
         points: bonusPoints,
@@ -434,9 +395,7 @@ export class SuccessStoriesService {
     this.logger.log(`Awarded ${bonusPoints} PawPoints to ${users.length} users for story ${story.id}`);
   }
 
-  /**
-   * Get transaction type for PawPoint award
-   */
+  
   private getTransactionType(storyType: SuccessStoryType): TransactionType {
     switch (storyType) {
       case SuccessStoryType.ADOPTED_INTERNAL:
@@ -451,9 +410,7 @@ export class SuccessStoriesService {
     }
   }
 
-  /**
-   * Get transaction description
-   */
+  
   private getTransactionDescription(storyType: SuccessStoryType, petName: string): string {
     switch (storyType) {
       case SuccessStoryType.ADOPTED_INTERNAL:
@@ -468,11 +425,9 @@ export class SuccessStoriesService {
     }
   }
 
-  /**
-   * Map success story to response DTO
-   */
+  
   private async mapToResponseDto(story: SuccessStory): Promise<SuccessStoryResponseDto> {
-    // Ensure pet and shelter data is loaded
+    
      if (!story.pet) {
       const reloaded = await this.successStoryRepository.findOne({
         where: { id: story.id },
@@ -514,11 +469,9 @@ export class SuccessStoriesService {
     };
   }
 
-  /**
-   * Map success story to user-specific DTO
-   */
+  
   private async mapToUserStoryDto(story: SuccessStory, userId: string): Promise<UserSuccessStoryDto> {
-    // Get user's donation amount for this pet
+    
     const userDonations = await this.donationRepository.find({
       where: { userId, petId: story.petId },
     });
@@ -539,7 +492,7 @@ export class SuccessStoriesService {
       title: story.getStoryTitle(),
       message: this.getPersonalizedMessage(story, userId),
       pawPointsEarned: story.type === SuccessStoryType.ADOPTED_INTERNAL && userId === story.adopterId 
-        ? 0 // Adopter doesn't get bonus points
+        ? 0 
         : story.getBonusPoints(),
       wasNotified,
       userDonationAmount,
@@ -547,9 +500,7 @@ export class SuccessStoriesService {
     };
   }
 
-  /**
-   * Get personalized message for user
-   */
+  
   private getPersonalizedMessage(story: SuccessStory, userId: string): string {
     const petName = story.pet.name;
     const isAdopter = story.type === SuccessStoryType.ADOPTED_INTERNAL && userId === story.adopterId;

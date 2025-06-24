@@ -1,4 +1,3 @@
-// src/uploads/uploads.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MulterModule } from '@nestjs/platform-express';
@@ -8,15 +7,14 @@ import { CloudinaryConfigService } from './config/cloudinary.config';
 
 @Module({
   imports: [
-    ConfigModule, // For Cloudinary configuration
+    ConfigModule,
     MulterModule.register({
-      dest: './temp-uploads', // Temporary storage before Cloudinary upload
+      dest: './temp-uploads',
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit per file
-        files: 10, // Max 10 files at once for multiple uploads
+        fileSize: 10 * 1024 * 1024,
+        files: 10,
       },
       fileFilter: (req, file, cb) => {
-        // Allow only image files for most uploads
         const allowedImageTypes = [
           'image/jpeg',
           'image/jpg', 
@@ -24,7 +22,6 @@ import { CloudinaryConfigService } from './config/cloudinary.config';
           'image/webp',
           'image/gif'
         ];
-        // Allow document types for vet records and verification docs
         const allowedDocTypes = [
           'application/pdf',
           'application/msword',
@@ -42,6 +39,6 @@ import { CloudinaryConfigService } from './config/cloudinary.config';
   ],
   controllers: [UploadsController],
   providers: [UploadsService, CloudinaryConfigService],
-  exports: [UploadsService], // Export for use in other modules (pets, users, shelters)
+  exports: [UploadsService],
 })
 export class UploadsModule {}

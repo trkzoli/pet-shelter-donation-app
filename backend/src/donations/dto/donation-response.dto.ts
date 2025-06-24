@@ -1,5 +1,4 @@
-// src/donations/dto/donation-response.dto.ts
-import { Expose, Transform, Type } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { DonationType, DonationStatus } from '../entities/donation.entity';
 
 export class DonationResponseDto {
@@ -158,7 +157,7 @@ export class SupportedPetDto {
 
   @Expose()
   @Transform(({ obj, value }) => {
-    // Check if user has donated to this pet (required for adoption)
+    
     return obj.donationSummary?.donationCount > 0;
   })
   canRequestAdoption: boolean;

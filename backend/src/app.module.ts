@@ -1,4 +1,3 @@
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,8 +6,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-
-// Import all modules
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SheltersModule } from './shelters/shelters.module';
@@ -21,7 +18,6 @@ import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SuccessStoriesModule } from './success-stories/success-stories.module';
 
-// Import all entities for TypeORM configuration
 import { User } from './users/entities/user.entity';
 import { Shelter } from './shelters/entities/shelter.entity';
 import { Pet } from './pets/entities/pet.entity';
@@ -35,32 +31,22 @@ import { AppService } from './app.service';
 
 @Module({
   imports: [
-    // ==================== CONFIGURATION ====================
     
-    /**
-     * Global configuration module
-     * Loads environment variables and makes them available throughout the app
-     */
     ConfigModule.forRoot({
-      isGlobal: true, // Make config available in all modules
+      isGlobal: true, 
       envFilePath: [
-        '.env.local',   // Override for local development
-        '.env',         // Default environment file
+        '.env.local',   
+        '.env',         
       ],
-      cache: true, // Cache environment variables for better performance
-      expandVariables: true, // Allow variable expansion (${VAR} syntax)
+      cache: true, 
+      expandVariables: true, 
       validationOptions: {
-        allowUnknown: true, // Allow unknown environment variables
-        abortEarly: true,   // Stop on first validation error
+        allowUnknown: true, 
+        abortEarly: true,  
       },
     }),
 
-    // ==================== DATABASE ====================
-    
-    /**
-     * TypeORM configuration
-     * Configures PostgreSQL database connection with all entities
-     */
+   
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -74,7 +60,7 @@ import { AppService } from './app.service';
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_NAME', 'project_eden'),
           
-          // Entity configuration
+          
           entities: [
             User,
             Shelter,
@@ -86,53 +72,46 @@ import { AppService } from './app.service';
             SuccessStory,
           ],
           
-          // Development settings
-          synchronize: !isProduction, // Auto-create/update tables (only in dev)
+          
+          synchronize: !isProduction, 
           logging: configService.get<boolean>('DB_LOGGING', !isProduction),
           
-          // Connection pool settings
+          
           extra: {
             connectionLimit: configService.get<number>('DB_CONNECTION_LIMIT', 10),
             acquireTimeout: configService.get<number>('DB_ACQUIRE_TIMEOUT', 60000),
             timeout: configService.get<number>('DB_TIMEOUT', 60000),
           },
           
-          // SSL configuration for production
+         
           ssl: isProduction
             ? {
-                rejectUnauthorized: false, // For managed databases like Heroku Postgres
+                rejectUnauthorized: false, 
               }
             : false,
           
-          // Migration settings (for production)
+         
           migrations: ['dist/migrations/*.js'],
-          migrationsRun: isProduction, // Auto-run migrations in production
+          migrationsRun: isProduction, 
           
-          // Additional TypeORM options
+          
           retryAttempts: configService.get<number>('DB_RETRY_ATTEMPTS', 3),
           retryDelay: configService.get<number>('DB_RETRY_DELAY', 3000),
-          autoLoadEntities: true, // Automatically load entities
-          keepConnectionAlive: true, // Keep connection alive between hot reloads
+          autoLoadEntities: true, 
+          keepConnectionAlive: true, 
         };
       },
       inject: [ConfigService],
     }),
 
-    // ==================== BACKGROUND JOBS ====================
     
-    /**
-     * Schedule module for cron jobs
-     * Used for monthly goal resets, campaign expiration, etc.
-     * Only configure once at the root level
-     */
+    
+    
     ScheduleModule.forRoot(),
 
-    // ==================== RATE LIMITING ====================
     
-    /**
-     * Throttler for rate limiting
-     * Protects against abuse and DDoS attacks
-     */
+    
+    
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -142,12 +121,8 @@ import { AppService } from './app.service';
       inject: [ConfigService],
     }),
 
-    // ==================== FEATURE MODULES ====================
     
-    /**
-     * Authentication & Authorization
-     * Handles user registration, login, JWT tokens, password reset
-     */
+    
     AuthModule,
 
     /**
@@ -211,51 +186,45 @@ import { AppService } from './app.service';
     SuccessStoriesModule,
   ],
 
-  // ==================== GLOBAL PROVIDERS ====================
+ 
   
   providers: [
-    /**
-     * Global validation pipe
-     * Validates all incoming requests using class-validator
-     */
+    
     {
       provide: APP_PIPE,
       useFactory: () => new ValidationPipe({
-        // Transform incoming data to match DTO types
+        
         transform: true,
         transformOptions: {
-          enableImplicitConversion: true, // Convert string numbers to actual numbers
+          enableImplicitConversion: true, 
         },
         
-        // Validation options
-        whitelist: true, // Strip properties not in DTO
-        forbidNonWhitelisted: true, // Throw error for extra properties
-        disableErrorMessages: false, // Show detailed validation errors
+       
+        whitelist: true, 
+        forbidNonWhitelisted: true, 
+        disableErrorMessages: false, 
         
-        // Validation behavior
+        
         validationError: {
-          target: false, // Don't expose the target object in errors
-          value: false,  // Don't expose the invalid value in errors
+          target: false, 
+          value: false,  
         },
         
-        // Stop on first error for better performance
+        
         stopAtFirstError: false,
         
-        // Skip missing properties (useful for PATCH requests)
+        
         skipMissingProperties: false,
         
-        // Skip undefined properties
+        
         skipUndefinedProperties: false,
         
-        // Skip null properties
+        
         skipNullProperties: false,
       }),
     },
 
-    /**
-     * Global throttling guard
-     * Applies rate limiting to all endpoints
-     */
+    
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
@@ -263,18 +232,16 @@ import { AppService } from './app.service';
     AppService,
   ],
 
-  // No controllers at app level - all handled by feature modules
+  
   controllers: [AppController],
 })
 export class AppModule {
   constructor(private configService: ConfigService) {
-    // Log important configuration on startup
+    
     this.logConfiguration();
   }
 
-  /**
-   * Log important configuration details on startup
-   */
+  
   private logConfiguration(): void {
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
     const port = this.configService.get<number>('PORT', 3000);
@@ -282,12 +249,11 @@ export class AppModule {
     const dbName = this.configService.get<string>('DB_NAME', 'project_eden');
     
     console.log('\nPROJECT EDEN BACKEND CONFIGURATION');
-    console.log('=====================================');
     console.log(`Environment: ${nodeEnv}`);
     console.log(`Port: ${port}`);
     console.log(`Database: ${dbHost}/${dbName}`);
     
-    // Log feature flags
+    
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     const cloudinaryName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
@@ -299,7 +265,7 @@ export class AppModule {
     console.log(`Cloudinary: ${cloudinaryName ? ' Configured' : ' Missing CLOUDINARY_CLOUD_NAME'}`);
     console.log(`Email: ${mailUser ? ' Configured' : ' Missing MAIL_USER'}`);
     
-    // Warning for missing critical configs
+    
     if (!jwtSecret || !stripeKey || !cloudinaryName || !mailUser) {
       console.log('\n  WARNING: Some services are not configured and may not work properly.');
       console.log('   Please check your .env file and ensure all required variables are set.\n');

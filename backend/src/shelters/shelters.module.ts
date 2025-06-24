@@ -1,4 +1,4 @@
-// src/shelters/shelters.module.ts
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SheltersController } from './shelters.controller';

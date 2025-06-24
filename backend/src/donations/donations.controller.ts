@@ -1,4 +1,4 @@
-// src/donations/donations.controller.ts (Updated for Payments Integration)
+
 import {
   Controller,
   Post,
@@ -54,10 +54,7 @@ export class DonationsController {
     private readonly paymentsService: PaymentsService,
   ) {}
 
-  /**
-   * Create payment intent for donation (Updated to use PaymentsService)
-   * POST /donations/create-intent
-   */
+ 
   @Post('create-intent')
   @UseGuards(RolesGuard)
   @Roles(UserRole.DONOR)
@@ -89,11 +86,11 @@ export class DonationsController {
     @Body() createDonationDto: CreateDonationDto,
   ): Promise<PaymentIntentResponseDto> {
     this.logger.log(`Creating payment intent for user ${userId}: $${createDonationDto.amount}`);
-    // Transform donations DTO to payments DTO
+    
     const createPaymentIntentDto: CreatePaymentIntentDto = {
       amount: createDonationDto.amount,
       currency: 'usd',
-      type: createDonationDto.type as any, // Type is compatible
+      type: createDonationDto.type as any, 
       petId: createDonationDto.petId,
       campaignId: createDonationDto.campaignId,
       paymentMethod: 'card',
@@ -138,7 +135,7 @@ export class DonationsController {
   ): Promise<PaymentSuccessDto> {
     this.logger.log(`Confirming donation for user ${userId}: ${confirmDto.paymentIntentId}`);
     
-    // Transform donations DTO to payments DTO
+    
     const confirmPaymentDto: ConfirmPaymentDto = {
       paymentIntentId: confirmDto.paymentIntentId,
     };
@@ -190,7 +187,7 @@ export class DonationsController {
     pages: number;
     currentPage: number;
   }> {
-    // Validate pagination parameters
+    
     const validPage = Math.max(1, page);
     const validLimit = Math.min(Math.max(1, limit), 50);
 
@@ -208,10 +205,7 @@ export class DonationsController {
     };
   }
 
-  /**
-   * Get pets supported by user
-   * GET /donations/supported-pets
-   */
+  
   @Get('supported-pets')
   @UseGuards(RolesGuard)
   @Roles(UserRole.DONOR)
@@ -235,10 +229,7 @@ export class DonationsController {
     return await this.donationsService.getSupportedPets(userId);
   }
 
-  /**
-   * Get success stories for user's supported pets
-   * GET /donations/success-stories
-   */
+  
   @Get('success-stories')
   @UseGuards(RolesGuard)
   @Roles(UserRole.DONOR)
@@ -262,10 +253,7 @@ export class DonationsController {
     return await this.donationsService.getUserSuccessStories(userId);
   }
 
-  /**
-   * Get user donations for a specific pet
-   * GET /donations/user/pet/:petId
-   */
+  
   @Get('user/pet/:petId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.DONOR)
@@ -295,10 +283,7 @@ export class DonationsController {
     return await this.donationsService.getUserPetDonations(userId, petId);
   }
 
-  /**
-   * Get user's donation statistics
-   * GET /donations/stats
-   */
+  
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles(UserRole.DONOR)
@@ -322,10 +307,7 @@ export class DonationsController {
     return await this.donationsService.getDonationStats(userId);
   }
 
-  /**
-   * Get specific donation details
-   * GET /donations/:id
-   */
+  
   @Get(':id')
   @ApiOperation({ 
     summary: 'Get donation details',
@@ -352,13 +334,10 @@ export class DonationsController {
     return await this.donationsService.getDonationById(userId, donationId);
   }
 
-  /**
-   * Request refund for donation (Admin/Support only)
-   * POST /donations/:id/refund
-   */
+
   @Post(':id/refund')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SHELTER) // Only shelters can process refunds
+  @Roles(UserRole.SHELTER) 
   @ApiBearerAuth()
   @ApiOperation({ 
     summary: 'Request donation refund',

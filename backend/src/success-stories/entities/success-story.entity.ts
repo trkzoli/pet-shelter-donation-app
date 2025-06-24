@@ -18,10 +18,10 @@ import { User } from '../../users/entities/user.entity';
 import { AdoptionRequest } from '../../adoptions/entities/adoption-request.entity';
 
 export enum SuccessStoryType {
-  ADOPTED_INTERNAL = 'adopted_internal',  // Adopted through the app
-  ADOPTED_EXTERNAL = 'adopted_external',  // Adopted outside the app
-  DECEASED = 'deceased',                  // Pet passed away
-  ERROR = 'error',                        // Shelter error/listing mistake
+  ADOPTED_INTERNAL = 'adopted_internal',
+  ADOPTED_EXTERNAL = 'adopted_external',
+  DECEASED = 'deceased',
+  ERROR = 'error',
 }
 
 @Entity('success_stories')
@@ -32,7 +32,6 @@ export class SuccessStory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Pet relation
   @ManyToOne(() => Pet)
   @JoinColumn()
   pet: Pet;
@@ -40,17 +39,14 @@ export class SuccessStory {
   @Column()
   petId: string;
 
-  // Story type
   @Column({ type: 'enum', enum: SuccessStoryType })
   @IsEnum(SuccessStoryType)
   type: SuccessStoryType;
 
-  // Users to be notified (donor IDs)
   @Column({ type: 'jsonb', default: [] })
   @IsArray()
   affectedUserIds: string[];
 
-  // Adopter (for internal adoptions)
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn()
   adopter?: User;
@@ -58,7 +54,6 @@ export class SuccessStory {
   @Column({ nullable: true })
   adopterId?: string;
 
-  // Related adoption request (for internal adoptions)
   @ManyToOne(() => AdoptionRequest, { nullable: true })
   @JoinColumn()
   adoptionRequest?: AdoptionRequest;
@@ -66,21 +61,18 @@ export class SuccessStory {
   @Column({ nullable: true })
   adoptionRequestId?: string;
 
-  // Error details (for error type)
   @Column({ nullable: true })
   @IsOptional()
   @IsString()
   errorReason?: string;
 
-  // Notification tracking
+  
   @Column({ type: 'jsonb', default: {} })
-  notificationsSent: Record<string, boolean>; // userId -> sent status
+  notificationsSent: Record<string, boolean>;
 
-  // Timestamp
   @CreateDateColumn()
   createdAt: Date;
 
-  // Helper methods
   shouldNotifyUser(userId: string): boolean {
     return this.affectedUserIds.includes(userId) && !this.notificationsSent[userId];
   }
@@ -90,15 +82,12 @@ export class SuccessStory {
   }
 
   getBonusPoints(): number {
-    // Adoption and compassion bonuses give 1 PawPoint
-    // Error bonus also gives 1 PawPoint
     switch (this.type) {
       case SuccessStoryType.ADOPTED_EXTERNAL:
       case SuccessStoryType.DECEASED:
       case SuccessStoryType.ERROR:
         return 1;
       case SuccessStoryType.ADOPTED_INTERNAL:
-        // Internal adoption: only non-adopters get bonus
         return 1;
       default:
         return 0;
@@ -134,7 +123,6 @@ export class SuccessStory {
     }
   }
 
-  // Factory methods
   static createAdoptionStory(
     petId: string,
     affectedUserIds: string[],

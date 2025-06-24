@@ -1,4 +1,4 @@
-// src/users/dto/update-profile.dto.ts
+
 import {
   IsString,
   IsOptional,
@@ -23,7 +23,6 @@ export class UpdateProfileDto {
   @Matches(/^\+?[\d\s-()]+$/, { message: 'Invalid phone number format' })
   phone?: string;
 
-  // Address fields
   @IsOptional()
   @IsString()
   @MinLength(2, { message: 'Street address must be at least 2 characters long' })
@@ -54,7 +53,6 @@ export class UpdateProfileDto {
   @MaxLength(100, { message: 'Country cannot exceed 100 characters' })
   country?: string;
 
-  // Housing information - now accepts any text
   @IsOptional()
   @IsString()
   @MaxLength(100, { message: 'Housing type cannot exceed 100 characters' })
@@ -75,7 +73,6 @@ export class UpdateProfileDto {
   @MaxLength(100, { message: 'Fence status cannot exceed 100 characters' })
   isFenced?: string;
 
-  // Pet experience fields
   @IsOptional()
   @IsString()
   @MaxLength(500, { message: 'Current pets description cannot exceed 500 characters' })
@@ -91,7 +88,6 @@ export class UpdateProfileDto {
   @MaxLength(100, { message: 'Experience level cannot exceed 100 characters' })
   experienceLevel?: string;
 
-  // Lifestyle fields
   @IsOptional()
   @IsString()
   @MaxLength(200, { message: 'Occupation cannot exceed 200 characters' })
@@ -107,7 +103,6 @@ export class UpdateProfileDto {
   @MaxLength(1000, { message: 'Adoption reason cannot exceed 1000 characters' })
   whyAdopt?: string;
 
-  // Additional properties that were referenced in users.service.ts
   @IsOptional()
   @IsString()
   housingOwnership?: string;

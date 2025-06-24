@@ -1,4 +1,4 @@
-// src/uploads/uploads.service.ts
+
 import { Injectable, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { CloudinaryConfigService } from './config/cloudinary.config';
 import { UploadApiResponse, UploadApiErrorResponse, v2 as cloudinary } from 'cloudinary';
@@ -50,9 +50,7 @@ export class UploadsService {
 
   constructor(private readonly cloudinaryConfig: CloudinaryConfigService) {}
 
-  /**
-   * Get Cloudinary folder based on upload type
-   */
+  
   private getCloudinaryFolder(type: UploadType): string {
     const folderMap = {
       [UploadType.PET_IMAGE]: 'pets',
@@ -65,9 +63,7 @@ export class UploadsService {
     return folderMap[type] || 'misc';
   }
 
-  /**
-   * Get transformation settings based on upload type
-   */
+  
   private getTransformation(type: UploadType): any {
     const transformationMap = {
       [UploadType.PET_IMAGE]: [
@@ -90,14 +86,12 @@ export class UploadsService {
         { width: 1000, height: 750, crop: 'limit', quality: 'auto:good' },
         { format: 'auto' },
       ],
-      [UploadType.VERIFICATION_DOCUMENT]: undefined, // No transformation for documents
+      [UploadType.VERIFICATION_DOCUMENT]: undefined, 
     };
     return transformationMap[type];
   }
 
-  /**
-   * Upload a single image to Cloudinary
-   */
+  
   async uploadSingleImage(
     file: Express.Multer.File,
     type: UploadType,
@@ -112,7 +106,6 @@ export class UploadsService {
         tags: [type, userId, entityId].filter(Boolean),
       });
 
-      // Use synchronous unlink from fs (not fs/promises)
       unlinkSync(file.path);
 
       return {
@@ -133,9 +126,6 @@ export class UploadsService {
     }
   }
 
-  /**
-   * Upload multiple images to Cloudinary
-   */
   async uploadMultipleImages(
     files: Express.Multer.File[],
     type: UploadType,
@@ -156,7 +146,6 @@ export class UploadsService {
             tags: [type, userId, entityId].filter(Boolean),
           });
 
-          // Use synchronous unlink from fs (not fs/promises)
           unlinkSync(file.path);
 
           results.push({
@@ -188,9 +177,6 @@ export class UploadsService {
     };
   }
 
-  /**
-   * Delete an image from Cloudinary
-   */
   async deleteImage(publicId: string): Promise<boolean> {
     try {
       const cloudinary = this.cloudinaryConfig.getCloudinary();
@@ -220,9 +206,6 @@ export class UploadsService {
     }
   }
 
-  /**
-   * Delete multiple images from Cloudinary
-   */
   async deleteMultipleImages(publicIds: string[]): Promise<{ deleted: string[]; failed: string[] }> {
     const deleted: string[] = [];
     const failed: string[] = [];
@@ -241,17 +224,11 @@ export class UploadsService {
     return { deleted, failed };
   }
 
-  /**
-   * Get optimized image URL with transformations
-   */
   getOptimizedImageUrl(publicId: string, size: 'thumbnail' | 'small' | 'medium' | 'large' = 'medium'): string {
     const transformations = this.cloudinaryConfig.getImageTransformations();
     return this.cloudinaryConfig.generateSecureUrl(publicId, transformations[size]);
   }
 
-  /**
-   * Validate image file
-   */
   private validateImageFile(file: Express.Multer.File): void {
     const allowedImageTypes = [
       'image/jpeg',
@@ -267,29 +244,22 @@ export class UploadsService {
       );
     }
 
-    // Check file size (10MB max for images)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new BadRequestException(
         `File size ${(file.size / 1024 / 1024).toFixed(2)}MB exceeds maximum allowed size of 10MB`
       );
     }
 
-    // Check image dimensions (if available)
-    // Note: We could add sharp integration here for more detailed image validation
   }
 
-  /**
-   * Get upload configuration based on upload type
-   */
   private getUploadConfig(uploadType: UploadType, userId?: string, entityId?: string): any {
     const presets = this.cloudinaryConfig.getUploadPresets();
     const timestamp = Date.now();
 
     switch (uploadType) {
       case UploadType.PET_IMAGE:
-        // For pet images during creation, entityId might be undefined
-        // Use temporary structure or userId-based path
         const petPath = entityId ? `pets/${entityId}` : `pets/temp/${userId}`;
         return {
           ...presets.petImages,
@@ -312,8 +282,6 @@ export class UploadsService {
         };
 
       case UploadType.CAMPAIGN_IMAGE:
-        // For campaign images during creation, entityId might be undefined
-        // Use temporary structure or userId-based path
         const campaignPath = entityId ? `campaigns/${entityId}` : `campaigns/temp/${userId}`;
         return {
           ...presets.campaignImages,
@@ -362,22 +330,15 @@ export class UploadsService {
     }
   }
 
-  /**
-   * Clean up temporary file
-   */
   private async cleanupTempFile(filePath: string): Promise<void> {
     try {
       await fs.access(filePath);
       await fs.unlink(filePath);
     } catch (error) {
-      // File might not exist or already cleaned up - this is fine
       this.logger.debug(`Temp file cleanup: ${filePath} - ${error.message}`);
     }
   }
 
-  /**
-   * Health check for upload service
-   */
   async healthCheck(): Promise<{ status: string; cloudinary: boolean; timestamp: Date }> {
     try {
       const cloudinaryOk = await this.cloudinaryConfig.validateConfiguration();
@@ -397,9 +358,6 @@ export class UploadsService {
     }
   }
 
-  /**
-   * Upload base64 image data directly to Cloudinary
-   */
   async uploadBase64Image(
     base64Data: string,
     uploadType: UploadType,
@@ -413,7 +371,6 @@ export class UploadsService {
         throw new BadRequestException('Base64 data is required but was not provided');
       }
 
-      // Validate mime type
       const allowedImageTypes = [
         'image/jpeg',
         'image/jpg',
@@ -428,22 +385,18 @@ export class UploadsService {
         );
       }
 
-      // Validate base64 data size (10MB max)
       const buffer = Buffer.from(base64Data, 'base64');
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
       if (buffer.length > maxSize) {
         throw new BadRequestException(
           `File size too large: ${(buffer.length / 1024 / 1024).toFixed(2)}MB. Maximum allowed: 10MB`
         );
       }
 
-      // Get upload configuration based on type
       const uploadConfig = this.getUploadConfig(uploadType, userId, entityId);
 
-      // Create data URI for Cloudinary
       const dataUri = `data:${mimeType};base64,${base64Data}`;
 
-      // Upload to Cloudinary using data URI
       const cloudinary = this.cloudinaryConfig.getCloudinary();
       const result: UploadApiResponse = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload(
@@ -461,7 +414,7 @@ export class UploadsService {
         );
       });
 
-      // Generate variants for images
+      
       const variants = uploadType !== UploadType.VERIFICATION_DOCUMENT && uploadType !== UploadType.VET_RECORDS
         ? this.cloudinaryConfig.generateImageVariants(result.public_id)
         : undefined;

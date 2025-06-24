@@ -1,4 +1,4 @@
-// src/pets/dto/monthly-goals.dto.ts
+
 import {
   IsNumber,
   IsOptional,
@@ -59,18 +59,15 @@ export class MonthlyGoalsDto {
   @Transform(({ value }) => parseFloat(value))
   other: number;
 
-  // Virtual field for total goal
   @Expose()
   get totalGoal(): number {
     return this.vaccination + this.food + this.medical + this.other;
   }
 
-  // Validation method
   isValid(): boolean {
     return this.totalGoal > 0 && this.totalGoal <= 10000;
   }
 
-  // Get goal breakdown as percentages
   getPercentageBreakdown(): {
     vaccination: number;
     food: number;
@@ -91,7 +88,6 @@ export class MonthlyGoalsDto {
   }
 }
 
-// DTO for setting monthly goals
 export class SetMonthlyGoalsDto {
   @ApiProperty({
     description: 'Monthly care goals for the pet',
@@ -103,7 +99,6 @@ export class SetMonthlyGoalsDto {
   monthlyGoals: MonthlyGoalsDto;
 }
 
-// DTO for monthly goals response with progress
 export class MonthlyGoalsResponseDto extends MonthlyGoalsDto {
   @ApiPropertyOptional({
     description: 'Current donations received for vaccination category',
@@ -149,7 +144,6 @@ export class MonthlyGoalsResponseDto extends MonthlyGoalsDto {
   @IsOptional()
   goalsLastReset?: Date;
 
-  // Calculate progress for each category
   @Expose()
   get progressBreakdown(): {
     vaccination: { goal: number; current: number; percentage: number; remaining: number };
@@ -185,7 +179,6 @@ export class MonthlyGoalsResponseDto extends MonthlyGoalsDto {
     };
   }
 
-  // Overall progress
   @Expose()
   get overallProgress(): number {
     const totalGoal = this.totalGoal;
@@ -195,7 +188,6 @@ export class MonthlyGoalsResponseDto extends MonthlyGoalsDto {
     return Math.round((totalCurrent / totalGoal) * 100);
   }
 
-  // Days until reset
   @Expose()
   get daysUntilReset(): number {
     if (!this.goalsLastReset) return 31;
@@ -208,7 +200,6 @@ export class MonthlyGoalsResponseDto extends MonthlyGoalsDto {
   }
 }
 
-// DTO for updating monthly goals (partial update)
 export class UpdateMonthlyGoalsDto {
   @ApiPropertyOptional({
     description: 'Updated monthly goal for vaccination and deworming expenses',

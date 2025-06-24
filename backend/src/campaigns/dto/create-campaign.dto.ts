@@ -1,4 +1,4 @@
-// src/campaigns/dto/create-campaign.dto.ts
+
 import {
   IsString,
   IsNumber,

@@ -1,4 +1,4 @@
-// src/shelters/shelters.controller.ts
+
 import {
   Controller,
   Get,
@@ -33,9 +33,7 @@ import {
 export class SheltersController {
   constructor(private readonly sheltersService: SheltersService) {}
 
-  /**
-   * Get current shelter's profile
-   */
+
   @Get('profile')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -43,9 +41,7 @@ export class SheltersController {
     return this.sheltersService.getProfile(userId);
   }
 
-  /**
-   * Update shelter profile
-   */
+
   @Put('profile')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -56,9 +52,7 @@ export class SheltersController {
     return this.sheltersService.updateProfile(userId, updateShelterDto);
   }
 
-  /**
-   * Get shelter statistics
-   */
+
   @Get('stats')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -66,9 +60,7 @@ export class SheltersController {
     return this.sheltersService.getStats(userId);
   }
 
-  /**
-   * Submit verification documents
-   */
+
   @Post('verify')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -81,7 +73,7 @@ export class SheltersController {
       throw new BadRequestException('Verification document is required');
     }
 
-    // Validate file type
+
     const allowedMimeTypes = [
       'image/jpeg',
       'image/png',
@@ -93,21 +85,18 @@ export class SheltersController {
       throw new BadRequestException('Only JPEG, PNG, and PDF files are allowed');
     }
 
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new BadRequestException('File size cannot exceed 10MB');
     }
 
-    // TODO: Upload to Cloudinary
-    // For now, we'll simulate with a mock URL
+
 
     return this.sheltersService.submitVerification(userId, file);
   }
 
-  /**
-   * Check if shelter can publish pets
-   */
+
   @Get('can-publish-pets')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -121,7 +110,7 @@ export class SheltersController {
       };
     }
 
-    // Check pet limit
+
     const hasReachedLimit =
       await this.sheltersService.hasReachedPetLimit(userId);
     if (hasReachedLimit) {
@@ -135,9 +124,7 @@ export class SheltersController {
     return { canPublish: true };
   }
 
-  /**
-   * Check if shelter can create campaigns
-   */
+
   @Get('can-create-campaigns')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -154,9 +141,7 @@ export class SheltersController {
     return { canCreate: true };
   }
 
-  /**
-   * Get public shelter information by ID
-   */
+
   @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
@@ -164,9 +149,7 @@ export class SheltersController {
     return this.sheltersService.getShelterById(shelterId);
   }
 
-  /**
-   * Manual verification (temporary for testing)
-   */
+
   @Post('manual-verify')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -177,15 +160,13 @@ export class SheltersController {
       return { message: 'Shelter is already verified' };
     }
 
-    // Update verification status directly
+
     await this.sheltersService.manualVerify(userId);
     
     return { message: 'Shelter has been manually verified for testing' };
   }
 
-  /**
-   * Get verification status
-   */
+
   @Get('verification/status')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)

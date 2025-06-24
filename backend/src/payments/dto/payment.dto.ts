@@ -1,4 +1,4 @@
-// src/payments/dto/payment.dto.ts
+
 import {
   IsString,
   IsNumber,
@@ -14,9 +14,7 @@ import {
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/**
- * DTO for creating payment intent
- */
+
 export class CreatePaymentIntentDto {
   @ApiProperty({
     description: 'Payment amount in cents',
@@ -67,9 +65,7 @@ export class CreatePaymentIntentDto {
   paymentMethod: string = 'card';
 }
 
-/**
- * DTO for confirming payment
- */
+
 export class ConfirmPaymentDto {
   @ApiProperty({
     description: 'Stripe payment intent ID',
@@ -88,9 +84,7 @@ export class ConfirmPaymentDto {
   paymentMethodId?: string;
 }
 
-/**
- * DTO for processing refunds
- */
+
 export class RefundPaymentDto {
   @ApiProperty({
     description: 'Donation ID to refund',
@@ -118,9 +112,7 @@ export class RefundPaymentDto {
   reason: string;
 }
 
-/**
- * DTO for webhook payload
- */
+
 export class WebhookEventDto {
   @ApiProperty({
     description: 'Stripe event ID',
@@ -146,9 +138,7 @@ export class WebhookEventDto {
   };
 }
 
-/**
- * Response DTOs
- */
+  
 export class PaymentIntentResponseDto {
   @ApiProperty({
     description: 'Stripe client secret for frontend',

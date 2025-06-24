@@ -1,4 +1,4 @@
-// src/users/users.controller.ts
+
 import {
   Controller,
   Get,
@@ -35,9 +35,7 @@ import {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  /**
-   * Get current user's profile
-   */
+
   @Get('profile')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR)
@@ -45,9 +43,7 @@ export class UsersController {
     return this.usersService.getProfile(userId);
   }
 
-  /**
-   * Update user profile
-   */
+
   @Put('profile')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR, UserRole.SHELTER)
@@ -58,9 +54,7 @@ export class UsersController {
     return this.usersService.updateProfile(userId, updateProfileDto);
   }
 
-  /**
-   * Get PawPoints balance and summary
-   */
+
   @Get('pawpoints')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR)
@@ -68,9 +62,7 @@ export class UsersController {
     return this.usersService.getPawPointsBalance(userId);
   }
 
-  /**
-   * Get PawPoints transaction history
-   */
+
   @Get('pawpoints/history')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR)
@@ -79,7 +71,7 @@ export class UsersController {
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
   ): Promise<PawPointTransactionResponseDto[]> {
-    // Validate limits
+
     if (limit > 100) {
       throw new BadRequestException('Maximum limit is 100 records');
     }
@@ -93,9 +85,7 @@ export class UsersController {
     return this.usersService.getPawPointsHistory(userId, limit, offset);
   }
 
-  /**
-   * Check adoption eligibility
-   */
+
   @Get('adoption-eligibility')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR)
@@ -105,9 +95,7 @@ export class UsersController {
     return this.usersService.checkAdoptionEligibility(userId);
   }
 
-  /**
-   * Upload profile image
-   */
+
   @Post('profile-image')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('image'))
@@ -120,20 +108,17 @@ export class UsersController {
       throw new BadRequestException('No image file provided');
     }
 
-    // Validate file type
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException('Only JPEG and PNG images are allowed');
     }
 
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new BadRequestException('Image size cannot exceed 5MB');
     }
 
-    // TODO: Upload to Cloudinary
-    // For now, we'll simulate with a mock URL
+
     const updatedProfile = await this.usersService.updateProfileImage(
       userId,
       file,
@@ -141,13 +126,11 @@ export class UsersController {
 
     return {
       message: 'Profile image uploaded successfully',
-      imageUrl: updatedProfile.profileImage ?? '', // Use '' if undefined, or throw if you prefer
+      imageUrl: updatedProfile.profileImage ?? '',
     };
   }
 
-  /**
-   * Upload profile image via base64 (React Native compatible)
-   */
+
   @Post('profile-image-base64')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR, UserRole.SHELTER)
@@ -159,7 +142,6 @@ export class UsersController {
       throw new BadRequestException('No image data provided');
     }
 
-    // Use the new UploadsService base64 method
     const uploadResult = await this.usersService.uploadProfileImageBase64(
       userId,
       body.image,
@@ -173,9 +155,7 @@ export class UsersController {
     };
   }
 
-  /**
-   * Get supported pets (pets user has donated to)
-   */
+
   @Get('supported-pets')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR)
@@ -183,9 +163,7 @@ export class UsersController {
     return this.usersService.getSupportedPets(userId);
   }
 
-  /**
-   * Force recalculate profile completion (debug/fix endpoint)
-   */
+
   @Post('recalculate-profile')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.DONOR)

@@ -1,4 +1,4 @@
-// src/campaigns/campaigns.module.ts
+
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -18,11 +18,11 @@ import { User } from '../users/entities/user.entity';
       Donation,
       User,
     ]),
-    ScheduleModule.forRoot(), // For cron jobs (auto-complete/expire campaigns)
-    ConfigModule, // For any future configuration needs
+    ScheduleModule.forRoot(), 
+    ConfigModule, 
   ],
   controllers: [CampaignsController],
   providers: [CampaignsService],
-  exports: [CampaignsService], // Export for use in donations module
+  exports: [CampaignsService], 
 })
 export class CampaignsModule {}

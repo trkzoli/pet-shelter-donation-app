@@ -1,4 +1,4 @@
-// src/pets/dto/update-pet.dto.ts
+
 import {
   IsString,
   IsNumber,
@@ -16,7 +16,6 @@ import { Transform } from 'class-transformer';
 import { PetType, PetGender } from '../entities/pet.entity';
 
 export class UpdatePetDto {
-  // Basic information - editable within 24 hours
   @IsOptional()
   @IsString()
   @MinLength(1, { message: 'Pet name is required' })
@@ -42,7 +41,6 @@ export class UpdatePetDto {
   @IsEnum(PetType, { message: 'Pet type must be dog or cat' })
   type?: PetType;
 
-  // Medical information - editable within 24 hours
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => {
@@ -73,7 +71,6 @@ export class UpdatePetDto {
   })
   spayedNeutered?: boolean;
 
-  // Adoption details - editable within 24 hours
   @IsOptional()
   @IsNumber()
   @Min(0, { message: 'Adoption fee cannot be negative' })
@@ -91,7 +88,6 @@ export class UpdatePetDto {
   @MaxLength(5000, { message: 'Story cannot exceed 5000 characters' })
   story?: string;
 
-  // Images - always editable (even after 24 hours)
   @IsOptional()
   @IsString()
   mainImage?: string;
@@ -102,7 +98,6 @@ export class UpdatePetDto {
   @IsString({ each: true })
   additionalImages?: string[];
 
-  // Verification - editable within 24 hours
   @IsOptional()
   @IsString()
   @MaxLength(50, { message: 'Microchip number cannot exceed 50 characters' })
@@ -113,7 +108,6 @@ export class UpdatePetDto {
   vetRecords?: string;
 }
 
-// DTO for photo-only updates (after 24 hours)
 export class UpdatePetPhotosDto {
   @IsOptional()
   @IsString()
@@ -126,7 +120,6 @@ export class UpdatePetPhotosDto {
   additionalImages?: string[];
 }
 
-// DTO for pet filtering
 export class PetFiltersDto {
   @IsOptional()
   @IsEnum(PetType)
@@ -150,7 +143,7 @@ export class PetFiltersDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  search?: string; // Search in name, breed, description
+  search?: string;
 
   @IsOptional()
   @IsNumber()

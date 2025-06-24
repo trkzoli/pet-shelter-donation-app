@@ -1,4 +1,4 @@
-// src/campaigns/campaigns.controller.ts
+
 import {
   Controller,
   Post,
@@ -36,10 +36,7 @@ import { Public } from '../auth/decorators/public.decorator';
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
-  /**
-   * Create a new campaign (Shelter only)
-   * POST /campaigns
-   */
+  
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.SHELTER)
@@ -51,10 +48,7 @@ export class CampaignsController {
     return this.campaignsService.createCampaign(userId, createCampaignDto);
 }
 
-  /**
-   * Get all active campaigns (sorted by priority)
-   * GET /campaigns?page=1&limit=20&priority=critical
-   */
+  
   @Get()
   @Public()
   async getActiveCampaigns(
@@ -63,21 +57,18 @@ export class CampaignsController {
     @Query('priority', new ParseEnumPipe(CampaignPriority, { optional: true }))
     priority?: CampaignPriority,
   ): Promise<CampaignListResponseDto> {
-    // Parse and validate pagination parameters manually
+    
     const page = pageParam ? parseInt(pageParam, 10) : 1;
     const limit = limitParam ? parseInt(limitParam, 10) : 20;
     
-    // Validate parsed values
+  
     const validPage = Math.max(1, isNaN(page) ? 1 : page);
     const validLimit = Math.min(Math.max(1, isNaN(limit) ? 20 : limit), 50);
 
     return this.campaignsService.getActiveCampaigns(validPage, validLimit, priority);
   }
 
-  /**
-   * Get campaign by ID
-   * GET /campaigns/:id
-   */
+  
   @Get(':id')
   async getCampaignById(
     @Param('id', ParseUUIDPipe) campaignId: string,
@@ -85,10 +76,7 @@ export class CampaignsController {
     return this.campaignsService.getCampaignById(campaignId);
   }
 
-  /**
-   * Get campaign statistics
-   * GET /campaigns/:id/stats
-   */
+  
   @Get(':id/stats')
   async getCampaignStats(
     @Param('id', ParseUUIDPipe) campaignId: string,
@@ -96,10 +84,7 @@ export class CampaignsController {
     return this.campaignsService.getCampaignStats(campaignId);
   }
 
-  /**
-   * Update campaign (Shelter only, before donations)
-   * PUT /campaigns/:id
-   */
+  
   @Put(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SHELTER)
@@ -112,10 +97,7 @@ export class CampaignsController {
     return this.campaignsService.updateCampaign(userId, campaignId, updateCampaignDto);
   }
 
-  /**
-   * Complete campaign manually (Shelter only)
-   * PUT /campaigns/:id/complete
-   */
+  
   @Put(':id/complete')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SHELTER)
@@ -128,10 +110,7 @@ export class CampaignsController {
     return this.campaignsService.completeCampaign(userId, campaignId, completeDto);
   }
 
-  /**
-   * Cancel campaign (Shelter only, before donations)
-   * DELETE /campaigns/:id
-   */
+  
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SHELTER)
@@ -143,10 +122,7 @@ export class CampaignsController {
     return this.campaignsService.cancelCampaign(userId, campaignId);
   }
 
-  /**
-   * Get campaigns for current shelter
-   * GET /campaigns/shelter/my-campaigns?page=1&limit=10&status=active
-   */
+  
   @Get('shelter/my-campaigns')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SHELTER)
@@ -161,11 +137,11 @@ export class CampaignsController {
     console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - userId:', userId);
     console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - pageParam:', pageParam, 'limitParam:', limitParam, 'status:', status);
     
-    // Parse and validate pagination parameters manually
+    
     const page = pageParam ? parseInt(pageParam, 10) : 1;
     const limit = limitParam ? parseInt(limitParam, 10) : 10;
     
-    // Validate parsed values
+  
     const validPage = Math.max(1, isNaN(page) ? 1 : page);
     const validLimit = Math.min(Math.max(1, isNaN(limit) ? 10 : limit), 50);
     
@@ -181,10 +157,7 @@ export class CampaignsController {
     return result;
   }
 
-  /**
-   * Get campaigns for specific shelter (Public)
-   * GET /campaigns/shelter/:shelterId?page=1&limit=10&status=active
-   */
+  
   @Get('shelter/:shelterId')
   async getShelterCampaigns(
     @Param('shelterId', ParseUUIDPipe) shelterId: string,
@@ -193,21 +166,18 @@ export class CampaignsController {
     @Query('status', new ParseEnumPipe(CampaignStatus, { optional: true }))
     status?: CampaignStatus,
   ): Promise<CampaignListResponseDto> {
-    // Parse and validate pagination parameters manually
+    
     const page = pageParam ? parseInt(pageParam, 10) : 1;
     const limit = limitParam ? parseInt(limitParam, 10) : 10;
     
-    // Validate parsed values
+    
     const validPage = Math.max(1, isNaN(page) ? 1 : page);
     const validLimit = Math.min(Math.max(1, isNaN(limit) ? 10 : limit), 50);
 
     return this.campaignsService.getCampaignsByShelter(shelterId, validPage, validLimit, status);
   }
 
-  /**
-   * Get shelter campaign summary
-   * GET /campaigns/shelter/summary
-   */
+  
   @Get('shelter/summary')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SHELTER)
@@ -217,19 +187,16 @@ export class CampaignsController {
     return this.campaignsService.getShelterCampaignSummary(userId);
   }
 
-  /**
-   * Get featured campaigns (Critical priority, top performing)
-   * GET /campaigns/featured?limit=6
-   */
+  
   @Get('featured')
   async getFeaturedCampaigns(
     @Query('limit') limitParam?: string,
   ): Promise<CampaignResponseDto[]> {
-    // Parse and validate limit parameter manually
+    
     const limit = limitParam ? parseInt(limitParam, 10) : 6;
     const validLimit = Math.min(Math.max(1, isNaN(limit) ? 6 : limit), 20);
     
-    // Get critical priority campaigns
+    
     const result = await this.campaignsService.getActiveCampaigns(
       1,
       validLimit,
@@ -239,16 +206,13 @@ export class CampaignsController {
     return result.campaigns;
   }
 
-  /**
-   * Get campaigns by priority for home feed visibility algorithm
-   * GET /campaigns/by-priority/:priority?limit=4
-   */
+  
   @Get('by-priority/:priority')
   async getCampaignsByPriority(
     @Param('priority', new ParseEnumPipe(CampaignPriority)) priority: CampaignPriority,
     @Query('limit') limitParam?: string,
   ): Promise<CampaignResponseDto[]> {
-    // Parse and validate limit parameter manually
+    
     const limit = limitParam ? parseInt(limitParam, 10) : 4;
     const validLimit = Math.min(Math.max(1, isNaN(limit) ? 4 : limit), 20);
     

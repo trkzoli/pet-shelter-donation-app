@@ -1,11 +1,10 @@
-// src/success-stories/success-stories.module.ts
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { SuccessStoriesController } from './success-stories.controller';
 import { SuccessStoriesService } from './success-stories.service';
 
-// Entity imports
 import { SuccessStory } from './entities/success-story.entity';
 import { Pet } from '../pets/entities/pet.entity';
 import { User } from '../users/entities/user.entity';
@@ -25,12 +24,12 @@ import { AdoptionRequest } from '../adoptions/entities/adoption-request.entity';
       PawPointTransaction,
       AdoptionRequest,
     ]),
-    ConfigModule, // For any future configuration needs
+    ConfigModule,
   ],
   controllers: [SuccessStoriesController],
   providers: [SuccessStoriesService],
   exports: [
-    SuccessStoriesService, // Export for use in other modules (pets, adoptions, notifications)
+    SuccessStoriesService,
   ],
 })
 export class SuccessStoriesModule {}

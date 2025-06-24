@@ -1,4 +1,4 @@
-// src/pets/pets.controller.ts
+
 import {
   Controller,
   Get,
@@ -42,9 +42,7 @@ import { Public } from '../auth/decorators/public.decorator';
 export class PetsController {
   constructor(private readonly petsService: PetsService) {}
 
-  /**
-   * Create a new pet (shelter only)
-   */
+  
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Roles(UserRole.SHELTER)
@@ -57,9 +55,7 @@ export class PetsController {
     return this.petsService.createPet(userId, createPetDto);
   }
 
-  /**
-   * Get all published pets with filters
-   */
+  
   @Get()
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -69,9 +65,7 @@ export class PetsController {
     return this.petsService.getPets(filters);
   }
 
-  /**
-   * Get pet details by ID
-   */
+  
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get pet details by ID' })
@@ -80,9 +74,7 @@ export class PetsController {
     return this.petsService.getPetById(id);
   }
 
-  /**
-   * Get shelter's pets (all statuses)
-   */
+  
   @Get('shelter/my-pets')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -92,9 +84,7 @@ export class PetsController {
     return this.petsService.getShelterPets(userId);
   }
 
-  /**
-   * Update pet (check 24-hour rule)
-   */
+  
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -108,9 +98,7 @@ export class PetsController {
     return this.petsService.updatePet(userId, petId, updatePetDto);
   }
 
-  /**
-   * Set monthly goals for a pet
-   */
+  
   @Post(':id/goals')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -124,9 +112,7 @@ export class PetsController {
     return this.petsService.setMonthlyGoals(userId, petId, setGoalsDto);
   }
 
-  /**
-   * Publish a pet
-   */
+  
   @Post(':id/publish')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -139,9 +125,7 @@ export class PetsController {
     return this.petsService.publishPet(userId, petId);
   }
 
-  /**
-   * Remove pet with reason
-   */
+  
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -155,9 +139,7 @@ export class PetsController {
     return this.petsService.removePet(userId, petId, removeDto);
   }
 
-  /**
-   * Confirm pet adoption
-   */
+  
   @Post(':id/adopt')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -171,9 +153,7 @@ export class PetsController {
     return this.petsService.confirmAdoption(userId, petId, confirmDto);
   }
 
-  /**
-   * Upload pet main image
-   */
+  
   @Post(':id/images/main')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -190,9 +170,7 @@ export class PetsController {
     return { message: 'Main image uploaded successfully', imageUrl };
   }
 
-  /**
-   * Upload additional pet images
-   */
+  
   @Post(':id/images/additional')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -209,9 +187,7 @@ export class PetsController {
     return { message: `${imageUrls.length} additional images uploaded successfully`, imageUrls };
   }
 
-  /**
-   * Upload veterinary records
-   */
+  
   @Post(':id/vet-records')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -228,9 +204,7 @@ export class PetsController {
     return { message: 'Veterinary records uploaded successfully', documentUrl };
   }
 
-  /**
-   * Upload main pet image (base64)
-   */
+  
   @Post(':id/images/main-base64')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)
@@ -245,9 +219,7 @@ export class PetsController {
     return { message: 'Main image uploaded successfully', imageUrl };
   }
 
-  /**
-   * Upload additional pet images (base64)
-   */
+  
   @Post(':id/images/additional-base64')
   @HttpCode(HttpStatus.OK)
   @Roles(UserRole.SHELTER)

@@ -1,4 +1,4 @@
-// src/uploads/uploads.controller.ts
+
 import {
   Controller,
   Post,
@@ -30,16 +30,7 @@ import { GetUser } from '../auth/decorators/user.decorator';
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
-  // ==================== SINGLE IMAGE UPLOAD ====================
-
-  /**
-   * Upload single image
-   * POST /uploads/image
-   * 
-   * Uploads a single image to Cloudinary with automatic optimization
-   * Supports different upload types with specific transformations
-   * Available to: All authenticated users
-   */
+  
   @Post('image')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('image'))
@@ -93,29 +84,19 @@ export class UploadsController {
 
     const uploadType = type as UploadType;
 
-    // Validate entity ID for specific upload types
+    
     if ([UploadType.VET_RECORDS, UploadType.ADOPTION_PROOF].includes(uploadType)) {
       if (!entityId) {
         throw new BadRequestException(`Entity ID is required for upload type: ${uploadType}`);
       }
     }
     
-    // For PET_IMAGE and CAMPAIGN_IMAGE, entityId is optional during creation but recommended for organization
-    // When entityId is not provided, images will be uploaded with a temporary ID structure
+    
 
     return this.uploadsService.uploadSingleImage(file, uploadType, userId, entityId);
   }
 
-  // ==================== MULTIPLE IMAGES UPLOAD ====================
-
-  /**
-   * Upload multiple images
-   * POST /uploads/images
-   * 
-   * Uploads multiple images at once (max 10 for pets, 5 for others)
-   * Each image is processed with appropriate transformations
-   * Available to: All authenticated users
-   */
+  
   @Post('images')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FilesInterceptor('images', 10)) // Max 10 files
@@ -177,7 +158,7 @@ export class UploadsController {
 
     const uploadType = type as UploadType;
 
-    // Validate entity ID for specific upload types
+    
     if ([UploadType.VET_RECORDS, UploadType.ADOPTION_PROOF].includes(uploadType)) {
       if (!entityId) {
         throw new BadRequestException(`Entity ID is required for upload type: ${uploadType}`);
@@ -187,16 +168,7 @@ export class UploadsController {
     return this.uploadsService.uploadMultipleImages(files, uploadType, userId, entityId);
   }
 
-  // ==================== BASE64 IMAGE UPLOAD ====================
-
-  /**
-   * Upload base64 image
-   * POST /uploads/base64-image
-   * 
-   * Upload an image from base64 data (used by React Native apps)
-   * Supports all upload types with automatic optimization
-   * Available to: All authenticated users
-   */
+  
   @Post('base64-image')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -242,15 +214,14 @@ export class UploadsController {
 
     const uploadType = type as UploadType;
 
-    // Validate entity ID for specific upload types
+    
     if ([UploadType.VET_RECORDS, UploadType.ADOPTION_PROOF].includes(uploadType)) {
       if (!entityId) {
         throw new BadRequestException(`Entity ID is required for upload type: ${uploadType}`);
       }
     }
     
-    // For PET_IMAGE and CAMPAIGN_IMAGE, entityId is optional during creation but recommended for organization
-    // When entityId is not provided, images will be uploaded with a temporary ID structure
+
 
     return this.uploadsService.uploadBase64Image(
       body.image, 
@@ -262,16 +233,7 @@ export class UploadsController {
     );
   }
 
-  // ==================== PET IMAGE UPLOADS ====================
-
-  /**
-   * Upload pet main image
-   * POST /uploads/pet/:petId/main-image
-   * 
-   * Specialized endpoint for uploading pet main images
-   * Automatically applies pet-specific transformations
-   * Available to: All authenticated users (shelters for their pets)
-   */
+  
   @Post('pet/:petId/main-image')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('image'))
@@ -294,14 +256,7 @@ export class UploadsController {
     return this.uploadsService.uploadSingleImage(file, UploadType.PET_IMAGE, userId, petId);
   }
 
-  /**
-   * Upload pet additional images
-   * POST /uploads/pet/:petId/additional-images
-   * 
-   * Upload up to 10 additional images for a pet
-   * Processed in batch with error handling for individual failures
-   * Available to: All authenticated users (shelters for their pets)
-   */
+  
   @Post('pet/:petId/additional-images')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FilesInterceptor('images', 10))
@@ -324,16 +279,7 @@ export class UploadsController {
     return this.uploadsService.uploadMultipleImages(files, UploadType.PET_IMAGE, userId, petId);
   }
 
-  // ==================== PROFILE IMAGE UPLOADS ====================
-
-  /**
-   * Upload user profile image
-   * POST /uploads/profile-image
-   * 
-   * Upload profile image with circular crop optimization
-   * Automatically generates multiple sizes for different UI contexts
-   * Available to: All authenticated users
-   */
+  
   @Post('profile-image')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('image'))
@@ -355,16 +301,7 @@ export class UploadsController {
     return this.uploadsService.uploadSingleImage(file, UploadType.PROFILE_IMAGE, userId);
   }
 
-  // ==================== CAMPAIGN IMAGE UPLOADS ====================
-
-  /**
-   * Upload campaign banner image
-   * POST /uploads/campaign/:campaignId/banner
-   * 
-   * Upload banner image for campaigns with banner-specific optimization
-   * Optimized for wide banner format display
-   * Available to: Shelter admins for their campaigns
-   */
+  
   @Post('campaign/:campaignId/banner')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('image'))
@@ -387,16 +324,7 @@ export class UploadsController {
     return this.uploadsService.uploadSingleImage(file, UploadType.CAMPAIGN_IMAGE, userId, campaignId);
   }
 
-  // ==================== DOCUMENT UPLOADS ====================
-
-  /**
-   * Upload verification document
-   * POST /uploads/verification-document
-   * 
-   * Upload verification documents for shelter verification
-   * Supports images and PDF documents
-   * Available to: Shelter users only
-   */
+  
   @Post('verification-document')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('document'))
@@ -415,7 +343,7 @@ export class UploadsController {
       throw new BadRequestException('No document file provided');
     }
 
-    // Validate document types for verification
+    
     const allowedTypes = [
       'image/jpeg',
       'image/png', 
@@ -430,14 +358,7 @@ export class UploadsController {
     return this.uploadsService.uploadSingleImage(file, UploadType.VERIFICATION_DOCUMENT, userId);
   }
 
-  /**
-   * Upload veterinary records
-   * POST /uploads/pet/:petId/vet-records
-   * 
-   * Upload veterinary records for pets
-   * Supports documents and images
-   * Available to: Shelter admins for their pets
-   */
+  
   @Post('pet/:petId/vet-records')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('document'))
@@ -457,7 +378,7 @@ export class UploadsController {
       throw new BadRequestException('No document file provided');
     }
 
-    // Validate document types for vet records
+    
     const allowedTypes = [
       'image/jpeg',
       'image/png',
@@ -474,13 +395,7 @@ export class UploadsController {
     return this.uploadsService.uploadSingleImage(file, UploadType.VET_RECORDS, userId, petId);
   }
 
-  /**
-   * Upload adoption proof image
-   * POST /uploads/adoption/:requestId/proof
-   * 
-   * Upload proof of adoption image for completed adoptions
-   * Available to: Shelter admins for their adoption requests
-   */
+  
   @Post('adoption/:requestId/proof')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('image'))
@@ -503,15 +418,7 @@ export class UploadsController {
     return this.uploadsService.uploadSingleImage(file, UploadType.ADOPTION_PROOF, userId, requestId);
   }
 
-  // ==================== IMAGE DELETION ====================
-
-  /**
-   * Delete single image
-   * DELETE /uploads/image/:publicId
-   * 
-   * Delete an image from Cloudinary using its public ID
-   * Available to: All authenticated users (with proper authorization checks)
-   */
+  
   @Delete('image/:publicId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -533,7 +440,7 @@ export class UploadsController {
   async deleteImage(
     @Param('publicId') publicId: string,
   ): Promise<{ success: boolean; publicId: string; message: string }> {
-    // Decode the public ID (it might be URL encoded)
+    
     const decodedPublicId = decodeURIComponent(publicId);
     
     const success = await this.uploadsService.deleteImage(decodedPublicId);
@@ -545,13 +452,7 @@ export class UploadsController {
     };
   }
 
-  /**
-   * Delete multiple images
-   * DELETE /uploads/images
-   * 
-   * Delete multiple images from Cloudinary
-   * Available to: All authenticated users (with proper authorization checks)
-   */
+  
   @Delete('images')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -597,15 +498,7 @@ export class UploadsController {
     };
   }
 
-  // ==================== UTILITY ENDPOINTS ====================
-
-  /**
-   * Get optimized image URL
-   * GET /uploads/optimize/:publicId
-   * 
-   * Get optimized image URL with specific transformations
-   * Available to: All authenticated users
-   */
+  
   @Get('optimize/:publicId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ 
@@ -645,7 +538,7 @@ export class UploadsController {
       };
     }
 
-    // Return all sizes
+    
     const sizes: Array<'thumbnail' | 'small' | 'medium' | 'large'> = ['thumbnail', 'small', 'medium', 'large'];
     const urls: Record<string, string> = {};
     
@@ -659,13 +552,7 @@ export class UploadsController {
     };
   }
 
-  /**
-   * Health check for upload service
-   * GET /uploads/health
-   * 
-   * Check if upload service and Cloudinary are properly configured
-   * Available to: All authenticated users
-   */
+  
   @Get('health')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Health check for uploads service' })

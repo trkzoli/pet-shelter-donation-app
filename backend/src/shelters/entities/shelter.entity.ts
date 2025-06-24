@@ -56,7 +56,6 @@ export class Shelter {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // One-to-one relation with User
   @OneToOne(() => User)
   @JoinColumn()
   user: User;
@@ -64,7 +63,6 @@ export class Shelter {
   @Column()
   userId: string;
 
-  // Shelter information
   @Column()
   @IsString()
   @Min(2)
@@ -89,7 +87,6 @@ export class Shelter {
   @Min(1900)
   yearEstablished: number;
 
-  // Contact information
   @Column()
   @IsString()
   contactPerson: string;
@@ -98,13 +95,11 @@ export class Shelter {
   @IsString()
   contactTitle: string;
 
-  // Operating hours stored as JSON
   @Column({ type: 'jsonb', nullable: true })
   @IsOptional()
   @IsJSON()
   operatingHours?: OperatingHours;
 
-  // Optional fields
   @Column({ nullable: true })
   @IsOptional()
   @IsUrl()
@@ -120,7 +115,6 @@ export class Shelter {
   @IsUrl()
   instagram?: string;
 
-  // Verification
   @Column({ type: 'varchar', default: 'pending' })
   verificationStatus: string;
 
@@ -135,7 +129,6 @@ export class Shelter {
   @Column({ type: 'timestamp', nullable: true })
   verifiedAt?: Date;
 
-  // Statistics
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   @IsNumber()
   @Min(0)
@@ -151,21 +144,18 @@ export class Shelter {
   @Min(0)
   currentPublishedPets: number;
 
-  // Profile completion for shelters
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   @IsNumber()
   @Min(0)
   @Max(100)
   profileCompleteness: number;
 
-  // Timestamps
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relations (to be defined in other entities)
   @OneToMany(() => Pet, pet => pet.shelter)
   pets: Pet[];
 
@@ -175,7 +165,6 @@ export class Shelter {
   @OneToMany(() => AdoptionRequest, request => request.shelter)
   adoptionRequests: AdoptionRequest[];
 
-  // Helper methods
   canPublishPets(): boolean {
     return (
       this.verificationStatus === 'verified' &&
@@ -185,8 +174,6 @@ export class Shelter {
   }
 
   hasActiveCampaign(): boolean {
-    // This would check if there's an active campaign
-    // Implementation would be in the service layer
     return false;
   }
 

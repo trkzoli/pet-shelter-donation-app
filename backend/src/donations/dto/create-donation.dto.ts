@@ -1,4 +1,4 @@
-// src/donations/dto/create-donation.dto.ts
+
 import {
   IsNotEmpty,
   IsNumber,
@@ -32,7 +32,7 @@ export class CreateDonationDto {
   @IsNotEmpty({ message: 'Campaign ID is required for campaign donations' })
   campaignId?: string;
 
-  // Internal fields set by controller
+  
   userId?: string;
   paymentIntentId?: string;
 }

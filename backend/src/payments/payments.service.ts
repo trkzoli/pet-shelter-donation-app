@@ -1,4 +1,4 @@
-// src/payments/payments.service.ts
+
 import {
   Injectable,
   NotFoundException,
@@ -50,9 +50,6 @@ export class PaymentsService {
     this.initializeStripe();
   }
 
-  /**
-   * Initialize Stripe with configuration
-   */
   private initializeStripe(): void {
     const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
@@ -72,9 +69,6 @@ export class PaymentsService {
     this.logger.log(`Stripe initialized in ${nodeEnv} mode`);
   }
 
-  /**
-   * Create payment intent for donation
-   */
   async createPaymentIntent(
     userId: string,
     createPaymentIntentDto: CreatePaymentIntentDto,
@@ -155,9 +149,6 @@ export class PaymentsService {
     }
   }
 
-  /**
-   * Confirm payment after successful payment
-   */
   async confirmPayment(
     userId: string,
     confirmPaymentDto: ConfirmPaymentDto,
@@ -229,9 +220,6 @@ export class PaymentsService {
     });
   }
 
-  /**
-   * Process refund for donation
-   */
   async processRefund(
     donationId: string,
     refundDto: RefundPaymentDto,
@@ -303,9 +291,6 @@ export class PaymentsService {
     });
   }
 
-  /**
-   * Handle Stripe webhook events (OPTIONAL - for production use)
-   */
   async handleWebhook(signature: string, payload: Buffer): Promise<void> {
     const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
     
@@ -349,9 +334,6 @@ export class PaymentsService {
     }
   }
 
-  /**
-   * Get Stripe publishable key
-   */
   getPublishableKey(): string {
     const publishableKey = this.configService.get<string>('STRIPE_PUBLISHABLE_KEY');
     if (!publishableKey) {
@@ -359,8 +341,6 @@ export class PaymentsService {
     }
     return publishableKey;
   }
-
-  // Private helper methods
 
   private async validateTargetAndCalculateFees(
     type: string,
@@ -386,7 +366,7 @@ export class PaymentsService {
       }
 
       targetEntity = pet;
-      platformFeePercentage = 10; // Fixed 10% for pet donations
+      platformFeePercentage = 10;
     } else {
       const campaign = await this.campaignRepository.findOne({
         where: { id: campaignId, status: CampaignStatus.ACTIVE },
@@ -397,7 +377,6 @@ export class PaymentsService {
         throw new NotFoundException('Campaign not found or not active');
       }
 
-      // Check if campaign hasn't expired
       if (campaign.endsAt < new Date()) {
         throw new BadRequestException('Campaign has expired');
       }
@@ -414,9 +393,9 @@ export class PaymentsService {
 
   private getTargetName(target: Pet | Campaign): string {
     if ('name' in target) {
-      return target.name; // Pet
+      return target.name;
     }
-    return target.title; // Campaign
+    return target.title;
   }
 
   private generatePaymentDescription(type: string, target: Pet | Campaign, amount: number): string {
@@ -434,17 +413,14 @@ export class PaymentsService {
     userId: string,
     donation: Donation,
   ): Promise<void> {
-    // Update user's PawPoints balance and total donated
     await manager.increment(User, { id: userId }, 'pawPoints', donation.pawPointsEarned);
     await manager.increment(User, { id: userId }, 'totalDonated', donation.amount);
 
-    // Get user's updated balance
     const user = await manager.findOne(User, {
       where: { id: userId },
       select: ['pawPoints'],
     });
 
-    // Create transaction record
     const transaction = manager.create(PawPointTransaction, {
       userId,
       points: donation.pawPointsEarned,
@@ -463,16 +439,13 @@ export class PaymentsService {
     donation: Donation,
     reason: string,
   ): Promise<void> {
-    // Deduct PawPoints from user
     await manager.decrement(User, { id: userId }, 'pawPoints', donation.pawPointsEarned);
 
-    // Get user's updated balance
     const user = await manager.findOne(User, {
       where: { id: userId },
       select: ['pawPoints'],
     });
 
-    // Create reversal transaction record
     const transaction = manager.create(PawPointTransaction, {
       userId,
       points: -donation.pawPointsEarned,
@@ -491,16 +464,13 @@ export class PaymentsService {
     type: string,
     reason: string,
   ): Promise<void> {
-    // Award 1 bonus PawPoint
     await manager.increment(User, { id: userId }, 'pawPoints', 1);
 
-    // Get user's updated balance
     const user = await manager.findOne(User, {
       where: { id: userId },
       select: ['pawPoints'],
     });
 
-    // Create transaction record
     const transaction = manager.create(PawPointTransaction, {
       userId,
       points: 1,
@@ -517,7 +487,6 @@ export class PaymentsService {
     donation: Donation,
   ): Promise<void> {
     if (donation.type === DonationType.PET) {
-      // Get fresh pet data to avoid stale values
       const pet = await manager.findOne(Pet, {
         where: { id: donation.petId },
         select: [
@@ -530,8 +499,7 @@ export class PaymentsService {
         throw new Error(`Pet not found: ${donation.petId}`);
       }
 
-      // Log current state and donation amounts for debugging
-      this.logger.log(`🔍 DONATION PROCESSING DEBUG:`);
+      this.logger.log(`DONATION PROCESSING DEBUG:`);
       this.logger.log(`  Pet: ${pet.name} (${pet.id})`);
       this.logger.log(`  Donation amount: $${donation.amount}`);
       this.logger.log(`  Platform fee: $${donation.platformFee}`);
@@ -539,12 +507,10 @@ export class PaymentsService {
       this.logger.log(`  Current pet totalDonationsReceived: $${pet.totalDonationsReceived}`);
       this.logger.log(`  Current pet currentMonthDonations: $${pet.currentMonthDonations}`);
 
-      // Validate donation amount is reasonable
       if (donation.amount > 100000) {
         throw new Error(`Suspicious donation amount detected: $${donation.amount} - preventing database corruption`);
       }
 
-      // Distribute donation across monthly goal categories
       if (pet.monthlyGoals) {
         const totalGoals: number = (Object.values(pet.monthlyGoals) as number[]).reduce(
           (sum: number, goal: number) => sum + goal,
@@ -552,7 +518,6 @@ export class PaymentsService {
         );
 
         if (totalGoals > 0) {
-          // Use shelter amount (after platform fee) for distribution, not full donation amount
           const shelterAmount = donation.getShelterAmount();
           const distribution = {
             vaccination: (shelterAmount * pet.monthlyGoals.vaccination) / totalGoals,
@@ -561,7 +526,6 @@ export class PaymentsService {
             other: (shelterAmount * pet.monthlyGoals.other) / totalGoals,
           };
 
-          // Update pet's current month distribution
           if (!pet.currentMonthDistribution) {
             pet.currentMonthDistribution = { vaccination: 0, food: 0, medical: 0, other: 0 };
           }
@@ -573,14 +537,12 @@ export class PaymentsService {
         }
       }
 
-      // Update pet totals - use shelter amount for currentMonthDonations since that's what goes to pet care
       const currentTotal = parseFloat(pet.totalDonationsReceived?.toString() || '0');
       const currentMonth = parseFloat(pet.currentMonthDonations?.toString() || '0');
       
-      const newTotalDonationsReceived = currentTotal + donation.amount; // Keep full amount for total tracking
-      const newCurrentMonthDonations = currentMonth + donation.getShelterAmount(); // Use shelter amount for monthly progress
+      const newTotalDonationsReceived = currentTotal + donation.amount;
+      const newCurrentMonthDonations = currentMonth + donation.getShelterAmount();
 
-      // Validate new totals are reasonable
       if (newTotalDonationsReceived > 1000000) {
         this.logger.error(`SUSPICIOUS CALCULATION DETECTED:`);
         this.logger.error(`  Current total: $${currentTotal}`);
@@ -589,11 +551,10 @@ export class PaymentsService {
         throw new Error(`Preventing database corruption - calculated total is unreasonably high: $${newTotalDonationsReceived}`);
       }
 
-      this.logger.log(`📊 CALCULATION RESULTS:`);
+      this.logger.log(`CALCULATION RESULTS:`);
       this.logger.log(`  New totalDonationsReceived: $${currentTotal} + $${donation.amount} = $${newTotalDonationsReceived}`);
       this.logger.log(`  New currentMonthDonations: $${currentMonth} + $${donation.getShelterAmount()} = $${newCurrentMonthDonations}`);
 
-      // Save the updated pet using update instead of save to avoid INSERT issues
       await manager.update(Pet, { id: donation.petId }, {
         totalDonationsReceived: newTotalDonationsReceived,
         currentMonthDonations: newCurrentMonthDonations,
@@ -604,7 +565,6 @@ export class PaymentsService {
       this.logger.log(`Pet donation totals updated successfully`);
 
     } else if (donation.type === DonationType.CAMPAIGN) {
-      // Update campaign progress with shelter amount (after platform fees)
       const shelterAmount = donation.getShelterAmount();
       await manager.increment(
         Campaign,
@@ -613,7 +573,6 @@ export class PaymentsService {
         shelterAmount,
       );
 
-      // Check if campaign goal is reached
       const campaign = await manager.findOne(Campaign, {
         where: { id: donation.campaignId },
         select: ['currentAmount', 'goalAmount', 'status'],
@@ -630,8 +589,6 @@ export class PaymentsService {
     }
   }
 
-  // Webhook event handlers
-
   private async handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     const donation = await this.donationRepository.findOne({
       where: { paymentIntentId: paymentIntent.id },
@@ -647,14 +604,11 @@ export class PaymentsService {
       return;
     }
 
-    // Only update the Stripe charge ID from webhook, don't reprocess the entire donation
-    // The frontend confirmPayment call should handle all the business logic
     try {
       await this.donationRepository.update(
         { id: donation.id },
         { 
           stripeChargeId: paymentIntent.latest_charge as string,
-          // Don't change status here - let the frontend confirmPayment handle it
         }
       );
       this.logger.log(`Webhook: Updated Stripe charge ID for donation ${donation.id}`);
@@ -673,7 +627,6 @@ export class PaymentsService {
       return;
     }
 
-    // Update donation status to failed
     await this.donationRepository.update(
       { id: donation.id },
       { status: DonationStatus.FAILED },
@@ -685,7 +638,6 @@ export class PaymentsService {
   private async handleChargeDispute(dispute: Stripe.Dispute): Promise<void> {
     const chargeId = dispute.charge as string;
     
-    // Find donation by charge ID
     const donation = await this.donationRepository.findOne({
       where: { stripeChargeId: chargeId },
       relations: ['user'],
@@ -696,20 +648,11 @@ export class PaymentsService {
       return;
     }
 
-    // Handle dispute based on reason
     this.logger.warn(`Dispute created for donation ${donation.id}: ${dispute.reason}`);
-    
-    // Could implement additional dispute handling logic here
-    // For example, notifying admins, flagging user accounts, etc.
   }
 
-  /**
-   * Fix corrupted donation data by recalculating from actual donation records
-   * This should be called after fixing the duplicate processing bug
-   */
   async fixCorruptedDonationData(petId: string): Promise<void> {
     return await this.dataSource.transaction(async manager => {
-      // Get all completed donations for this pet
       const donations = await manager.find(Donation, {
         where: {
           petId,
@@ -718,7 +661,6 @@ export class PaymentsService {
         order: { createdAt: 'ASC' },
       });
 
-      // Get the pet
       const pet = await manager.findOne(Pet, {
         where: { id: petId },
       });
@@ -727,20 +669,16 @@ export class PaymentsService {
         throw new Error(`Pet not found: ${petId}`);
       }
 
-      // Calculate correct totals
       let totalDonationsReceived = 0;
       let currentMonthDonations = 0;
       const currentMonthDistribution = { vaccination: 0, food: 0, medical: 0, other: 0 };
 
-      // Sum up all donations
       for (const donation of donations) {
         totalDonationsReceived += donation.amount;
         
-        // Calculate shelter amount (90% of donation)
         const shelterAmount = donation.getShelterAmount();
         currentMonthDonations += shelterAmount;
 
-        // Distribute across categories if monthly goals exist
         if (pet.monthlyGoals) {
           const totalGoals = Object.values(pet.monthlyGoals).reduce((sum, goal) => sum + goal, 0);
           if (totalGoals > 0) {
@@ -752,7 +690,6 @@ export class PaymentsService {
         }
       }
 
-      // Update pet with correct values
       await manager.update(Pet, { id: petId }, {
         totalDonationsReceived,
         currentMonthDonations,
@@ -764,12 +701,8 @@ export class PaymentsService {
     });
   }
 
-  /**
-   * Clean up corrupted donation data by resetting pet totals and optionally deleting records
-   */
   async cleanupCorruptedData(petId: string, deleteDonations: boolean = false): Promise<{ deletedRecords: number }> {
     return await this.dataSource.transaction(async manager => {
-      // Get the pet
       const pet = await manager.findOne(Pet, {
         where: { id: petId },
       });
@@ -780,7 +713,6 @@ export class PaymentsService {
 
       let deletedRecords = 0;
 
-      // Optionally delete donation records
       if (deleteDonations) {
         const result = await manager.delete(Donation, {
           petId,
@@ -790,7 +722,6 @@ export class PaymentsService {
         this.logger.log(`Deleted ${deletedRecords} donation records for pet ${petId}`);
       }
 
-      // Reset pet donation totals to zero
       await manager.update(Pet, { id: petId }, {
         totalDonationsReceived: 0,
         currentMonthDonations: 0,

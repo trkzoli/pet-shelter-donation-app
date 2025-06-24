@@ -1,4 +1,4 @@
-// src/pets/pets.service.ts
+
 import {
   Injectable,
   NotFoundException,
@@ -40,11 +40,7 @@ export class PetsService {
     private readonly uploadsService: UploadsService,
   ) {}
 
-  /**
-   * Create a new pet (draft status)
-   */
   async createPet(userId: string, createPetDto: CreatePetDto): Promise<Pet> {
-    // Get shelter for this user
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
       relations: ['user'],
@@ -54,22 +50,18 @@ export class PetsService {
       throw new NotFoundException('Shelter not found');
     }
 
-    // Check if shelter can publish pets
     if (!(await this.canShelterPublishPets(shelter))) {
       throw new ForbiddenException(
         'Shelter must be verified and have 100% complete profile to create pets'
       );
     }
 
-    // Check pet limit (max 10 published pets)
     if (shelter.currentPublishedPets >= 10) {
       throw new ConflictException('Maximum of 10 published pets allowed');
     }
 
-    // Validate monthly goals
     this.validateMonthlyGoals(createPetDto.monthlyGoals);
 
-    // Create pet in draft status
     const pet = this.petRepository.create({
       ...createPetDto,
       shelterId: shelter.id,
@@ -87,9 +79,6 @@ export class PetsService {
     return this.petRepository.save(pet);
   }
 
-  /**
-   * Get all pets with filters and pagination
-   */
   async getPets(filters: PetFiltersDto): Promise<PetListResponseDto> {
     const queryBuilder = this.petRepository
       .createQueryBuilder('pet')
@@ -97,7 +86,6 @@ export class PetsService {
       .leftJoinAndSelect('shelter.user', 'user')
       .where('pet.status = :status', { status: PetStatus.PUBLISHED });
 
-    // Apply filters
     if (filters.type) {
       queryBuilder.andWhere('pet.type = :type', { type: filters.type });
     }
@@ -121,7 +109,6 @@ export class PetsService {
       );
     }
 
-    // Apply sorting
     switch (filters.sortBy) {
       case 'oldest':
         queryBuilder.orderBy('pet.publishedAt', 'ASC');
@@ -135,11 +122,10 @@ export class PetsService {
       case 'name':
         queryBuilder.orderBy('pet.name', 'ASC');
         break;
-      default: // newest
+      default:
         queryBuilder.orderBy('pet.publishedAt', 'DESC');
     }
 
-    // Apply pagination
     const page = filters.page || 1;
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
@@ -166,9 +152,6 @@ export class PetsService {
     return petDtos;
   }
 
-  /**
-   * Get pet by ID with details
-   */
   async getPetById(id: string): Promise<PetDetailDto> {
     const pet = await this.petRepository.findOne({
       where: { id },
@@ -179,7 +162,7 @@ export class PetsService {
       throw new NotFoundException('Pet not found');
     }
 
-    console.log(`🔍 INDIVIDUAL PET SERVICE: Raw pet entity for ${id}:`, {
+    console.log(`INDIVIDUAL PET SERVICE: Raw pet entity for ${id}:`, {
       id: pet.id,
       name: pet.name,
       breed: pet.breed,
@@ -197,14 +180,11 @@ export class PetsService {
 
     const dto = plainToClass(PetDetailDto, pet, { excludeExtraneousValues: true });
     
-    console.log(`🔍 INDIVIDUAL PET SERVICE: Transformed DTO for ${id}:`, JSON.stringify(dto, null, 2));
+    console.log(`INDIVIDUAL PET SERVICE: Transformed DTO for ${id}:`, JSON.stringify(dto, null, 2));
     
     return dto;
   }
 
-  /**
-   * Get pets for a specific shelter
-   */
   async getShelterPets(userId: string): Promise<ShelterPetDto[]> {
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
@@ -217,33 +197,30 @@ export class PetsService {
     const pets = await this.petRepository.find({
       where: { 
         shelterId: shelter.id,
-        status: In([PetStatus.DRAFT, PetStatus.PUBLISHED]) // Only show draft and published pets
+        status: In([PetStatus.DRAFT, PetStatus.PUBLISHED])
       },
       relations: ['adoptionRequests'],
       order: { createdAt: 'DESC' },
     });
 
-    console.log(`🔍 SHELTER PETS DEBUG: Found ${pets.length} pets for shelter ${shelter.id} (excluding removed)`);
+    console.log(`SHELTER PETS DEBUG: Found ${pets.length} pets for shelter ${shelter.id} (excluding removed)`);
     pets.forEach(pet => {
       console.log(`📋 Pet ${pet.id}: name="${pet.name}", status="${pet.status}", monthlyGoals=${JSON.stringify(pet.monthlyGoals)}, mainImage="${pet.mainImage}", additionalImages=${JSON.stringify(pet.additionalImages)}`);
     });
 
     const petDtos = plainToClass(ShelterPetDto, pets, { excludeExtraneousValues: false });
     
-    console.log(`📤 SHELTER PETS DTO: Returning ${petDtos.length} pet DTOs`);
+    console.log(`SHELTER PETS DTO: Returning ${petDtos.length} pet DTOs`);
     petDtos.forEach(dto => {
-      console.log(`📋 DTO ${dto.id}: name="${dto.name}", breed="${dto.breed}", age="${dto.age}", description="${dto.description}", story="${dto.story}"`);
-      console.log(`📋 DTO ${dto.id}: monthlyGoals=${JSON.stringify(dto.monthlyGoals)}, totalMonthlyGoal=${dto.totalMonthlyGoal}`);
-      console.log(`📋 DTO ${dto.id}: mainImage="${dto.mainImage}", additionalImages=${JSON.stringify(dto.additionalImages)}`);
-      console.log(`📋 DTO ${dto.id}: vaccinated=${dto.vaccinated}, dewormed=${dto.dewormed}, spayedNeutered=${dto.spayedNeutered}`);
+      console.log(`DTO ${dto.id}: name="${dto.name}", breed="${dto.breed}", age="${dto.age}", description="${dto.description}", story="${dto.story}"`);
+      console.log(`DTO ${dto.id}: monthlyGoals=${JSON.stringify(dto.monthlyGoals)}, totalMonthlyGoal=${dto.totalMonthlyGoal}`);
+      console.log(`DTO ${dto.id}: mainImage="${dto.mainImage}", additionalImages=${JSON.stringify(dto.additionalImages)}`);
+      console.log(`DTO ${dto.id}: vaccinated=${dto.vaccinated}, dewormed=${dto.dewormed}, spayedNeutered=${dto.spayedNeutered}`);
     });
 
     return petDtos;
   }
 
-  /**
-   * Update pet (check 24-hour rule)
-   */
   async updatePet(userId: string, petId: string, updatePetDto: UpdatePetDto): Promise<Pet> {
     const pet = await this.findPetForShelter(userId, petId);
 
@@ -255,7 +232,7 @@ export class PetsService {
         additionalImages: updatePetDto.additionalImages,
       };
 
-      // Check if trying to update non-photo fields
+      
       const nonPhotoFields = Object.keys(updatePetDto).filter(
         key => !['mainImage', 'additionalImages'].includes(key)
       );
@@ -268,23 +245,18 @@ export class PetsService {
 
       Object.assign(pet, photosOnlyDto);
     } else {
-      // Within 24 hours - allow all updates
       Object.assign(pet, updatePetDto);
     }
 
     return this.petRepository.save(pet);
   }
 
-  /**
-   * Set monthly goals for a pet
-   */
+
   async setMonthlyGoals(userId: string, petId: string, setGoalsDto: SetMonthlyGoalsDto): Promise<Pet> {
     const pet = await this.findPetForShelter(userId, petId);
 
-    // Validate monthly goals
     this.validateMonthlyGoals(setGoalsDto.monthlyGoals);
 
-    // Update goals and reset date
     pet.monthlyGoals = setGoalsDto.monthlyGoals;
     pet.goalsLastReset = new Date();
     pet.currentMonthDonations = 0;
@@ -298,9 +270,7 @@ export class PetsService {
     return this.petRepository.save(pet);
   }
 
-  /**
-   * Publish a pet (check shelter eligibility)
-   */
+
   async publishPet(userId: string, petId: string): Promise<Pet> {
     const pet = await this.findPetForShelter(userId, petId);
 
@@ -308,7 +278,6 @@ export class PetsService {
       throw new BadRequestException('Only draft pets can be published');
     }
 
-    // Get shelter to check eligibility
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
       relations: ['user'],
@@ -321,12 +290,10 @@ export class PetsService {
       );
     }
 
-    // Check pet limit
     if (shelter.currentPublishedPets >= 10) {
       throw new ConflictException('Maximum of 10 published pets allowed');
     }
 
-    // Validate pet has all required fields for publishing
     if (!pet.mainImage) {
       throw new BadRequestException('Main image is required to publish pet');
     }
@@ -335,7 +302,6 @@ export class PetsService {
       throw new BadRequestException('Monthly goals must be set before publishing');
     }
 
-    // Update pet status and increment shelter count
     pet.status = PetStatus.PUBLISHED;
     pet.publishedAt = new Date();
 
@@ -349,9 +315,7 @@ export class PetsService {
     return pet;
   }
 
-  /**
-   * Remove pet with reason
-   */
+
   async removePet(userId: string, petId: string, removeDto: RemovePetDto): Promise<{ message: string }> {
     const pet = await this.findPetForShelter(userId, petId);
 
@@ -361,12 +325,10 @@ export class PetsService {
 
     const wasPublished = pet.status === PetStatus.PUBLISHED;
 
-    // Get shelter to update count
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
     });
 
-    // Get affected donors for success story
     const donations = await this.donationRepository.find({
       where: { petId: pet.id },
       select: ['userId'],
@@ -374,18 +336,16 @@ export class PetsService {
     if (!shelter) throw new NotFoundException('Shelter not found');
     const affectedUserIds = [...new Set(donations.map(d => d.userId))];
 
-    // Update pet status
     const oldStatus = pet.status;
     pet.status = PetStatus.REMOVED;
-    console.log(`🗑️ REMOVING PET: ${pet.id} - changing status from ${oldStatus} to ${PetStatus.REMOVED}`);
+    console.log(`REMOVING PET: ${pet.id} - changing status from ${oldStatus} to ${PetStatus.REMOVED}`);
 
-    // Decrease published pets count if it was published
     if (wasPublished) {
       shelter.currentPublishedPets = Math.max(0, shelter.currentPublishedPets - 1);
-      console.log(`📉 UPDATING SHELTER COUNT: ${shelter.shelterName} - published pets: ${shelter.currentPublishedPets + 1} -> ${shelter.currentPublishedPets}`);
+      console.log(`UPDATING SHELTER COUNT: ${shelter.shelterName} - published pets: ${shelter.currentPublishedPets + 1} -> ${shelter.currentPublishedPets}`);
     }
 
-    // Create success story for donors
+
     const successStory = this.successStoryRepository.create({
       petId: pet.id,
       type: removeDto.reason === 'deceased' ? SuccessStoryType.DECEASED : SuccessStoryType.ERROR,
@@ -399,9 +359,6 @@ export class PetsService {
       this.successStoryRepository.save(successStory),
     ]);
 
-    // TODO: Trigger PawPoints bonus for donors (implemented in donations module)
-    // TODO: Handle potential refunds for "other" reason
-
     return {
       message: `Pet removed successfully. ${
         removeDto.reason === 'deceased' 
@@ -411,9 +368,7 @@ export class PetsService {
     };
   }
 
-  /**
-   * Confirm adoption
-   */
+
   async confirmAdoption(userId: string, petId: string, confirmDto: ConfirmAdoptionDto): Promise<Pet> {
     const pet = await this.findPetForShelter(userId, petId);
 
@@ -421,12 +376,10 @@ export class PetsService {
       throw new BadRequestException('Only published pets can be adopted');
     }
 
-    // Get shelter to update counts
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
     });
     if (!shelter) throw new NotFoundException('Shelter not found');
-    // Get affected donors for success story
     const donations = await this.donationRepository.find({
       where: { petId: pet.id },
       select: ['userId'],
@@ -434,15 +387,13 @@ export class PetsService {
     
     const affectedUserIds = [...new Set(donations.map(d => d.userId))];
 
-    // Update pet status
     pet.status = PetStatus.ADOPTED;
     shelter.currentPublishedPets = Math.max(0, shelter.currentPublishedPets - 1);
     shelter.adoptionsCompleted++;
 
-    // Create success story
     const successStory = this.successStoryRepository.create({
       petId: pet.id,
-      type: SuccessStoryType.ADOPTED_EXTERNAL, // Assume external unless specified
+      type: SuccessStoryType.ADOPTED_EXTERNAL,
       affectedUserIds,
     });
 
@@ -452,14 +403,10 @@ export class PetsService {
       this.successStoryRepository.save(successStory),
     ]);
 
-    // TODO: Trigger PawPoints bonus for donors (implemented in donations module)
-
     return pet;
   }
 
-  /**
-   * Upload pet images
-   */
+
   async uploadMainImage(
     userId: string,
     petId: string,
@@ -467,7 +414,6 @@ export class PetsService {
   ): Promise<{ imageUrl: string }> {
     if (!file) throw new BadRequestException('No image file provided');
 
-    // Validate file type and size here if needed
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException('Only JPEG and PNG images are allowed');
@@ -481,7 +427,6 @@ export class PetsService {
     return { imageUrl: uploadResult.secureUrl };
   }
 
-  // Upload additional images
   async uploadAdditionalImages(
     userId: string,
     petId: string,
@@ -494,7 +439,7 @@ export class PetsService {
 
     const imageUrls: string[] = [];
     for (const file of files) {
-      // Validate file type and size here if needed
+      
 
       const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
       if (!allowedMimeTypes.includes(file.mimetype)) {
@@ -511,29 +456,22 @@ export class PetsService {
     return { imageUrls };
   }
 
-  /**
-   * Upload vet record document
-   */
+
   async uploadVetRecord(userId: string, petId: string, file: Express.Multer.File): Promise<{ documentUrl: string }> {
     const pet = await this.findPetForShelter(userId, petId);
 
-    // Upload to Cloudinary
     const result = await this.uploadsService.uploadSingleImage(file, UploadType.VET_RECORDS, userId, petId);
 
-    // Update pet record
     pet.vetRecords = result.secureUrl;
     await this.petRepository.save(pet);
 
     return { documentUrl: result.secureUrl };
   }
 
-  /**
-   * Upload main pet image using base64
-   */
+
   async uploadMainImageBase64(userId: string, petId: string, base64Image: string): Promise<{ imageUrl: string }> {
     const pet = await this.findPetForShelter(userId, petId);
 
-    // Upload to Cloudinary using base64
     const result = await this.uploadsService.uploadBase64Image(
       base64Image, 
       UploadType.PET_IMAGE, 
@@ -543,20 +481,16 @@ export class PetsService {
       petId
     );
 
-    // Update pet record
     pet.mainImage = result.secureUrl;
     await this.petRepository.save(pet);
 
     return { imageUrl: result.secureUrl };
   }
 
-  /**
-   * Upload additional pet images using base64
-   */
+
   async uploadAdditionalImagesBase64(userId: string, petId: string, base64Images: string[]): Promise<{ imageUrls: string[] }> {
     const pet = await this.findPetForShelter(userId, petId);
 
-    // Upload all images to Cloudinary
     const uploadPromises = base64Images.map((base64Image, index) => 
       this.uploadsService.uploadBase64Image(
         base64Image, 
@@ -571,7 +505,6 @@ export class PetsService {
     const results = await Promise.all(uploadPromises);
     const newImageUrls = results.map(result => result.secureUrl);
 
-    // Append new images to existing additional images (don't replace)
     const existingImages = pet.additionalImages || [];
     pet.additionalImages = [...existingImages, ...newImageUrls];
     await this.petRepository.save(pet);
@@ -579,9 +512,7 @@ export class PetsService {
     return { imageUrls: newImageUrls };
   }
 
-  /**
-   * Calculate donation distribution for monthly goals
-   */
+
   calculateDonationDistribution(amount: number, monthlyGoals: MonthlyGoals): DonationDistribution {
     const totalGoal = monthlyGoals.vaccination + monthlyGoals.food + monthlyGoals.medical + monthlyGoals.other;
     
@@ -597,9 +528,7 @@ export class PetsService {
     };
   }
 
-  /**
-   * Reset monthly goals for all pets (cron job - runs every day at midnight)
-   */
+
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async resetMonthlyGoals(): Promise<void> {
     const thirtyOneDaysAgo = new Date();
@@ -629,9 +558,7 @@ export class PetsService {
     }
   }
 
-  /**
-   * Private helper methods
-   */
+
   private async findPetForShelter(userId: string, petId: string): Promise<Pet> {
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
@@ -653,7 +580,6 @@ export class PetsService {
   }
 
   private async canShelterPublishPets(shelter: Shelter): Promise<boolean> {
-    // Load shelter with user relation for proper profile completion calculation
     const shelterWithUser = await this.shelterRepository.findOne({
       where: { id: shelter.id },
       relations: ['user'],
@@ -663,21 +589,18 @@ export class PetsService {
       return false;
     }
 
-    // Calculate profile completion using the same logic as SheltersService
     const profileCompleteness = this.calculateShelterProfileCompletion(shelterWithUser);
     
-    console.log(`🔍 PET CREATION: Shelter ${shelterWithUser.id} verification status: ${shelterWithUser.verificationStatus}, completion: ${profileCompleteness}%`);
+    console.log(`PET CREATION: Shelter ${shelterWithUser.id} verification status: ${shelterWithUser.verificationStatus}, completion: ${profileCompleteness}%`);
     
-    // Auto-verify if profile is 100% complete but not yet verified (MVP behavior)
     if (profileCompleteness >= 100 && shelterWithUser.verificationStatus !== 'verified') {
-      console.log(`🔄 AUTO-VERIFYING: Shelter ${shelterWithUser.id} has 100% completion but not verified yet`);
+      console.log(`AUTO-VERIFYING: Shelter ${shelterWithUser.id} has 100% completion but not verified yet`);
       shelterWithUser.verificationStatus = 'verified';
       shelterWithUser.verifiedAt = new Date();
       await this.shelterRepository.save(shelterWithUser);
-      console.log(`🎉 AUTO-VERIFIED: Shelter ${shelterWithUser.id} auto-verified for pet creation`);
+      console.log(`AUTO-VERIFIED: Shelter ${shelterWithUser.id} auto-verified for pet creation`);
     }
 
-    // Simplified check for testing - if manually verified, allow pet creation
     if (shelterWithUser.verificationStatus === 'verified') {
       console.log(`PET CREATION: Shelter ${shelterWithUser.id} is verified, allowing pet creation`);
       return true;
@@ -691,11 +614,7 @@ export class PetsService {
     );
   }
 
-  /**
-   * Calculate shelter profile completion percentage (same logic as SheltersService)
-   */
   private calculateShelterProfileCompletion(shelter: Shelter): number {
-    // Required shelter fields (6 total) - must match frontend
     const requiredShelterFields = [
       'shelterName',
       'description',
@@ -705,7 +624,6 @@ export class PetsService {
       'contactPerson',
     ];
 
-    // Required user fields (8 total) - email, phone, and 5 address fields
     const requiredUserFields = ['email', 'phone', 'street', 'city', 'state', 'zip', 'country'];
     
     const filledShelterFields = requiredShelterFields.filter((field) => {
@@ -721,7 +639,7 @@ export class PetsService {
       }).length;
     }
 
-    const totalRequired = requiredShelterFields.length + requiredUserFields.length; // 6 + 8 = 14
+    const totalRequired = requiredShelterFields.length + requiredUserFields.length;
     const totalFilled = filledShelterFields.length + filledUserFields;
 
     return Math.round((totalFilled / totalRequired) * 100);
@@ -738,15 +656,11 @@ export class PetsService {
       throw new BadRequestException('Monthly goals total cannot exceed $10,000');
     }
 
-    // Each category must be non-negative
     if (goals.vaccination < 0 || goals.food < 0 || goals.medical < 0 || goals.other < 0) {
       throw new BadRequestException('Monthly goal categories cannot be negative');
     }
   }
 
-  /**
-   * Helper to update pet images
-   */
   private async uploadPetImages(
     userId: string,
     petId: string,

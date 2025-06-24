@@ -1,4 +1,4 @@
-// src/pets/pets.module.ts
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -23,18 +23,18 @@ import { UploadsModule } from '../uploads/uploads.module';
       Donation,
       AdoptionRequest
     ]),
-    ScheduleModule.forRoot(), // Enable cron jobs for monthly goal resets
+    ScheduleModule.forRoot(),
     MulterModule.register({
-      dest: './uploads', // Temporary storage before Cloudinary upload
+      dest: './uploads',
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-        files: 10, // Max 10 files at once
+        fileSize: 10 * 1024 * 1024,
+        files: 10,
       },
     }),
-    UploadsModule, // Custom module for handling file uploads
+    UploadsModule,
   ],
   controllers: [PetsController],
-  providers: [PetsService], // Include UploadsService for file handling
-  exports: [PetsService], // Export for use in other modules (donations, adoptions)
+  providers: [PetsService],
+  exports: [PetsService],
 })
 export class PetsModule {}
