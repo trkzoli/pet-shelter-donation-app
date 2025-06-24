@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,247 +6,667 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  FlatList,
   useWindowDimensions,
+  SafeAreaView,
+  Platform,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import NavBar from '../../components/navigation/NavBar';
-import SettingsModal from '../../components/Settings';
+import { Ionicons } from '@expo/vector-icons';
+import { AlertModal } from '../../components/modals';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import SettingsModal from '../../components/modals/SettingsModal';
+import axios from 'axios';
+import { API_BASE_URL } from '../../constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
-const ownedPets = [
-  { id: '1', name: 'Rex', image: require('../../assets/images/placeholder.png') },
-  { id: '2', name: 'Bella', image: require('../../assets/images/placeholder.png') },
-  { id: '3', name: 'Max', image: require('../../assets/images/placeholder.png') },
-  { id: '4', name: 'Luna', image: require('../../assets/images/placeholder.png') },
-  { id: '5', name: 'Charlie', image: require('../../assets/images/placeholder.png') },
-];
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 20,
+  CARD_SPACING: 15,
+  BORDER_RADIUS: 15,
+  PROFILE_IMAGE_SIZE: 100,
+  BUTTON_HEIGHT: 55,
+  HEADER_HEIGHT: 80,
+} as const;
+
+const SPACING = {
+  SMALL: 8,
+  MEDIUM: 12,
+  LARGE: 16,
+  EXTRA_LARGE: 20,
+} as const;
+
+const FONT_RATIOS = {
+  HEADER_TITLE: 0.055,
+  SECTION_TITLE: 0.045,
+  BODY_TEXT: 0.035,
+} as const;
+
+
+const MOCK_USER_DATA = {
+  id: '1',
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  profileImage: require('../../assets/images/pphr.png'),
+  pawPoints: 12,
+  totalDonated: 345.50,
+  profileCompleteness: 90,
+  donationCount: 18,
+  joinDate: '2024-02-15',
+  lastDonation: '2024-06-01',
+} as const;
+
+
+const PAW_POINTS_CONFIG = {
+  POINTS_PER_25_DOLLARS: 1,
+  REAL_ADOPTION_MIN_POINTS: 5,
+  REAL_ADOPTION_MIN_PROFILE: 100,
+} as const;
 
 const ProfilePage: React.FC = () => {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const [settingsVisible, setSettingsVisible] = useState(false);
+  const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
+  
 
-  const toggleSettingsModal = () => {
-    setSettingsVisible(!settingsVisible);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const [pawPoints, setPawPoints] = useState<number>(0);
+  const [totalDonated, setTotalDonated] = useState<number>(0);
+
+
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not authenticated');
+      const [profileRes, pawPointsRes, donationStatsRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_BASE_URL}/users/pawpoints`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_BASE_URL}/donations/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      setUserData(profileRes.data);
+      setPawPoints(pawPointsRes.data.balance ?? 0);
+      setTotalDonated(donationStatsRes.data.totalDonated ?? pawPointsRes.data.totalDonated ?? 0);
+    } catch (err: any) {
+      setError('Failed to load profile. Please try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+
+
+
+
+  
+  const isRealAdoptionEligible = 
+    pawPoints >= PAW_POINTS_CONFIG.REAL_ADOPTION_MIN_POINTS &&
+    (userData?.profileCompleteness ?? 0) >= PAW_POINTS_CONFIG.REAL_ADOPTION_MIN_PROFILE;
+
+
+  const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
+  const profileImageSize = Math.min(width * 0.25, DESIGN_CONSTANTS.PROFILE_IMAGE_SIZE);
+  const sectionTitleFontSize = width * FONT_RATIOS.SECTION_TITLE;
+  const bodyFontSize = width * FONT_RATIOS.BODY_TEXT;
+
+  
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        await axios.post(`${API_BASE_URL}/users/recalculate-profile`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Profile recalculation triggered');
+      }
+    } catch (err) {
+      console.log('Profile recalculation failed, proceeding with normal refresh');
+    } finally {
+      
+      await fetchProfile();
+    }
+  }, [fetchProfile]);
+
+  const toggleSettingsModal = useCallback(() => {
+    setSettingsVisible(prev => !prev);
+  }, []);
+
+  const handleRealAdoptionPress = useCallback(() => {
+    if (!isRealAdoptionEligible) {
+      showAlert({
+        title: 'Real Adoption Requirements',
+        message: 'You need 5 PawPoints and 100% complete profile to unlock this feature.',
+        type: 'info',
+        buttonText: 'Got it'
+      });
+      return;
+    }
+
+    router.push('/adoption/process');
+  }, [isRealAdoptionEligible, router, showAlert]);
+
+  const handleProfileImagePress = useCallback(async () => {
+    
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert({
+        title: 'Permission Denied',
+        message: 'Permission to access media library is required.',
+        type: 'error',
+        buttonText: 'OK',
+      });
+      return;
+    }
+    
+    
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true, 
+    });
+    
+    if (result.canceled) return;
+    
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not authenticated');
+      
+      const asset = result.assets?.[0];
+      if (!asset || !asset.base64) {
+        throw new Error('No image data available');
+      }
+
+      const fileExtension = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const mimeType = fileExtension === 'png' ? 'image/png' : 'image/jpeg';
+      
+      console.log('Uploading donor profile image via base64:', {
+        type: mimeType,
+        name: `profile.${fileExtension}`,
+        size: asset.base64.length,
+      });
+      
+      
+      const response = await fetch(`${API_BASE_URL}/users/profile-image-base64`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: asset.base64,
+          mimeType: mimeType,
+          filename: `profile.${fileExtension}`,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed');
+      }
+      
+      const res = { data: await response.json() };
+  
+      setUserData((prev: any) => ({ 
+        ...prev, 
+        profileImage: res.data.imageUrl 
+      }));
+      
+      showAlert({
+        title: 'Profile Updated',
+        message: 'Your profile picture has been updated.',
+        type: 'success',
+        buttonText: 'OK',
+      });
+    } catch (err: any) {
+      showAlert({
+        title: 'Upload Failed',
+        message: err?.response?.data?.message || err.message || 'Failed to upload profile picture. Please try again.',
+        type: 'error',
+        buttonText: 'OK',
+      });
+    }
+  }, [showAlert]);
+
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(amount);
   };
 
   return (
-    <View style={[styles.background, { width, height }]}>
-      <View style={[styles.container, { marginTop: height * 0.05 }]}>
-        {/* Profile Section */}
-        <View style={styles.profileContainer}>
-          {/* Settings Button */}
-          <TouchableOpacity style={styles.settingsButton} onPress={toggleSettingsModal}>
+    <SafeAreaView style={styles.container}>
+      
+      <View style={[styles.header, { paddingTop: height * 0.05 }]}>
+        <TouchableOpacity 
+          style={styles.settingsButton} 
+          onPress={toggleSettingsModal}
+          accessibilityRole="button"
+          accessibilityLabel="Open settings"
+        >
+          <Ionicons name="settings-outline" size={28} color="#797979" />
+        </TouchableOpacity>
+        
+        <Text style={[styles.headerTitle, { fontSize: headerTitleFontSize }]}>
+          Your Profile
+        </Text>
+        
+      
+        <View style={styles.headerPlaceholder} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#AB886D']}
+            tintColor="#AB886D"
+          />
+        }
+      >
+        
+        <View style={styles.profileHeader}>
+          <TouchableOpacity 
+            style={styles.profileImageContainer}
+            onPress={handleProfileImagePress}
+            activeOpacity={0.8}
+          >
             <Image
-              source={require('../../assets/images/settings.png')}
-              style={styles.settingsIcon}
+              source={userData?.profileImage ? { uri: userData.profileImage } : MOCK_USER_DATA.profileImage}
+              style={[styles.profileImage, { width: profileImageSize, height: profileImageSize }]}
             />
+            <View style={styles.profileImageOverlay}>
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
+            </View>
           </TouchableOpacity>
-
-          <Image
-            source={require('../../assets/images/pphr.png')}
-            style={styles.profileImage}
-          />
-          <Text style={styles.profileName}>John Doe</Text>
-          <Text style={styles.profileSubtitle}>Owned pets</Text>
-
-          {/* Horizontal Scrollable List of Pets */}
-          <FlatList
-            data={ownedPets}
-            horizontal
-            keyExtractor={(item) => item.id}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <View style={styles.petItem}>
-                <Image source={item.image} style={styles.petImage} />
-                <Text style={styles.petName}>{item.name}</Text>
-              </View>
-            )}
-            contentContainerStyle={styles.petList}
-          />
+          
+          <Text style={[styles.profileName, { fontSize: sectionTitleFontSize * 1.2 }]}>
+            {userData?.name || MOCK_USER_DATA.name}
+          </Text>
+          
+          <Text style={styles.profileEmail}>
+            {userData?.email || MOCK_USER_DATA.email}
+          </Text>
         </View>
 
-        {/* Scrollable Info Section */}
-        <ScrollView
-          style={styles.scrollableContent}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Information Section */}
-          <View style={styles.infoSection}>
-            <Text style={styles.infoSectionTitle}>Information</Text>
-            <View style={styles.infoBox}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>PetTokens</Text>
-                <Text style={styles.infoValue}>0.0 PTK</Text>
+ 
+        <View style={styles.overviewContainer}>
+          <Text style={[styles.sectionTitle, { fontSize: sectionTitleFontSize }]}>
+            Overview
+          </Text>
+          
+          <View style={styles.statsGrid}>
+       
+            <View style={[styles.statCard, styles.pawPointsCard]}>
+              <View style={styles.statCardHeader}>
+                <Image 
+                  source={require('../../assets/images/LogoWhite.png')} 
+                  style={styles.pawPointsIcon}
+                />
+                <Text style={styles.pawPointsLabel}>PawPoints</Text>
               </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Donations Total Value</Text>
-                <Text style={styles.infoValue}>0.0 USD</Text>
+              <Text style={styles.pawPointsValue}>{pawPoints}</Text>
+              <Text style={styles.pawPointsSubtext}>
+                Next at ${((Math.floor(pawPoints) + 1) * 25).toFixed(0)}
+              </Text>
+            </View>
+
+          
+            <View style={[styles.statCard, styles.donationCard]}>
+              <View style={styles.statCardHeader}>
+                <Ionicons name="heart" size={24} color="#AB886D" />
+                <Text style={styles.donationLabel}>Total Donated</Text>
               </View>
+              <Text style={styles.donationValue}>
+                {formatCurrency(totalDonated)}
+              </Text>
             </View>
           </View>
+        </View>
 
-          {/* Action Buttons */}
-          <View style={styles.buttonsSection}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>Previous Donations</Text>
-              <Image
-                source={require('../../assets/images/aright.png')}
-                style={styles.actionButtonIcon}
-              />
-            </TouchableOpacity>
+   
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              !isRealAdoptionEligible && styles.actionButtonDisabled
+            ]}
+            onPress={handleRealAdoptionPress}
+            disabled={false} // Always clickable to show requirements
+            activeOpacity={0.8}
+          >
+            <View style={styles.actionButtonContent}>
+              <View style={styles.actionButtonIconContainer}>
+                <Ionicons 
+                  name="home-outline" 
+                  size={22} 
+                  color={isRealAdoptionEligible ? '#AB886D' : '#CCCCCC'} 
+                />
+              </View>
+              <View style={styles.actionButtonTextContainer}>
+                <Text style={[
+                  styles.actionButtonTitle, 
+                  !isRealAdoptionEligible && styles.actionButtonTitleDisabled
+                ]}>
+                  Start Real Adoption
+                </Text>
+                {!isRealAdoptionEligible && (
+                  <Text style={[styles.actionButtonSubtitle, styles.actionButtonSubtitleDisabled]}>
+                    You need 5 PawPoints and 100% complete profile to unlock this feature
+                  </Text>
+                )}
+                {isRealAdoptionEligible && (
+                  <Text style={styles.actionButtonSubtitle}>
+                    Begin the real adoption process
+                  </Text>
+                )}
+              </View>
+              <View style={styles.actionButtonBadge}>
+                <Text style={styles.actionButtonBadgeText}>
+                  {isRealAdoptionEligible ? "Available" : "Locked"}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>Token Manager</Text>
-              <Image
-                source={require('../../assets/images/LogoWhite.png')}
-                style={styles.actionButtonIcon}
-              />
-            </TouchableOpacity>
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
 
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>Favorite Projects</Text>
-              <Image
-                source={require('../../assets/images/fav.png')}
-                style={styles.actionButtonIcon}
-              />
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
 
-        {/* Settings Modal */}
-        <SettingsModal visible={settingsVisible} onClose={toggleSettingsModal} />
+      <SettingsModal 
+        visible={settingsVisible} 
+        onClose={() => setSettingsVisible(false)} 
+        userData={userData || MOCK_USER_DATA}
+      />
 
-        {/* Bottom Navigation Bar */}
-        <NavBar />
-      </View>
-    </View>
+
+      <AlertModal
+        visible={isVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonText={alertConfig.buttonText}
+        type={alertConfig.type}
+        onClose={hideAlert}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: '#E4E0E1', 
-  },
   container: {
     flex: 1,
+    backgroundColor: '#E4E0E1',
   },
-  profileContainer: {
+  
+ 
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingBottom: SPACING.SMALL,
+    backgroundColor: '#E4E0E1',
   },
   settingsButton: {
-    position: 'absolute',
-    top: 30,
-    left: 30,
-    zIndex: 10,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  settingsIcon: {
-    width: 30,
-    height: 30,
-    resizeMode: 'contain',
-    tintColor: '#797979',
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-    resizeMode: 'cover',
-  },
-  profileName: {
-    fontSize: 20,
+  headerTitle: {
     fontFamily: 'PoppinsBold',
     color: '#493628',
+    textAlign: 'center',
   },
-  profileSubtitle: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
+  headerPlaceholder: {
+    width: 44, 
   },
-  petList: {
-    marginTop: 10,
-    paddingHorizontal: 20,
-  },
-  petItem: {
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
-  petImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 5,
-    resizeMode: 'cover',
-  },
-  petName: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
-  },
-  scrollableContent: {
+  
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingTop: SPACING.LARGE,
   },
-  infoSection: {
-    marginBottom: 20,
-    paddingHorizontal: 20,
+  
+  profileHeader: {
+    alignItems: 'center',
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingBottom: SPACING.EXTRA_LARGE,
   },
-  infoSectionTitle: {
-    fontSize: 18,
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: SPACING.MEDIUM,
+  },
+  profileImage: {
+    borderRadius: DESIGN_CONSTANTS.PROFILE_IMAGE_SIZE / 2,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  profileImageOverlay: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: '#AB886D',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  profileName: {
     fontFamily: 'PoppinsBold',
-    color: '#1F2029',
-    marginBottom: 10,
+    color: '#493628',
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  infoBox: {
-    borderColor: '#797979',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  infoLabel: {
-    fontSize: 16,
+  profileEmail: {
+    fontSize: 14,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    color: '#797979',
+    textAlign: 'center',
   },
-  infoValue: {
-    fontSize: 16,
+
+  overviewContainer: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    marginBottom: SPACING.EXTRA_LARGE,
+  },
+  sectionTitle: {
     fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginBottom: SPACING.LARGE,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: SPACING.MEDIUM,
+  },
+  statCard: {
+    flex: 1,
+    padding: SPACING.LARGE,
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  pawPointsCard: {
+    backgroundColor: '#493628',
+  },
+  donationCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.SMALL,
+  },
+  pawPointsIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#AB886D',
+    marginRight: 6,
+  },
+  pawPointsLabel: {
+    fontSize: 12,
+    fontFamily: 'PoppinsSemiBold',
     color: '#AB886D',
   },
-  buttonsSection: {
-    paddingHorizontal: 20,
+  pawPointsValue: {
+    fontSize: 28,
+    fontFamily: 'PoppinsBold',
+    color: '#E4E0E1',
+    marginBottom: 2,
+  },
+  pawPointsSubtext: {
+    fontSize: 10,
+    fontFamily: 'PoppinsRegular',
+    color: '#AB886D',
+  },
+  donationLabel: {
+    fontSize: 12,
+    fontFamily: 'PoppinsSemiBold',
+    color: '#AB886D',
+  },
+  donationValue: {
+    fontSize: 24,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginBottom: 2,
+  },
+
+  actionsContainer: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
   },
   actionButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderColor: '#797979',
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  actionButtonText: {
+  actionButtonDisabled: {
+    backgroundColor: '#F5F5F5',
+    borderColor: '#E0E0E0',
+  },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.LARGE,
+    minHeight: DESIGN_CONSTANTS.BUTTON_HEIGHT,
+  },
+  actionButtonIconContainer: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.MEDIUM,
+  },
+  actionButtonTextContainer: {
+    flex: 1,
+  },
+  actionButtonTitle: {
     fontSize: 16,
-    fontFamily: 'PoppinsRegular',
+    fontFamily: 'PoppinsSemiBold',
     color: '#1F2029',
+    marginBottom: 2,
   },
-  actionButtonIcon: {
-    width: 25,
-    height: 25,
-    resizeMode: 'contain',
-    tintColor: '#AB886D',
+  actionButtonTitleDisabled: {
+    color: '#CCCCCC',
+  },
+  actionButtonSubtitle: {
+    fontSize: 13,
+    fontFamily: 'PoppinsRegular',
+    color: '#797979',
+    lineHeight: 18,
+  },
+  actionButtonSubtitleDisabled: {
+    color: '#CCCCCC',
+  },
+  actionButtonBadge: {
+    backgroundColor: '#AB886D',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: SPACING.SMALL,
+  },
+  actionButtonBadgeText: {
+    fontSize: 11,
+    fontFamily: 'PoppinsBold',
+    color: '#FFFFFF',
+  },
+  bottomSpacing: {
+    height: 100,
   },
 });
 
 export default ProfilePage;
+

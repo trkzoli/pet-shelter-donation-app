@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,99 +7,171 @@ import {
   TouchableOpacity,
   SafeAreaView,
   useWindowDimensions,
+  ScrollView,
+  Platform,
 } from 'react-native';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
 
 const WelcomeScreen: React.FC = () => {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const [fontsLoaded] = useFonts({
-    Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
-    PoppinsRegular: require('../../assets/fonts/Poppins-Regular.ttf'),
-    PoppinsBold: require('../../assets/fonts/Poppins-Bold.ttf'),
-    PoppinsSemiBold: require('../../assets/fonts/Poppins-SemiBold.ttf'),
-    PoppinsSemiBoldItalic: require('../../assets/fonts/Poppins-SemiBoldItalic.ttf'),
-    PoppinsItalic: require('../../assets/fonts/Poppins-Italic.ttf'),
+  const [imagesLoaded, setImagesLoaded] = useState({
+    side1: false,
+    center: false,
+    side2: false,
   });
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  const handleSignUp = useCallback(() => {
+    router.replace('/choose-signup');
+  }, [router]);
 
-  const horizontalPadding = 20 * 2; 
-  const availableWidth = width - horizontalPadding;
+  const handleLogin = useCallback(() => {
+    router.replace('/login');
+  }, [router]);
 
+  const handleImageLoad = useCallback((imageKey: keyof typeof imagesLoaded) => {
+    setImagesLoaded(prev => ({ ...prev, [imageKey]: true }));
+  }, []);
+
+  const HORIZONTAL_PADDING = 40;
+  const availableWidth = width - HORIZONTAL_PADDING;
   const sideImageWidth = availableWidth * 0.30;
   const sideImageHeight = availableWidth * 0.40;
   const middleImageWidth = availableWidth * 0.35;
   const middleImageHeight = availableWidth * 0.45;
-
+  
   const titleFontSize = width * 0.06;
   const descriptionFontSize = width * 0.04;
   const buttonFontSize = width * 0.04;
   const buttonHeight = height * 0.07;
 
   return (
-    <SafeAreaView style={[styles.background, { width, height }]}>
-      <View style={styles.container}>
-        <View style={[styles.imageRow, { width: availableWidth }]}>
-          <Image
-            source={require('../../assets/images/ph1.jpg')}
-            style={[
-              styles.sideImage,
-              { width: sideImageWidth, height: sideImageHeight },
-            ]}
-          />
-          <Image
-            source={require('../../assets/images/tmh1.jpg')}
-            style={[
-              styles.middleImage,
-              { width: middleImageWidth, height: middleImageHeight },
-            ]}
-          />
-          <Image
-            source={require('../../assets/images/ph2.jpg')}
-            style={[
-              styles.sideImage,
-              { width: sideImageWidth, height: sideImageHeight },
-            ]}
-          />
-        </View>
-
-        <Text style={[styles.title, { fontSize: titleFontSize }]}>
-          <Text style={styles.highlightedWord}>Adopt</Text> a furry friend virtually
-        </Text>
-
-        <Text style={[styles.description, { fontSize: descriptionFontSize }]}>
-         Every pet deserves love. Even from a distance, you can be the reason a shelter pet finds happiness. Start your virtual adoption journey today!
-        </Text>
-
-        <TouchableOpacity 
-          style={[styles.signupButton, { width: availableWidth, height: buttonHeight }]}
-          onPress={() => router.push('/choose-signup')}
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
         >
-          <Text style={[styles.buttonText, { fontSize: buttonFontSize }]}>SIGN UP</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.loginButton, { width: availableWidth, height: buttonHeight }]}
-          onPress={() => router.push('/login')}
-        >
-          <Text style={[styles.buttonText, { fontSize: buttonFontSize }]}>LOG IN</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+          <View style={styles.content}>
+           
+            <View style={[styles.imageRow, { width: availableWidth }]}>
+              {/* Side Image 1 */}
+              <View style={[styles.imageContainer, { width: sideImageWidth, height: sideImageHeight }]}>
+                <Image
+                  source={require('../../assets/images/ph1.jpg')}
+                  style={[
+                    styles.sideImage,
+                    { 
+                      width: sideImageWidth, 
+                      height: sideImageHeight,
+                      opacity: imagesLoaded.side1 ? 1 : 0,
+                    },
+                  ]}
+                  onLoad={() => handleImageLoad('side1')}
+                  resizeMode="cover"
+                />
+              </View>
+
+              {/* Center Image */}
+              <View style={[styles.imageContainer, { width: middleImageWidth, height: middleImageHeight }]}>
+                <Image
+                  source={require('../../assets/images/tmh1.jpg')}
+                  style={[
+                    styles.middleImage,
+                    { 
+                      width: middleImageWidth, 
+                      height: middleImageHeight,
+                      opacity: imagesLoaded.center ? 1 : 0,
+                    },
+                  ]}
+                  onLoad={() => handleImageLoad('center')}
+                  resizeMode="cover"
+                />
+              </View>
+
+              {/* Side Image 2 */}
+              <View style={[styles.imageContainer, { width: sideImageWidth, height: sideImageHeight }]}>
+                <Image
+                  source={require('../../assets/images/ph2.jpg')}
+                  style={[
+                    styles.sideImage,
+                    { 
+                      width: sideImageWidth, 
+                      height: sideImageHeight,
+                      opacity: imagesLoaded.side2 ? 1 : 0,
+                    },
+                  ]}
+                  onLoad={() => handleImageLoad('side2')}
+                  resizeMode="cover"
+                />
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text style={[styles.title, { fontSize: titleFontSize }]}>
+              <Text style={styles.highlightedWord}>Adopt</Text> a furry friend virtually
+            </Text>
+
+            {/* Description */}
+            <Text style={[styles.description, { fontSize: descriptionFontSize }]}>
+             
+            </Text>
+
+            {/* CTA Buttons */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.signupButton, 
+                  { width: availableWidth, height: buttonHeight }
+                ]}
+                onPress={handleSignUp}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Sign up for Pawner"
+              >
+                <Text style={[styles.buttonText, { fontSize: buttonFontSize }]}>
+                  SIGN UP
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[
+                  styles.loginButton, 
+                  { width: availableWidth, height: buttonHeight }
+                ]}
+                onPress={handleLogin}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Log in to existing account"
+              >
+                <Text style={[styles.buttonText, { fontSize: buttonFontSize }]}>
+                  LOG IN
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
+  container: {
     flex: 1,
     backgroundColor: '#E4E0E1',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  container: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#E4E0E1',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  content: {
     width: '100%',
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -109,22 +181,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center', 
-    marginBottom: 20,
+    marginBottom: 30,
+  },
+  imageContainer: {
+    position: 'relative',
+    backgroundColor: '#E4E0E1', 
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   sideImage: {
-    borderRadius: 20, 
-    resizeMode: 'cover',
-    
+    borderRadius: 20,
+    position: 'absolute',
   },
   middleImage: {
-    borderRadius: 20, 
-    resizeMode: 'cover',
+    borderRadius: 20,
+    position: 'absolute',
   },
   title: {
     fontFamily: 'PoppinsSemiBold',
     textAlign: 'center',
     color: '#1F2029',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   highlightedWord: {
     fontFamily: 'PoppinsBold',
@@ -134,26 +211,48 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsItalic',
     textAlign: 'center',
     color: '#1F2029',
-    marginBottom: 30,
-    lineHeight: 20,
+    marginBottom: 40,
+    paddingHorizontal: 10,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 15,
   },
   signupButton: {
     backgroundColor: '#AB886D',
     borderRadius: 20, 
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
-    alignSelf: 'center',
-    paddingVertical: 12.5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   loginButton: {
     backgroundColor: '#D6C0B3',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    paddingVertical: 12.5,
-    
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   buttonText: {
     fontFamily: 'PoppinsBold',
@@ -162,3 +261,6 @@ const styles = StyleSheet.create({
 });
 
 export default WelcomeScreen;
+
+
+

@@ -1,355 +1,361 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Modal,
-  FlatList,
   useWindowDimensions,
+  SafeAreaView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { AlertModal } from '../../components/modals';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import { setTabsUI } from '../../config/systemUI';
 
-const PaymentMethods: React.FC = () => {
+
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 20,
+  BORDER_RADIUS: 20,
+  BACK_BUTTON_TOP: 50,
+  BUTTON_HEIGHT: 55,
+  HEADER_HEIGHT: 100,
+  PAYMENT_OPTION_HEIGHT: 80,
+} as const;
+
+const SPACING = {
+  SMALL: 8,
+  MEDIUM: 12,
+  LARGE: 16,
+  EXTRA_LARGE: 20,
+} as const;
+
+const FONT_RATIOS = {
+  HEADER_TITLE: 0.06,
+  BUTTON_TEXT: 0.045,
+  BODY_TEXT: 0.04,
+} as const;
+
+const PaymentMethodsPage: React.FC = () => {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams();
-  const { amount, tokens } = params;
+  const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
+  
+  const amount = params.amount as string;
+  const petId = params.petId as string;
+  const campaignId = params.campaignId as string;
+  const petName = params.petName as string || 'this pet';
+  const campaignTitle = params.campaignTitle as string || 'this campaign';
+  const shelterName = params.shelterName as string || 'the shelter';
+  const type = params.type as string || 'pet';
+  
+  const displayName = type === 'campaign' ? shelterName : petName;
 
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [alertVisible, setAlertVisible] = useState(false);
+  useEffect(() => {
+    setTabsUI();
+  }, []);
 
-  const paymentMethods = [
-    { name: 'PayPal', icon: require('../../assets/images/paypal.png') },
-    { name: 'Apple Pay', icon: require('../../assets/images/apple-pay.png') },
-    { name: 'Google Pay', icon: require('../../assets/images/google-pay.png') },
-  ];
+  const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
+  const buttonTextFontSize = width * FONT_RATIOS.BUTTON_TEXT;
+  const bodyTextFontSize = width * FONT_RATIOS.BODY_TEXT;
 
-  const handleProceed = () => {
-    if (selectedMethod) {
-      setModalVisible(true);
-    } else {
-      setAlertVisible(true);
-    }
-  };
 
-  const handleModalConfirm = () => {
-    setModalVisible(false);
-    router.replace('/profile'); // Redirect to the profile page
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleCardPayment = useCallback(() => {
+    router.push({
+      pathname: '/payment/add-card',
+      params: {
+        amount,
+        petId,
+        campaignId,
+        petName,
+        title: campaignTitle,
+        shelterName,
+        type,
+      },
+    });
+  }, [amount, petId, campaignId, petName, campaignTitle, shelterName, type, router]);
+
+  const formatCurrency = (amount: string): string => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(numAmount);
   };
 
   return (
-    <View style={[styles.background, { width, height }]}>
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
 
-        <Text style={styles.title}>Payment Methods</Text>
-
-        {/* Credit & Debit Card Option */}
-        <TouchableOpacity style={styles.cardOption} onPress={() => router.push('/payment/add-card')}>
-          <Image source={require('../../assets/images/bankcard.png')} style={styles.cardIcon} />
-          <Text style={styles.cardText}>Credit & Debit Card</Text>
-          <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={[styles.orText, {fontSize: width * 0.03}]}>OR</Text> 
-          <View style={styles.line} />
-        </View>
-
-        {/* Fast Payment Options */}
-        <View style={styles.fastPaymentContainer}>
-          {paymentMethods.map((method) => (
-            <TouchableOpacity
-              key={method.name}
-              style={[
-                styles.fastPaymentOption,
-                selectedMethod === method.name && styles.activePaymentOption,
-              ]}
-              onPress={() => setSelectedMethod(method.name)}
-            >
-              <Image source={method.icon} style={styles.fastPaymentIcon} />
-              <View
-                style={[
-                  styles.radioCircle,
-                  selectedMethod === method.name && styles.radioSelected,
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Proceed Button */}
-        <TouchableOpacity style={styles.proceedButton} onPress={handleProceed}>
-          <Text style={styles.proceedButtonText}>PROCEED</Text>
-        </TouchableOpacity>
-
-        {/* Confirmation Modal */}
-        <Modal
-          animationType="fade"
-          transparent
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={handleBack} 
+          style={styles.headerBackButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back to donation amount"
         >
-          <View style={styles.modalBackground}>
-            <View style={[styles.modalContainer, { width: width * 0.8 }]}>
-              <Text style={styles.modalTitle}>Confirm Payment</Text>
-              <Text style={styles.modalText}>
-                You are about to pay <Text style={styles.boldText}>${amount}</Text> using{' '}
-                <Text style={styles.boldText}>{selectedMethod}</Text>. You will receive{' '}
-                <Text style={styles.boldText}>{tokens} PTK</Text>.
-              </Text>
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.okButton} onPress={handleModalConfirm}>
-                  <Text style={styles.okButtonText}>Ok</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-        <Modal
-          animationType="fade"
-          transparent
-          visible={alertVisible}
-          onRequestClose={() => setAlertVisible(false)}
-        >
-          <View style={styles.alertBackground}>
-            <View style={[styles.alertContainer, { width: width * 0.8 }]}>
-              <Text style={styles.alertText}>Please select a payment method.</Text>
-              <TouchableOpacity
-                style={styles.alertButton}
-                onPress={() => setAlertVisible(false)}
-              >
-                <Text style={styles.alertButtonText}>OK</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+          <Image
+            source={require('../../assets/images/backB.png')}
+            style={styles.backIcon}
+          />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { fontSize: headerTitleFontSize }]}>
+          Payment Method
+        </Text>
       </View>
-    </View>
+
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+ 
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Ionicons name="receipt-outline" size={24} color="#AB886D" />
+            <Text style={styles.summaryTitle}>Payment Summary</Text>
+          </View>
+          <View style={styles.summaryDetails}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Donation Amount:</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(amount)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Supporting:</Text>
+              <Text style={styles.summaryValue}>{displayName}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.paymentSection}>
+          <Text style={styles.sectionTitle}>Secure Card Payment</Text>
+          <TouchableOpacity 
+            style={styles.cardPaymentOption}
+            onPress={handleCardPayment}
+            accessibilityRole="button"
+            accessibilityLabel="Pay with credit or debit card"
+          >
+            <View style={styles.cardPaymentContent}>
+              <Image 
+                source={require('../../assets/images/bankcard.png')} 
+                style={styles.cardIcon} 
+              />
+              <View style={styles.cardPaymentText}>
+                <Text style={styles.cardPaymentTitle}>Credit & Debit Card</Text>
+                <Text style={styles.cardPaymentSubtitle}>Visa, Mastercard, American Express</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#797979" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.securityCard}>
+          <View style={styles.securityHeader}>
+            <Ionicons name="shield-checkmark" size={20} color="#51CF66" />
+            <Text style={styles.securityTitle}>Secure Payment</Text>
+          </View>
+          <Text style={styles.securityText}>
+            Your payment information is encrypted and secure. We never store your payment details.
+          </Text>
+        </View>
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+
+      <AlertModal
+        visible={isVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonText={alertConfig.buttonText}
+        type={alertConfig.type}
+        onClose={hideAlert}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: '#E4E0E1', 
-  },
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
-  backButtonText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#797979',
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#493628',
-  },
-  cardOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#797979',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
-  },
-  cardIcon: {
-    width: 30,
-    height: 30,
-    marginRight: 10,
-    resizeMode: 'contain',
-  },
-  cardText: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
-  },
-  arrow: {
-    fontSize: 20,
-    color: '#797979',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 20,
-  },
-  line: {
-    height: 1,
-    flex: 1,
-    backgroundColor: '#797979',
-  },
-  orText: {
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    marginHorizontal: 10,
-  },
-  fastPaymentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  fastPaymentOption: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#797979',
-    borderRadius: 10,
-    padding: 15,
-    width: 80,
-    height: 80,
-  },
-  fastPaymentIcon: {
-    width: 50,
-    height: 50,
-    resizeMode: 'contain',
-  },
-  activePaymentOption: {
     backgroundColor: '#E4E0E1',
-    borderWidth: 1,
-    borderColor: '#AB886D',
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#797979',
-    marginTop: 5,
-  },
-  radioSelected: {
-    backgroundColor: '#AB886D',
-    borderWidth: 1,
-    borderColor: '#AB886D',
-  },
-  proceedButton: {
-    backgroundColor: '#AB886D',
-    paddingVertical: 15,
-    width: '100%',
-    borderRadius: 20,
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
-  },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: '#3F4F44',
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-    marginBottom: 10,
-  },
-  modalText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsRegular',
-    color: '#E4E0E1',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  boldText: {
-    fontFamily: 'PoppinsBold',
-    color: '#AB886D',
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  cancelButton: {
-    backgroundColor: '#D6C0B3',
-    padding: 10,
-    borderRadius: 25,
-    width: '45%',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#3F4F44',
-  },
-  okButton: {
-    backgroundColor: '#AB886D',
-    padding: 10,
-    borderRadius: 25,
-    width: '45%',
-    alignItems: 'center',
-  },
-  okButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-  },
-  alertBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  alertContainer: {
-    backgroundColor: '#3F4F44',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  alertText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#FF6F61', 
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  alertButton: {
-    backgroundColor: '#D6C0B3',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-  },
-  alertButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#3F4F44',
   },
   
+  header: {
+    height: DESIGN_CONSTANTS.HEADER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingTop: DESIGN_CONSTANTS.BACK_BUTTON_TOP,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D6C0B3',
+  },
+  headerBackButton: {
+    padding: 8,
+    marginRight: SPACING.MEDIUM,
+  },
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#797979',
+    resizeMode: 'contain',
+  },
+  headerTitle: {
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    flex: 1,
+  },
+
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingTop: SPACING.LARGE,
+    paddingBottom: SPACING.EXTRA_LARGE,
+  },
+  
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.MEDIUM,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginLeft: SPACING.SMALL,
+  },
+  summaryDetails: {
+    gap: SPACING.SMALL,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    fontSize: 14,
+    fontFamily: 'PoppinsRegular',
+    color: '#797979',
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontFamily: 'PoppinsSemiBold',
+    color: '#1F2029',
+  },
+
+  paymentSection: {
+    marginBottom: SPACING.LARGE,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginBottom: SPACING.MEDIUM,
+  },
+
+  cardPaymentOption: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  cardPaymentContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.LARGE,
+  },
+  cardIcon: {
+    width: 40,
+    height: 40,
+    marginRight: SPACING.MEDIUM,
+    resizeMode: 'contain',
+  },
+  cardPaymentText: {
+    flex: 1,
+  },
+  cardPaymentTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsSemiBold',
+    color: '#1F2029',
+    marginBottom: 2,
+  },
+  cardPaymentSubtitle: {
+    fontSize: 12,
+    fontFamily: 'PoppinsRegular',
+    color: '#797979',
+  },
+
+  securityCard: {
+    backgroundColor: '#F0F8F0',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  securityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.SMALL,
+  },
+  securityTitle: {
+    fontSize: 14,
+    fontFamily: 'PoppinsBold',
+    color: '#2E7D32',
+    marginLeft: SPACING.SMALL,
+  },
+  securityText: {
+    fontSize: 12,
+    fontFamily: 'PoppinsRegular',
+    color: '#2E7D32',
+    lineHeight: 16,
+  },
+  
+  bottomSpacing: {
+    height: 20,
+  },
 });
 
-export default PaymentMethods;
+export default PaymentMethodsPage;
+
+

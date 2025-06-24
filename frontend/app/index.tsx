@@ -1,70 +1,126 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StatusBar, StyleSheet, useWindowDimensions, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { 
+  View, 
+  StatusBar, 
+  StyleSheet, 
+  useWindowDimensions, 
+  Animated,
+  Platform,
+} from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useRouter } from 'expo-router';
 
+// All fonts load
+const ALL_APP_FONTS = {
+  Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
+  PoppinsRegular: require('../assets/fonts/Poppins-Regular.ttf'),
+  PoppinsBold: require('../assets/fonts/Poppins-Bold.ttf'),
+  PoppinsSemiBold: require('../assets/fonts/Poppins-SemiBold.ttf'),
+  PoppinsSemiBoldItalic: require('../assets/fonts/Poppins-SemiBoldItalic.ttf'),
+  PoppinsItalic: require('../assets/fonts/Poppins-Italic.ttf'),
+};
+
+// Preventhiding
+SplashScreen.preventAutoHideAsync();
+
 const SplashScreenComponent: React.FC = () => {
   const router = useRouter();
-  const [fontsLoaded] = useFonts({
-    Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
-  });
+  const [appIsReady, setAppIsReady] = useState(false);
 
-  // Animation values
+  const [fontsLoaded, fontError] = useFonts(ALL_APP_FONTS);
+
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoTranslateY = useRef(new Animated.Value(30)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  //const titleTranslateY = useRef(new Animated.Value(80)).current;
-
+  const screenOpacity = useRef(new Animated.Value(1)).current;
+  
   const { width, height } = useWindowDimensions();
 
   useEffect(() => {
-    SplashScreen.preventAutoHideAsync();
-  }, []);
+    async function prepare() {
+      try {
+        if (fontsLoaded || fontError) {
+          if (fontError) {
+            console.warn('Some fonts failed to load:', fontError);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 300));
+          setAppIsReady(true);
+        }
+      } catch (e) {
+        console.warn('App preparation failed:', e);
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (appIsReady) {
+      SplashScreen.hideAsync();
+
       Animated.sequence([
-        // Először a logó animációja
         Animated.parallel([
-          Animated.timing(logoOpacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
-          Animated.timing(logoTranslateY, { toValue: 0, duration: 1000, useNativeDriver: true }),
+          Animated.timing(logoOpacity, { 
+            toValue: 1, 
+            duration: 1000, 
+            useNativeDriver: true 
+          }),
+          Animated.timing(logoTranslateY, { 
+            toValue: 0, 
+            duration: 1000, 
+            useNativeDriver: true 
+          }),
         ]),
-      
-        // Majd a cím animációja
-        Animated.parallel([
-          Animated.timing(titleOpacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
-          // Animated.spring(titleTranslateY, {
-          //   toValue: 0,
-          //   friction: 5, // Rugalmasság (minél kisebb, annál nagyobb az ugrás)
-          //   tension: 60, // Gyorsaság (minél nagyobb, annál gyorsabb a visszaállás)
-          //   useNativeDriver: true,
-          // }),
-        ]),
+        Animated.timing(titleOpacity, { 
+          toValue: 1, 
+          duration: 1000, 
+          useNativeDriver: true 
+        }),
       ]).start();
 
-      setTimeout(() => {
-        SplashScreen.hideAsync();
-        router.push('/welcome');
-      }, 3500);
-    }
-  }, [fontsLoaded]);
+      const timer = setTimeout(() => {
+        Animated.timing(screenOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          router.replace('/welcome');
+        });
+      }, 3000);
 
-  if (!fontsLoaded) {
+      return () => clearTimeout(timer);
+    }
+  }, [appIsReady, logoOpacity, logoTranslateY, titleOpacity, screenOpacity, router]);
+
+  if (!appIsReady) {
     return null;
   }
 
-  // Responsive sizes based on screen width
   const logoSize = width * 0.4;
   const titleFontSize = width * 0.1;
-  // Compute dynamic negative margin based on the logo size.
-  // If logoSize is 160, then 25% of that is 40 (so marginBottom becomes -40)
   const dynamicNegativeMargin = -logoSize * 0.25;
 
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-      <View style={[styles.background, { width, height }]}>
+      <StatusBar 
+        translucent 
+        backgroundColor="transparent" 
+        barStyle="dark-content" 
+        hidden={Platform.OS === 'android'}
+      />
+      <Animated.View 
+        style={[
+          styles.background, 
+          { 
+            width, 
+            height,
+            opacity: screenOpacity,
+          }
+        ]}
+      >
         <View style={styles.centerContainer}>
           <Animated.Image
             source={require("../assets/images/LogoWhite.png")}
@@ -84,7 +140,6 @@ const SplashScreenComponent: React.FC = () => {
               styles.title,
               {
                 opacity: titleOpacity,
-                //transform: [{ translateY: titleTranslateY }],
                 fontSize: titleFontSize,
               },
             ]}
@@ -92,7 +147,7 @@ const SplashScreenComponent: React.FC = () => {
             Pawner
           </Animated.Text>
         </View>
-      </View>
+      </Animated.View>
     </>
   );
 };
@@ -119,3 +174,5 @@ const styles = StyleSheet.create({
 });
 
 export default SplashScreenComponent;
+
+

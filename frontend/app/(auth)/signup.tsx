@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,137 +9,417 @@ import {
   SafeAreaView,
   ScrollView,
   useWindowDimensions,
+  Platform,
+  BackHandler,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
+import { AlertModal, LegalContentModal } from '../../components/modals';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import axios from 'axios';
+import { API_BASE_URL } from '../../constants';
+
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 40,
+  INPUT_HEIGHT: 50,
+  BUTTON_HEIGHT: 50,
+  BORDER_RADIUS: 20,
+  SOCIAL_BUTTON_SIZE: 40,
+  BACK_BUTTON_TOP: 50,
+} as const;
+
+const FONT_RATIOS = {
+  TITLE: 0.08,
+  BUTTON_TEXT: 0.045,
+  BODY_TEXT: 0.035,
+  TERMS_TEXT: 0.03,
+} as const;
+
+const SPACING = {
+  VERTICAL_SMALL: 10,
+  VERTICAL_MEDIUM: 15,
+  VERTICAL_LARGE: 30,
+  CONTAINER_BOTTOM: 50,
+} as const;
 
 const SignUpScreen: React.FC = () => {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const horizontalPadding = 20 * 2;
-  const availableWidth = width - horizontalPadding;
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
+  
 
-  const [fontsLoaded] = useFonts({
-    Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
-    PoppinsRegular: require('../../assets/fonts/Poppins-Regular.ttf'),
-    PoppinsBold: require('../../assets/fonts/Poppins-Bold.ttf'),
-    PoppinsSemiBold: require('../../assets/fonts/Poppins-SemiBold.ttf'),
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
   });
-  
-  if (!fontsLoaded) {
-    return null;
-  }
-  
-  const handleSignUp = () => {
-    console.log('Signing up with:', email, password);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fieldsTouched, setFieldsTouched] = useState({
+    email: false,
+    password: false,
+  });
+  const [legalModalVisible, setLegalModalVisible] = useState(false);
+  const [legalContentType, setLegalContentType] = useState<'terms' | 'privacy'>('terms');
+
+
+  const availableWidth = width - DESIGN_CONSTANTS.HORIZONTAL_PADDING;
+  const titleFontSize = availableWidth * FONT_RATIOS.TITLE;
+  const buttonTextFontSize = availableWidth * FONT_RATIOS.BUTTON_TEXT;
+  const bodyTextFontSize = availableWidth * FONT_RATIOS.BODY_TEXT;
+  const termsTextFontSize = availableWidth * FONT_RATIOS.TERMS_TEXT;
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
+
+
+  const validatePassword = (password: string) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    };
+    
+    const metRequirements = Object.values(requirements).filter(Boolean).length;
+    const isValid = metRequirements === 5;
+    
+    return { requirements, isValid, metCount: metRequirements };
+  };
+
+  const getPasswordRequirementText = (password: string) => {
+    if (!password) return '';
+    
+    const validation = validatePassword(password);
+    const missing = [];
+    
+    if (!validation.requirements.length) missing.push('8+ characters');
+    if (!validation.requirements.uppercase) missing.push('uppercase letter');
+    if (!validation.requirements.lowercase) missing.push('lowercase letter');
+    if (!validation.requirements.number) missing.push('number');
+    if (!validation.requirements.special) missing.push('special character');
+    
+    if (missing.length === 0) return 'Strong password!';
+    
+    return `Need: ${missing.join(', ')}`;
+  };
+
+  const getEmailBorderColor = () => {
+    if (!fieldsTouched.email) return '#797979';
+    if (!formData.email) return '#797979';
+    return isValidEmail(formData.email) ? '#51CF66' : '#FF6B6B';
+  };
+
+  const getPasswordBorderColor = () => {
+    if (!fieldsTouched.password) return '#797979';
+    if (!formData.password) return '#797979';
+    return validatePassword(formData.password).isValid ? '#51CF66' : '#FF6B6B';
+  };
+
+
+  const handleBack = useCallback(() => {
+    router.push('/choose-signup');
+  }, [router]);
+
+  const togglePasswordVisibility = useCallback(() => {
+    setPasswordVisible(prev => !prev);
+  }, []);
+
+  const handleEmailChange = useCallback((email: string) => {
+    setFormData(prev => ({ ...prev, email }));
+  }, []);
+
+  const handlePasswordChange = useCallback((password: string) => {
+    setFormData(prev => ({ ...prev, password }));
+  }, []);
+
+  const handleEmailBlur = useCallback(() => {
+    setFieldsTouched(prev => ({ ...prev, email: true }));
+  }, []);
+
+  const handlePasswordBlur = useCallback(() => {
+    setFieldsTouched(prev => ({ ...prev, password: true }));
+  }, []);
+
+  const handleSignUp = useCallback(async () => {
+
+    if (!formData.email.trim()) {
+      showAlert({
+        title: 'Email Required',
+        message: 'Please enter your email address.',
+        type: 'warning',
+        buttonText: 'OK'
+      });
+      return;
+    }
+
+    if (!isValidEmail(formData.email)) {
+      showAlert({
+        title: 'Invalid Email',
+        message: 'Please enter a valid email address.',
+        type: 'error',
+        buttonText: 'OK'
+      });
+      return;
+    }
+
+    if (!validatePassword(formData.password).isValid) {
+      showAlert({
+        title: 'Password Requirements',
+        message: 'Please ensure your password meets all security requirements.',
+        type: 'warning',
+        buttonText: 'OK'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      
+      const response = await axios.post(`${API_BASE_URL}/auth/register/donor`, {
+        email: formData.email,
+        password: formData.password,
+        name: 'Donor',
+      });
+      
+      router.push({
+        pathname: '/verify-email',
+        params: {
+          email: formData.email,
+          userType: 'user',
+        },
+      });
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data?.message || 'Registration failed. Please try again.';
+        showAlert({
+          title: 'Registration Error',
+          message: Array.isArray(message) ? message.join(' ') : message,
+          type: 'error',
+          buttonText: 'OK',
+        });
+      } else {
+        showAlert({
+          title: 'Network Error',
+          message: 'Could not connect to the server. Please try again.',
+          type: 'error',
+          buttonText: 'OK',
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [formData, router, showAlert]);
+
+
+
+  const handleLoginNavigation = useCallback(() => {
+    router.push('/login');
+  }, [router]);
+
+  const handleShowTerms = useCallback(() => {
+    setLegalContentType('terms');
+    setLegalModalVisible(true);
+  }, []);
+
+  const handleShowPrivacy = useCallback(() => {
+    setLegalContentType('privacy');
+    setLegalModalVisible(true);
+  }, []);
+
+
+  useEffect(() => {
+    const onBackPress = () => {
+      router.push('/choose-signup');
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.mainContainer}>
-        {/* Back Arrow */}
-        <TouchableOpacity onPress={() => router.push('/choose-signup')} style={styles.backIcon}>
-          <Text style={styles.backText}>←</Text>
+        
+        <TouchableOpacity 
+          onPress={handleBack} 
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back to user type selection"
+        >
+          <Image
+            source={require('../../assets/images/backB.png')}
+            style={styles.backIcon}
+          />
         </TouchableOpacity>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }} 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}         
+        >
+        {/* Main Content */}
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Top Image */}
           <Image
             source={require('../../assets/images/AOwner2.png')}
-            style={[styles.topImage, { width: width * 0.7, height: width * 0.7 }]}
+            style={[
+              styles.topImage, 
+              { width: width * 0.6, height: width * 0.6 }
+            ]}
+            accessibilityLabel="Pet owner illustration"
           />
+
           {/* Title */}
-          <Text style={[styles.topTitle, { fontSize: availableWidth * 0.08 }]}>
+          <Text style={[styles.title, { fontSize: titleFontSize }]}>
             Sign Up
           </Text>
           
-          {/* Email Input Field */}
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#6B6B6B"
-            style={[styles.input, { width: availableWidth * 0.9 }]}
-            value={email}
-            onChangeText={setEmail}
-          />
-          
-          {/* Password Input Field with Eye Icon inside */}
-          <View style={[styles.passwordContainer, { width: availableWidth * 0.9 }]}>
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
             <TextInput
-              placeholder="Password"
+              placeholder="Email"
               placeholderTextColor="#6B6B6B"
-              secureTextEntry={!passwordVisible}
-              style={[styles.input, { flex: 1, paddingRight: 40 }]}
-              value={password}
-              onChangeText={setPassword}
+              style={[
+                styles.input, 
+                { 
+                  width: availableWidth * 0.9,
+                  borderColor: getEmailBorderColor()
+                }
+              ]}
+              value={formData.email}
+              onChangeText={handleEmailChange}
+              onBlur={handleEmailBlur}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
+              accessibilityLabel="Email address"
             />
-            <TouchableOpacity
-              onPress={() => setPasswordVisible(!passwordVisible)}
-              style={styles.eyeIconContainer}
-            >
-              <Ionicons name={passwordVisible ? 'eye' : 'eye-off'} size={width * 0.05} color="#797979" />
-            </TouchableOpacity>
+            {fieldsTouched.email && formData.email && !isValidEmail(formData.email) && (
+              <Text style={styles.errorText}>Please enter a valid email address</Text>
+            )}
           </View>
-          <Text style={[styles.termsText, {fontSize: availableWidth * 0.03}]}>
-            By signing up, you agree to our{' '}
-            <Text style={styles.linkText}>Terms & Conditions</Text> and{' '}
-            <Text style={styles.linkText}>Privacy Policy</Text>.
+          
+          {/* Password Input with Validation */}
+          <View style={styles.inputContainer}>
+            <View style={[styles.passwordContainer, { width: availableWidth * 0.9 }]}>
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#6B6B6B"
+                secureTextEntry={!passwordVisible}
+                style={[
+                  styles.input, 
+                  styles.passwordInput,
+                  { borderColor: getPasswordBorderColor() }
+                ]}
+                value={formData.password}
+                onChangeText={handlePasswordChange}
+                onBlur={handlePasswordBlur}
+                autoComplete="password"
+                textContentType="password"
+                accessibilityLabel="Password"
+              />
+              <TouchableOpacity
+                onPress={togglePasswordVisibility}
+                style={styles.eyeIconContainer}
+                accessibilityRole="button"
+                accessibilityLabel={passwordVisible ? "Show password" : "Hide password"}
+              >
+                <Ionicons 
+                  name={passwordVisible ? 'eye' : 'eye-off'}
+                  size={width * 0.05} 
+                  color="#797979" 
+                />
+              </TouchableOpacity>
+            </View>
+            {fieldsTouched.password && formData.password && (
+              <Text 
+                style={[
+                  styles.passwordRequirementText,
+                  { 
+                    color: validatePassword(formData.password).isValid ? '#51CF66' : '#FF6B6B' 
+                  }
+                ]}
+              >
+                {getPasswordRequirementText(formData.password)}
+              </Text>
+            )}
+          </View>
+
+          {/* Terms and Conditions */}
+          <Text style={[styles.termsText, { fontSize: termsTextFontSize }]}>
+            By creating an account, you agree to our{' '}
+            <Text 
+              style={styles.linkText} 
+              onPress={handleShowTerms}
+            >
+              Terms of Service
+            </Text>
+            {' '}and{' '}
+            <Text 
+              style={styles.linkText}
+              onPress={handleShowPrivacy}
+            >
+              Privacy Policy
+            </Text>
           </Text>
-          {/* Create Your Account Button */}
+
+     
           <TouchableOpacity
-            style={[styles.createAccountButton, { width: availableWidth * 0.9 }]}
+            style={[
+              styles.createAccountButton, 
+              { width: availableWidth * 0.9 },
+              isLoading && styles.buttonDisabled
+            ]}
             onPress={handleSignUp}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Create your account"
           >
-            <Text style={[styles.createAccountButtonText, { fontSize: availableWidth * 0.045 }]}>
-              Create Your Account
+            <Text style={[styles.createAccountButtonText, { fontSize: buttonTextFontSize }]}>
+              {isLoading ? 'Creating Account...' : 'Create Your Account'}
             </Text>
           </TouchableOpacity>
           
-          {/* Separator */}
-          <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
-            - Or continue with -
-          </Text>
+
           
-          {/* Social Media Buttons Row */}
-          <View style={[styles.socialButtonsContainer, { width: availableWidth * 0.8 }]}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image
-                source={require('../../assets/images/gl1.png')}
-                style={styles.socialIcon}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image
-                source={require('../../assets/images/fb1.png')}
-                style={styles.socialIcon}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image
-                source={require('../../assets/images/x1.png')}
-                style={styles.socialIcon}
-              />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Already have an account */}
-          <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
+          {/* Login Link */}
+          <Text style={[styles.loginText, { fontSize: bodyTextFontSize }]}>
             Already have an account?{' '}
-            <Text style={styles.linkText} onPress={() => router.push('/login')}>
+            <Text style={styles.linkText} onPress={handleLoginNavigation}>
               Login
             </Text>
           </Text>
         </ScrollView>
+        </KeyboardAvoidingView>
       </View>
+
+      {/* Custom Alert Modal */}
+      <AlertModal
+        visible={isVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonText={alertConfig.buttonText}
+        type={alertConfig.type}
+        onClose={hideAlert}
+      />
+      {/* Legal Content Modal */}
+      <LegalContentModal
+        visible={legalModalVisible}
+        onClose={() => setLegalModalVisible(false)}
+        contentType={legalContentType}
+      />
     </SafeAreaView>
   );
 };
-  
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -149,104 +429,118 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  backIcon: {
+  backButton: {
     position: 'absolute',
-    top: 50,
+    top: DESIGN_CONSTANTS.BACK_BUTTON_TOP,
     left: 20,
     zIndex: 10,
+    padding: 8,
   },
-  backText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#797979',
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#797979',
+    resizeMode: 'contain',
   },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingTop: 30,
-    paddingBottom: 50,
+    paddingTop: SPACING.VERTICAL_LARGE,
+    paddingBottom: SPACING.CONTAINER_BOTTOM,
   },
   topImage: {
     resizeMode: 'contain',
-    marginVertical: 10,
+    marginVertical: SPACING.VERTICAL_SMALL,
   },
-  topTitle: {
-    fontFamily: 'PoppinsBold',
+  title: {
+    fontFamily: 'Pacifico',  
     color: '#493628',
-    marginBottom: 10,
+    marginBottom: SPACING.VERTICAL_MEDIUM,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    marginBottom: SPACING.VERTICAL_SMALL,
   },
   input: {
-    height: 50,
+    height: DESIGN_CONSTANTS.INPUT_HEIGHT,
     backgroundColor: '#E4E0E1',
     paddingHorizontal: 15,
-    marginBottom: 10,
+    marginBottom: 5,
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
     borderBottomWidth: 1,
-    borderColor: '#797979',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
     position: 'relative',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingRight: 50,
+    marginBottom: 0,
   },
   eyeIconContainer: {
     position: 'absolute',
-    right: 10,
-    top: 15, 
+    right: 15,
+    padding: 5,
   },
-  createAccountButton: {
-    height: 50,
-    backgroundColor: '#AB886D',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-    marginBottom: 15,
-    paddingVertical: 12.5,
-  },
-  createAccountButtonText: {
-    fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
-  },
-  orText: {
+  errorText: {
+    fontSize: 12,
     fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    marginBottom: 15,
+    color: '#FF6B6B',
+    marginTop: 2,
+    marginLeft: 5,
   },
-  socialButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  socialButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EDEDED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
-  socialIcon: {
-    width: 30,
-    height: 30,
-    resizeMode: 'contain',
-  },
-  loginText: {
-    marginTop: 10,
+  passwordRequirementText: {
+    fontSize: 12,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    marginTop: 2,
+    marginLeft: 5,
+    lineHeight: 16,
   },
   termsText: {
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
     textAlign: 'center',
     lineHeight: 18,
-    marginHorizontal: 10,
-    marginBottom: 10,
+    marginHorizontal: SPACING.VERTICAL_SMALL,
+    marginBottom: SPACING.VERTICAL_MEDIUM,
+    marginTop: SPACING.VERTICAL_SMALL,
+  },
+  createAccountButton: {
+    height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
+    backgroundColor: '#AB886D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    marginBottom: SPACING.VERTICAL_MEDIUM,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  createAccountButtonText: {
+    fontFamily: 'PoppinsBold',
+    color: '#E4E0E1',
+  },
+
+  loginText: {
+    marginTop: SPACING.VERTICAL_SMALL,
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+    textAlign: 'center',
   },
   linkText: {
     fontFamily: 'PoppinsBold',
@@ -255,3 +549,4 @@ const styles = StyleSheet.create({
 });
 
 export default SignUpScreen;
+

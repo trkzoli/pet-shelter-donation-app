@@ -1,0 +1,22 @@
+export const COLORS = {
+  // Primary Colors
+  PRIMARY_BROWN: '#493628',
+  LIGHT_BROWN: '#AB886D',
+  BACKGROUND: '#E4E0E1',
+  CARD_BACKGROUND: '#FFFFFF',
+  
+  // Accent Colors
+  DONATE_ORANGE: '#FF8C42',
+  SUCCESS_GREEN: '#51CF66',
+  ERROR_RED: '#FF6B6B',
+  WARNING_YELLOW: '#FFD43B',
+  
+  // Neutral Colors
+  GRAY_DARK: '#797979',
+  GRAY_LIGHT: '#D6C0B3',
+  
+  // Input States
+  INPUT_BORDER_DEFAULT: '#797979',
+  INPUT_BORDER_VALID: '#51CF66',
+  INPUT_BORDER_ERROR: '#FF6B6B',
+} as const;

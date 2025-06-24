@@ -1,148 +1,282 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
-  Animated,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   SafeAreaView,
-  KeyboardAvoidingView,
   ScrollView,
-  Platform,
   useWindowDimensions,
+  Platform,
   Image,
+  BackHandler,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
+import { AlertModal } from '../../components/modals';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import axios from 'axios';
+import { API_BASE_URL } from '../../constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 40,
+  INPUT_HEIGHT: 50,
+  BUTTON_HEIGHT: 50,
+  BORDER_RADIUS: 20,
+  SOCIAL_BUTTON_SIZE: 40,
+  BACK_BUTTON_TOP: 50,
+} as const;
+
+const FONT_RATIOS = {
+  TITLE: 0.08,
+  BUTTON_TEXT: 0.045,
+  BODY_TEXT: 0.035,
+} as const;
+
+const SPACING = {
+  VERTICAL_SMALL: 10,
+  VERTICAL_MEDIUM: 15,
+  VERTICAL_LARGE: 30,
+  CONTAINER_BOTTOM: 50,
+} as const;
 
 const LoginScreen: React.FC = () => {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const horizontalPadding = 20 * 2;
-  const availableWidth = width - horizontalPadding;
-
-  // States for inputs and password visibility
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-
-  const [fontsLoaded] = useFonts({
-    Pacifico: require('../../assets/fonts/Pacifico-Regular.ttf'),
-    PoppinsRegular: require('../../assets/fonts/Poppins-Regular.ttf'),
-    PoppinsBold: require('../../assets/fonts/Poppins-Bold.ttf'),
-    PoppinsSemiBold: require('../../assets/fonts/Poppins-SemiBold.ttf'),
+  const { width, height } = useWindowDimensions();
+  const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
   });
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  const availableWidth = width - DESIGN_CONSTANTS.HORIZONTAL_PADDING;
+  const titleFontSize = availableWidth * FONT_RATIOS.TITLE;
+  const buttonTextFontSize = availableWidth * FONT_RATIOS.BUTTON_TEXT;
+  const bodyTextFontSize = availableWidth * FONT_RATIOS.BODY_TEXT;
 
-  const handleLogin = () => {
-    const users = {
-      shelter: { email: "shelter@example.com", password: "shelter123" },
-      adopter: { email: "adopter@example.com", password: "adopter123" },
-    };
-    if (email === users.shelter.email && password === users.shelter.password) {
-      router.push('/shelter-home');
-    } else if (email === users.adopter.email && password === users.adopter.password) {
-      router.push('/home');
-    } else {
-      alert("Invalid email or password. Please try again.");
+  const handleBack = useCallback(() => {
+    router.push('/welcome');
+  }, [router]);
+
+  const togglePasswordVisibility = useCallback(() => {
+    setPasswordVisible(prev => !prev);
+  }, []);
+
+  const handleEmailChange = useCallback((email: string) => {
+    setFormData(prev => ({ ...prev, email }));
+  }, []);
+
+  const handlePasswordChange = useCallback((password: string) => {
+    setFormData(prev => ({ ...prev, password }));
+  }, []);
+
+  const handleLogin = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email: formData.email,
+        password: formData.password,
+      });
+      const { accessToken, user } = response.data;
+      if (!accessToken) throw new Error('No token returned');
+      await AsyncStorage.setItem('token', accessToken);
+      
+     
+      const userType = user?.role === 'shelter' ? 'shelter' : 'user';
+      if (userType === 'shelter') {
+        router.replace('/(shelter-tabs)/shelter-home');
+      } else {
+        router.replace('/(tabs)/home');
+      }
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response) {
+        const message = error.response.data?.message || 'Login failed. Please try again.';
+        showAlert({
+          title: 'Login Failed',
+          message: Array.isArray(message) ? message.join(' ') : message,
+          type: 'error',
+          buttonText: 'Try Again',
+        });
+      } else {
+        showAlert({
+          title: 'Network Error',
+          message: 'Could not connect to the server. Please try again.',
+          type: 'error',
+          buttonText: 'OK',
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [formData, router, showAlert]);
+
+
+
+  const handleSignUpNavigation = useCallback(() => {
+    router.replace('/choose-signup');
+  }, [router]);
+
+  const handleForgotPasswordPress = useCallback(() => {
+    router.push('/forgot-password');
+  }, [router]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      router.push('/welcome');
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.mainContainer}>
-        {/* Back Arrow */}
-        <TouchableOpacity onPress={() => router.push('/welcome')} style={styles.backIcon}>
-          <Text style={styles.backText}>←</Text>
+        
+        <TouchableOpacity 
+          onPress={handleBack} 
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back to welcome screen"
+        >
+          <Image
+            source={require('../../assets/images/backB.png')}
+            style={styles.backIcon}
+          />
         </TouchableOpacity>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Animated Top Image */}
-          <Animated.Image
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+         
+          <Image
             source={require('../../assets/images/lgdog.png')}
             style={[
               styles.topImage,
-              {
-                width: width * 0.7,
-                height: width * 0.7,
-              },
+              { width: width * 0.7, height: width * 0.7 }
             ]}
+            accessibilityLabel="Welcome illustration"
           />
-          {/* Title */}
-          <Text style={[styles.topTitle, { fontSize: availableWidth * 0.08 }]}>
+
+      
+          <Text style={[styles.title, { fontSize: titleFontSize }]}>
             Welcome, Friend!
           </Text>
           
-          {/* Email Input Field */}
+         
           <TextInput
             placeholder="Email"
             placeholderTextColor="#6B6B6B"
             style={[styles.input, { width: availableWidth * 0.9 }]}
-            value={email}
-            onChangeText={setEmail}
+            value={formData.email}
+            onChangeText={handleEmailChange}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            accessibilityLabel="Email address"
+            accessibilityHint="Enter your email address to log in"
           />
           
-          {/* Password Input Field with Eye Icon inside */}
+       
           <View style={[styles.passwordContainer, { width: availableWidth * 0.9 }]}>
             <TextInput
               placeholder="Password"
               placeholderTextColor="#6B6B6B"
               secureTextEntry={!passwordVisible}
-              style={[styles.input, { flex: 1, paddingRight: 40 }]}
-              value={password}
-              onChangeText={setPassword}
+              style={[styles.input, styles.passwordInput]}
+              value={formData.password}
+              onChangeText={handlePasswordChange}
+              autoComplete="password"
+              textContentType="password"
+              accessibilityLabel="Password"
+              accessibilityHint="Enter your password to log in"
             />
-            <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)} style={styles.eyeIconContainer}>
-              <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={width * 0.05} color="#797979" />
+            <TouchableOpacity
+              onPress={togglePasswordVisibility}
+              style={styles.eyeIconContainer}
+              accessibilityRole="button"
+              accessibilityLabel={passwordVisible ? "Show password" : "Hide password"}
+            >
+              <Ionicons 
+                name={passwordVisible ? 'eye' : 'eye-off'}
+                size={width * 0.05} 
+                color="#797979" 
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.forgotPasswordContainer}>
+            <TouchableOpacity
+              onPress={handleForgotPasswordPress}
+              accessibilityRole="button"
+              accessibilityLabel="Reset your password"
+            >
+              <Text style={[styles.forgotPasswordText, { fontSize: bodyTextFontSize }]}>
+                Forgot Password?
+              </Text>
             </TouchableOpacity>
           </View>
           
-          {/* LOG IN Button */}
+          
           <TouchableOpacity
-            style={[styles.loginButton, { width: availableWidth * 0.9 }]}
+            style={[
+              styles.loginButton, 
+              { width: availableWidth * 0.9 },
+              isLoading && styles.buttonDisabled
+            ]}
             onPress={handleLogin}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Log in to your account"
+            accessibilityState={{ disabled: isLoading }}
           >
-            <Text style={[styles.loginButtonText, { fontSize: availableWidth * 0.045 }]}>
-              LOG IN
+            <Text style={[styles.loginButtonText, { fontSize: buttonTextFontSize }]}>
+              {isLoading ? 'Logging In...' : 'LOG IN'}
             </Text>
           </TouchableOpacity>
           
-          {/* Separator */}
-          <Text style={[styles.orText, { fontSize: availableWidth * 0.035 }]}>
-            - Or continue with -
-          </Text>
+
           
-          {/* Social Media Buttons Row */}
-          <View style={[styles.socialButtonsContainer, { width: availableWidth * 0.8 }]}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image source={require('../../assets/images/gl1.png')} style={styles.socialIcon} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image source={require('../../assets/images/fb1.png')} style={styles.socialIcon} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image source={require('../../assets/images/x1.png')} style={styles.socialIcon} />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Sign Up Link */}
-          <Text style={[styles.loginText, { fontSize: availableWidth * 0.035 }]}>
+  
+          <Text style={[styles.signupText, { fontSize: bodyTextFontSize }]}>
             Don't have an account?{' '}
-            <Text style={styles.linkText} onPress={() => router.push('/choose-signup')}>
+            <Text style={styles.linkText} onPress={handleSignUpNavigation}>
               Sign Up
             </Text>
           </Text>
         </ScrollView>
+        </KeyboardAvoidingView>
       </View>
+
+ 
+      <AlertModal
+        visible={isVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonText={alertConfig.buttonText}
+        type={alertConfig.type}
+        onClose={hideAlert}
+      />
+
     </SafeAreaView>
   );
 };
-  
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -152,38 +286,41 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  backIcon: {
+  backButton: {
     position: 'absolute',
-    top: 50,
+    top: DESIGN_CONSTANTS.BACK_BUTTON_TOP,
     left: 20,
     zIndex: 10,
+    padding: 8,
   },
-  backText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#797979',
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#797979',
+    resizeMode: 'contain',
   },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingTop: 30,
-    paddingBottom: 50,
+    paddingTop: SPACING.VERTICAL_LARGE,
+    paddingBottom: SPACING.CONTAINER_BOTTOM,
   },
   topImage: {
     resizeMode: 'contain',
-    marginTop: 10,
+    marginTop: SPACING.VERTICAL_SMALL,
     marginBottom: -20,
   },
-  topTitle: {
+  title: {
     fontFamily: 'Pacifico',
     color: '#493628',
-    marginBottom: 40,
+    marginBottom: SPACING.VERTICAL_LARGE,
+    textAlign: 'center',
   },
   input: {
-    height: 50,
+    height: DESIGN_CONSTANTS.INPUT_HEIGHT,
     backgroundColor: '#E4E0E1',
     paddingHorizontal: 15,
-    marginBottom: 15,
+    marginBottom: SPACING.VERTICAL_MEDIUM,
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
@@ -193,56 +330,60 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: SPACING.VERTICAL_MEDIUM,
     position: 'relative',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingRight: 50,
+    marginBottom: 0,
   },
   eyeIconContainer: {
     position: 'absolute',
-    right: 10,
-    top: 15,
+    right: 15,
+    padding: 5,
+  },
+  forgotPasswordContainer: {
+    width: '90%',
+    alignItems: 'flex-end',
+    marginBottom: SPACING.VERTICAL_MEDIUM,
+  },
+  forgotPasswordText: {
+    fontFamily: 'PoppinsSemiBold',
+    color: '#493628',
+    textDecorationLine: 'underline',
   },
   loginButton: {
-    height: 50,
+    height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
     backgroundColor: '#AB886D',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    marginBottom: 15,
-    paddingVertical: 12.5,
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    marginBottom: SPACING.VERTICAL_MEDIUM,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   loginButtonText: {
     fontFamily: 'PoppinsBold',
-    color: '#EDEDED',
+    color: '#E4E0E1',
   },
-  orText: {
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    marginBottom: 15,
-  },
-  socialButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  socialButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EDEDED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
-  socialIcon: {
-    width: 30,
-    height: 30,
-    resizeMode: 'contain',
-  },
-  loginText: {
-    marginTop: 10,
+  signupText: {
+    marginTop: SPACING.VERTICAL_SMALL,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
+    textAlign: 'center',
   },
   linkText: {
     fontFamily: 'PoppinsBold',
@@ -251,3 +392,5 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+
+

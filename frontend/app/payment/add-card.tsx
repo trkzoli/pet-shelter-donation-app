@@ -1,364 +1,548 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  TextInput,
   ScrollView,
-  Modal,
   useWindowDimensions,
+  SafeAreaView,
+  Platform,
+  Image,
+  KeyboardAvoidingView,
+  Alert,
+  TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { AlertModal } from '../../components/modals';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import { setTabsUI } from '../../config/systemUI';
+import axios from 'axios';
+import { API_BASE_URL } from '../../constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useStripe, CardField } from '@stripe/stripe-react-native';
+
+
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 20,
+  BORDER_RADIUS: 20,
+  BACK_BUTTON_TOP: 50,
+  BUTTON_HEIGHT: 55,
+  HEADER_HEIGHT: 100,
+  INPUT_HEIGHT: 50,
+} as const;
+
+const SPACING = {
+  SMALL: 8,
+  MEDIUM: 12,
+  LARGE: 16,
+  EXTRA_LARGE: 20,
+} as const;
+
+const FONT_RATIOS = {
+  HEADER_TITLE: 0.06,
+  BUTTON_TEXT: 0.045,
+  BODY_TEXT: 0.035,
+} as const;
 
 const AddCardPage: React.FC = () => {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-  const [cardNumber, setCardNumber] = useState('');
+  const { width } = useWindowDimensions();
+  const params = useLocalSearchParams();
+  const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
+  const { confirmPayment, createPaymentMethod } = useStripe();
+  
+  
+  const amount = params.amount as string;
+  const petId = params.petId as string;
+  const campaignId = params.campaignId as string;
+  const petName = params.petName as string || 'this pet';
+  const campaignTitle = params.title as string || 'this campaign';
+  const shelterName = params.shelterName as string || 'the shelter';
+  const type = params.type as string || 'pet';
+  
+  
+  const displayName = type === 'campaign' ? shelterName : petName;
+  
+ 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [cardDetails, setCardDetails] = useState<any>(null);
   const [nameOnCard, setNameOnCard] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [saveCard, setSaveCard] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [paymentSummaryVisible, setPaymentSummaryVisible] = useState(false);
 
-  const handleProceed = () => {
-    if (!cardNumber || cardNumber.length < 13 || cardNumber.length > 16) {
-      setErrorMessage('Invalid card number. Must be 13 to 16 digits.');
-      setModalVisible(true);
+ 
+  useEffect(() => {
+    setTabsUI();
+  }, []);
+
+  
+  const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
+  const buttonTextFontSize = width * FONT_RATIOS.BUTTON_TEXT;
+  const bodyTextFontSize = width * FONT_RATIOS.BODY_TEXT;
+
+  
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleProceed = useCallback(async () => {
+   
+    if (!cardDetails?.complete || isProcessing) {
+      showAlert({
+        title: 'Incomplete Card Details',
+        message: 'Please complete all card information before proceeding.',
+        type: 'error',
+        buttonText: 'OK'
+      });
       return;
     }
-    if (!nameOnCard) {
-      setErrorMessage('Please enter the name on the card.');
-      setModalVisible(true);
+
+    if (!nameOnCard.trim()) {
+      showAlert({
+        title: 'Name Required',
+        message: 'Please enter the name as it appears on your card.',
+        type: 'error',
+        buttonText: 'OK'
+      });
       return;
     }
-    if (!expiryDate || expiryDate.length !== 5 || !expiryDate.includes('/')) {
-      setErrorMessage('Invalid expiry date. Format must be MM/YY.');
-      setModalVisible(true);
-      return;
+    
+    setIsProcessing(true);
+    
+    try {
+      
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('Not authenticated');
+      
+      const amountNum = parseFloat(amount);
+      const paymentIntentRes = await axios.post(
+        `${API_BASE_URL}/payments/create-intent`,
+        {
+          amount: amountNum,
+          type: type,
+          petId: type === 'pet' ? petId : undefined,
+          campaignId: type === 'campaign' ? campaignId : undefined,
+          paymentMethod: 'card',
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const { clientSecret, paymentIntentId } = paymentIntentRes.data;
+      
+      
+      const { paymentMethod, error: pmError } = await createPaymentMethod({
+        paymentMethodType: 'Card',
+        paymentMethodData: {
+          billingDetails: {
+            name: nameOnCard.trim(),
+          },
+        },
+      });
+      
+      if (pmError) {
+        throw new Error(pmError.message);
+      }
+      
+     
+      const { error: confirmError } = await confirmPayment(clientSecret, {
+        paymentMethodType: 'Card',
+      });
+      
+      if (confirmError) {
+        throw new Error(confirmError.message);
+      }
+      
+     
+      await axios.post(
+        `${API_BASE_URL}/payments/confirm`,
+        {
+          paymentIntentId,
+          paymentMethodId: paymentMethod?.id,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+   
+      showAlert({
+        title: 'Payment Successful!',
+        message: `Thank you for your donation to support ${displayName}! Your payment has been processed successfully.`,
+        type: 'success',
+        buttonText: 'Continue',
+      });
+      setTimeout(() => {
+        hideAlert();
+        router.replace('/profile');
+      }, 2500);
+    } catch (error: any) {
+      showAlert({
+        title: 'Payment Failed',
+        message: error.message || 'Something went wrong with your payment. Please try again.',
+        type: 'error',
+        buttonText: 'Try Again',
+      });
+    } finally {
+      setIsProcessing(false);
     }
-    if (!cvv || cvv.length < 3 || cvv.length > 4) {
-      setErrorMessage('Invalid CVV. Must be 3 or 4 digits.');
-      setModalVisible(true);
-      return;
-    }
-    setPaymentSummaryVisible(true);
-  };
+  }, [cardDetails, nameOnCard, amount, petId, campaignId, displayName, type, showAlert, hideAlert, router, confirmPayment, createPaymentMethod]);
 
-  const handleCardNumberChange = (text: string) => {
-    const cleanedText = text.replace(/[^0-9]/g, '');
-    setCardNumber(cleanedText);
-  };
 
-  const handleExpiryDateChange = (text: string) => {
-    const cleanedText = text.replace(/[^0-9]/g, '');
-    if (cleanedText.length <= 2) {
-      setExpiryDate(cleanedText);
-    } else if (cleanedText.length <= 4) {
-      setExpiryDate(`${cleanedText.substring(0, 2)}/${cleanedText.substring(2)}`);
-    }
-  };
-
-  const handleCvvChange = (text: string) => {
-    const cleanedText = text.replace(/[^0-9]/g, '');
-    if (cleanedText.length <= 4) setCvv(cleanedText);
-  };
-
-  const finalizePayment = () => {
-    router.replace('/profile');
+  const formatCurrency = (amount: string): string => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(numAmount);
   };
 
   return (
-    <View style={[styles.background, { width, height }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.container}>
-          {/* Back Button */}
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>←</Text>
-          </TouchableOpacity>
-          {/* Card Image */}
-          <View style={styles.cardContainer}>
-            <Image
-              source={require('../../assets/images/ccard.png')}
-              style={{ width: width * 0.7, height: width * 0.7 }}
-            />
-          </View>
+    <SafeAreaView style={styles.container}>
 
-          <Text style={styles.title}>Add Card</Text>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={handleBack} 
+          style={styles.headerBackButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back to payment methods"
+        >
+          <Image
+            source={require('../../assets/images/backB.png')}
+            style={styles.backIcon}
+          />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { fontSize: headerTitleFontSize }]}>
+          Add Payment Card
+        </Text>
+      </View>
 
-          {/* Payment Information Fields */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Card Number"
-              placeholderTextColor="#797979"
-              keyboardType="numeric"
-              maxLength={16}
-              value={cardNumber}
-              onChangeText={handleCardNumberChange}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Name on Card"
-              placeholderTextColor="#797979"
-              value={nameOnCard}
-              onChangeText={setNameOnCard}
-            />
-            <View style={styles.doubleInputContainer}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="MM/YY"
-                placeholderTextColor="#797979"
-                keyboardType="numeric"
-                maxLength={5}
-                value={expiryDate}
-                onChangeText={handleExpiryDateChange}
-              />
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="CVV"
-                placeholderTextColor="#797979"
-                keyboardType="numeric"
-                maxLength={4}
-                value={cvv}
-                onChangeText={handleCvvChange}
-              />
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryHeader}>
+              <Ionicons name="receipt-outline" size={24} color="#AB886D" />
+              <Text style={styles.summaryTitle}>Payment Summary</Text>
+            </View>
+            <View style={styles.summaryDetails}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Donation Amount:</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(amount)}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Supporting:</Text>
+                <Text style={styles.summaryValue}>{displayName}</Text>
+              </View>
             </View>
           </View>
 
-          {/* Save Card Option */}
-          <View style={styles.saveOption}>
-            <TouchableOpacity
-              style={styles.checkbox}
-              onPress={() => setSaveCard(!saveCard)}
-            >
-              <View style={[styles.checkboxMark, saveCard && styles.checkboxChecked]} />
-            </TouchableOpacity>
-            <Text style={styles.saveText}>Save this card</Text>
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Card Information</Text>
+            
+           
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Name on Card</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  nameOnCard.trim().length > 0 && styles.inputValid,
+                ]}
+                value={nameOnCard}
+                onChangeText={setNameOnCard}
+                placeholder="John Doe"
+                placeholderTextColor="#797979"
+                autoCapitalize="words"
+                autoComplete="cc-name"
+                accessibilityLabel="Name on card"
+              />
+            </View>
+            
+         
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Card Details</Text>
+              <View style={styles.cardFieldContainer}>
+                <CardField
+                  postalCodeEnabled={false}
+                  style={styles.cardField}
+                  onCardChange={(details) => {
+                    setCardDetails(details);
+                  }}
+                />
+              </View>
+            </View>
           </View>
 
-          {/* Proceed Button */}
-          <TouchableOpacity style={styles.proceedButton} onPress={handleProceed}>
-            <Text style={styles.proceedButtonText}>PROCEED</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
 
-      {/* Error Modal */}
-      <Modal
-        animationType="fade"
-        transparent
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalBackground}>
-          <View style={[styles.modalContainer, { width: width * 0.8 }]}>
-            <Text style={[styles.modalText, styles.errorText]}>{errorMessage}</Text>
+          <View style={styles.payButtonContainer}>
             <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setModalVisible(false)}
+              style={[
+                styles.payButton,
+                (!cardDetails?.complete || !nameOnCard.trim() || isProcessing) && styles.payButtonDisabled
+              ]}
+              onPress={handleProceed}
+              disabled={!cardDetails?.complete || !nameOnCard.trim() || isProcessing}
+              accessibilityRole="button"
+              accessibilityLabel={`Pay ${formatCurrency(amount)}`}
+              accessibilityState={{ disabled: !cardDetails?.complete || !nameOnCard.trim() || isProcessing }}
             >
-              <Text style={styles.cancelButtonText}>Ok</Text>
+              {isProcessing ? (
+                <Text style={[styles.payButtonText, { fontSize: buttonTextFontSize }]}>
+                  Processing Payment...
+                </Text>
+              ) : (
+                <Text style={[styles.payButtonText, { fontSize: buttonTextFontSize }]}>
+                  Pay {formatCurrency(amount)}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
 
-      {/* Payment Summary Modal */}
-      <Modal
-        animationType="fade"
-        transparent
-        visible={paymentSummaryVisible}
-        onRequestClose={() => setPaymentSummaryVisible(false)}
-      >
-        <View style={styles.modalBackground}>
-          <View style={[styles.modalContainer, { width: width * 0.8 }]}>
-            <Text style={styles.modalTitle}>Confirm Payment</Text>
-            <Text style={styles.modalText}>
-              You will pay <Text style={styles.boldText}>$50</Text> and receive{' '}
-              <Text style={styles.boldText}>10 PetTokens (PTK)</Text>.
+
+          <View style={styles.securityCard}>
+            <View style={styles.securityHeader}>
+              <Ionicons name="shield-checkmark" size={20} color="#51CF66" />
+              <Text style={styles.securityTitle}>Your payment is secure</Text>
+            </View>
+            <Text style={styles.securityText}>
+              Your card information is encrypted and processed securely. We never store your complete card details.
             </Text>
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setPaymentSummaryVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.okButton} onPress={finalizePayment}>
-                <Text style={styles.okButtonText}>Ok</Text>
-              </TouchableOpacity>
-            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+
+
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <AlertModal
+        visible={isVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonText={alertConfig.buttonText}
+        type={alertConfig.type}
+        onClose={hideAlert}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
+  container: {
     flex: 1,
     backgroundColor: '#E4E0E1',
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
+
+  header: {
+    height: DESIGN_CONSTANTS.HEADER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingTop: DESIGN_CONSTANTS.BACK_BUTTON_TOP,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D6C0B3',
   },
-  container: {
-    flex: 1,
-    padding: 20,
+  headerBackButton: {
+    padding: 8,
+    marginRight: SPACING.MEDIUM,
   },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#797979',
+    resizeMode: 'contain',
   },
-  backButtonText: {
-    fontSize: 24,
+  headerTitle: {
     fontFamily: 'PoppinsBold',
+    color: '#493628',
+    flex: 1,
+  },
+  
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingTop: SPACING.LARGE,
+    paddingBottom: SPACING.EXTRA_LARGE,
+  },
+  
+
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.MEDIUM,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginLeft: SPACING.SMALL,
+  },
+  summaryDetails: {
+    gap: SPACING.SMALL,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    fontSize: 14,
+    fontFamily: 'PoppinsRegular',
     color: '#797979',
   },
-  title: {
-    fontSize: 24,
+  summaryValue: {
+    fontSize: 14,
+    fontFamily: 'PoppinsSemiBold',
+    color: '#1F2029',
+  },
+  
+
+  formSection: {
+    marginBottom: SPACING.LARGE,
+  },
+  sectionTitle: {
+    fontSize: 16,
     fontFamily: 'PoppinsBold',
-    textAlign: 'center',
     color: '#493628',
-    marginBottom: 20,
+    marginBottom: SPACING.MEDIUM,
   },
-  cardContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
+  
+
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: SPACING.MEDIUM,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontFamily: 'PoppinsRegular',
+    color: '#797979',
+    marginBottom: SPACING.SMALL,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#797979',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    height: DESIGN_CONSTANTS.INPUT_HEIGHT,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: SPACING.MEDIUM,
+    paddingHorizontal: SPACING.LARGE,
     fontSize: 16,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
-    marginBottom: 10,
-    backgroundColor: '#E4E0E1',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
-  doubleInputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
+  inputValid: {
+    borderColor: '#51CF66',
   },
-  halfInput: {
-    flex: 1,
+  
+  cardFieldContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: SPACING.MEDIUM,
+    paddingHorizontal: SPACING.LARGE,
+    paddingVertical: SPACING.SMALL,
+    minHeight: 60,
   },
-  saveOption: {
+  cardField: {
+    height: 40, 
+  },
+  
+  payButtonContainer: {
+    marginVertical: SPACING.LARGE,
+  },
+  payButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -15,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: '#797979',
-    borderRadius: 5,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  checkboxMark: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-  },
-  checkboxChecked: {
+    height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
     backgroundColor: '#AB886D',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  saveText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-  },
-  proceedButton: {
-    backgroundColor: '#AB886D',
-    paddingVertical: 15,
-    borderRadius: 20,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-  },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: '#3F4F44',
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-    marginBottom: 10,
-  },
-  modalText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsRegular',
-    color: '#E4E0E1',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  boldText: {
-    fontFamily: 'PoppinsBold',
-    color: '#AB886D',
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  cancelButton: {
+  payButtonDisabled: {
     backgroundColor: '#D6C0B3',
-    padding: 10,
-    borderRadius: 25,
-    width: '45%',
-    alignItems: 'center',
+    opacity: 0.6,
   },
-  cancelButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#3F4F44',
-  },
-  okButton: {
-    backgroundColor: '#AB886D',
-    padding: 10,
-    borderRadius: 25,
-    width: '45%',
-    alignItems: 'center',
-  },
-  okButtonText: {
-    fontSize: 16,
+  payButtonText: {
     fontFamily: 'PoppinsBold',
     color: '#E4E0E1',
   },
-  errorText: {
-    color: '#FF6F61',
+  
+
+  securityCard: {
+    backgroundColor: '#F0F8F0',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  securityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.SMALL,
+  },
+  securityTitle: {
+    fontSize: 14,
     fontFamily: 'PoppinsBold',
+    color: '#2E7D32',
+    marginLeft: SPACING.SMALL,
+  },
+  securityText: {
+    fontSize: 12,
+    fontFamily: 'PoppinsRegular',
+    color: '#2E7D32',
+    lineHeight: 16,
+  },
+  
+  bottomSpacing: {
+    height: 20,
   },
 });
 
 export default AddCardPage;
+
+
+

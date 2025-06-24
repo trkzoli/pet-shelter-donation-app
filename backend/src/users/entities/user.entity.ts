@@ -1,40 +1,337 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  BeforeInsert,
+  BeforeUpdate,
+  OneToOne,
+  OneToMany,
+  Index,
+  Check,
+} from 'typeorm';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  IsNumber,
+  Min,
+  Max,
+  Matches,
+} from 'class-validator';
+import { Exclude } from 'class-transformer';
+import * as bcrypt from 'bcrypt';
+import { Shelter } from '../../shelters/entities/shelter.entity';
 import { Donation } from '../../donations/entities/donation.entity';
-import { Token } from '../../tokens/entities/token.entity';
+import { PawPointTransaction } from '../../donations/entities/pawpoint-transaction.entity';
+import { AdoptionRequest } from '../../adoptions/entities/adoption-request.entity';
 
+export enum UserRole {
+  DONOR = 'donor',
+  SHELTER = 'shelter',
+}
+
+export enum HousingType {
+  HOUSE = 'house',
+  APARTMENT = 'apartment',
+  CONDO = 'condo',
+}
+
+export enum OwnershipStatus {
+  OWN = 'own',
+  RENT = 'rent',
+  FAMILY = 'family',
+}
+
+export enum YardStatus {
+  YES = 'yes',
+  NO = 'no',
+  SHARED = 'shared',
+}
+
+export enum FenceStatus {
+  YES = 'yes',
+  NO = 'no',
+  PARTIALLY = 'partially',
+}
+
+export enum ExperienceLevel {
+  FIRST_TIME = 'first_time',
+  SOME_EXPERIENCE = 'some_experience',
+  EXPERIENCED = 'experienced',
+  VERY_EXPERIENCED = 'very_experienced',
+}
 
 @Entity('users')
+@Index(['email'], { unique: true })
+@Check(`"pawPoints" >= 0`)
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // Authentication fields
   @Column({ unique: true })
+  @IsEmail()
   email: string;
 
-  @Column({ select: false })
+  @Column()
+  @Exclude()
+  @MinLength(6)
   password: string;
 
   @Column()
+  @IsString()
+  @MinLength(2)
   name: string;
 
-  @Column({ default: false })
-  isShelter: boolean;
+  @Column({ nullable: true })
+  @IsOptional()
+  @Matches(/^\+?[\d\s-()]+$/, { message: 'Invalid phone number format' })
+  phone?: string;
+
+  // Address fields
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  street?: string;
 
   @Column({ nullable: true })
-  profileImage: string;
+  @IsOptional()
+  @IsString()
+  city?: string;
 
-  @Column({ default: 0, type: 'decimal', precision: 10, scale: 4 })
-  tokenBalance: number;
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  state?: string;
 
-  @OneToMany(() => Donation, donation => donation.user)
-  donations: Donation[];
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  zip?: string;
 
-  @OneToMany(() => Token, token => token.user)
-  tokens: Token[];
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  country?: string;
 
+  // Housing information (for donors) - changed to allow any text
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  housingType?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  ownershipStatus?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  hasYard?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  isFenced?: string;
+
+  // Additional housing information
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  housingOwnership?: string;
+
+  // Pet experience fields
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  currentPets?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  previousPets?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  experienceLevel?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  petExperience?: string;
+
+  // Lifestyle fields
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  occupation?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  workSchedule?: string;
+
+  @Column({ type: 'text', nullable: true })
+  @IsOptional()
+  @IsString()
+  whyAdopt?: string;
+
+  // Profile image
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  profileImage?: string;
+
+  // Profile completion (calculated field)
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  profileCompleteness: number;
+
+  // PawPoints and donations
+  @Column({ default: 0 })
+  @IsNumber()
+  @Min(0)
+  pawPoints: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @IsNumber()
+  @Min(0)
+  totalDonated: number;
+
+  // Email verification
+  @Column({ default: false })
+  @IsBoolean()
+  emailVerified: boolean;
+
+  @Column({ nullable: true, length: 4 })
+  @Exclude()
+  verificationCode?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  verificationCodeExpiry?: Date;
+
+  // Password reset
+  @Column({ nullable: true })
+  @Exclude()
+  resetToken?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetTokenExpiry?: Date;
+
+  // User role
+  @Column({ type: 'enum', enum: UserRole })
+  @IsEnum(UserRole)
+  role: UserRole;
+
+  // Timestamps
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // Relations (to be defined in other entities)
+  @OneToOne(() => Shelter, shelter => shelter.user)
+  shelter?: Shelter;
+
+  @OneToMany(() => Donation, donation => donation.user)
+  donations: Donation[];
+
+  @OneToMany(() => PawPointTransaction, transaction => transaction.user)
+  pawPointTransactions: PawPointTransaction[];
+
+  @OneToMany(() => AdoptionRequest, request => request.user)
+  adoptionRequests: AdoptionRequest[];
+
+  // Hooks
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashPassword() {
+    if (this.password && !this.password.startsWith('$2b$')) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
+  }
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  calculateProfileCompletion() {
+    const requiredFields = [
+      'name',
+      'phone',
+      'street',
+      'city',
+      'state',
+      'zip',
+      'country',
+      'housingType',
+      'ownershipStatus',
+      'currentPets',
+      'experienceLevel',
+      'occupation',
+      'workSchedule',
+      'whyAdopt',
+    ];
+
+    // Only calculate for donors
+    if (this.role === UserRole.DONOR) {
+      const filledFields = requiredFields.filter(field => {
+        const value = this[field as keyof User];
+        return value !== null && value !== undefined && value !== '';
+      });
+      this.profileCompleteness = Math.round((filledFields.length / requiredFields.length) * 100);
+      
+      // Debug log for profile completion calculation
+      console.log('🔍 BACKEND Profile Completion:', {
+        requiredFields: requiredFields.length,
+        filledFields: filledFields.length,
+        percentage: this.profileCompleteness,
+        filledFieldNames: filledFields
+      });
+    } else {
+      // Shelters have different profile requirements, handled in Shelter entity
+      this.profileCompleteness = 0;
+    }
+  }
+
+  // Helper methods
+  async validatePassword(password: string): Promise<boolean> {
+    return bcrypt.compare(password, this.password);
+  }
+
+  generateVerificationCode(): void {
+    this.verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
+    this.verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  }
+
+  generateResetToken(): string {
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    this.resetToken = token;
+    this.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    return token;
+  }
+
+  isVerificationCodeValid(code: string): boolean {
+    return !!(
+      this.verificationCode === code &&
+      this.verificationCodeExpiry &&
+      this.verificationCodeExpiry > new Date()
+    );
+  }
+
+  isResetTokenValid(token: string): boolean {
+    return !!(
+      this.resetToken === token &&
+      this.resetTokenExpiry &&
+      this.resetTokenExpiry > new Date()
+    );
+  }
 }

@@ -1,15 +1,15 @@
+// src/config/database.config.ts
+// src/config/database.config.ts
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { ConfigService } from '@nestjs/config';
 
-export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOptions => {
-  return {
-    type: 'postgres',
-    host: configService.get<string>('DB_HOST'),
-    port: configService.get<number>('DB_PORT'),
-    username: configService.get<string>('DB_USERNAME'),
-    password: configService.get<string>('DB_PASSWORD'),
-    database: configService.get<string>('DB_NAME'),
-    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-    synchronize: configService.get<string>('NODE_ENV') !== 'production',
-  };
-};
+export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  username: process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || 'tzadmin1',
+  database: process.env.DB_NAME || 'pawner_db',
+  synchronize: process.env.NODE_ENV !== 'production',
+  autoLoadEntities: true,
+  logging: process.env.NODE_ENV === 'development',
+});

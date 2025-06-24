@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,282 +6,471 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  Image,
   useWindowDimensions,
+  SafeAreaView,
+  Platform,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import ShelterNavBar from '../../components/navigation/shelterNavBar';
+import { Ionicons } from '@expo/vector-icons';
+import { setTabsUI } from '../../config/systemUI';
+import { FilterDropdownModal } from '../../components/modals';
+import ShelterPetCard from '../../components/pet/ShelterPetCard';
+import axios from 'axios';
+import { API_BASE_URL } from '../../constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const animals = [
-  { id: '1', name: 'Buddy', breed: 'Chihuahua', donations: 120, type: 'Dogs', image: require('../../assets/images/ds1.jpg') },
-  { id: '2', name: 'Max', breed: 'Rottweiler', donations: 250, type: 'Dogs', image: require('../../assets/images/ds2.jpg') },
-  { id: '3', name: 'Bella', breed: 'German Shepherd', donations: 180, type: 'Dogs', image: require('../../assets/images/ds3.jpg') },
-  { id: '4', name: 'Lucy', breed: 'Beagle', donations: 140, type: 'Dogs', image: require('../../assets/images/ds4.jpg') },
-  { id: '5', name: 'Whiskers', breed: 'Persian Cat', donations: 95, type: 'Cats', image: require('../../assets/images/cs1.jpg') },
-  { id: '6', name: 'Snowball', breed: 'Angora Cat', donations: 110, type: 'Cats', image: require('../../assets/images/cs2.jpg') },
-  { id: '7', name: 'Nibbles', breed: 'Syrian Hamster', donations: 50, type: 'Hamsters', image: require('../../assets/images/hs1.jpg') },
-];
-const allFilters = ['All', 'Dogs', 'Cats', 'Hamsters', 'Rabbits', 'Parrots', 'Fish'];
 
-const ShelterHome: React.FC = () => {
+type FilterType = 'All' | 'Dogs' | 'Cats'; 
+
+
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 16,
+  BORDER_RADIUS: 20,
+  SEARCH_BAR_HEIGHT: 45,
+  CARD_SPACING: 6, 
+} as const;
+
+const SPACING = {
+  SMALL: 8,
+  MEDIUM: 12,
+  LARGE: 16,
+  EXTRA_LARGE: 20,
+} as const;
+
+const COLORS = {
+  PRIMARY_BROWN: '#493628',
+  LIGHT_BROWN: '#AB886D',
+  BACKGROUND: '#E4E0E1',
+  CARD_BACKGROUND: '#FFFFFF',
+  GRAY_DARK: '#797979',
+} as const;
+
+const FONT_RATIOS = {
+  HEADER_TITLE: 0.055, 
+  SEARCH_TEXT: 0.035,
+  CARD_TITLE: 0.042,
+  CARD_SUBTITLE: 0.035,
+  CARD_BODY: 0.032,
+  BUTTON_TEXT: 0.038,
+} as const;
+
+
+interface ShelterPet {
+  id: string;
+  name: string;
+  breed: string;
+  type: FilterType;
+  donations: number;
+  donorCount: number;
+  image: any;
+}
+
+const ShelterHomePage: React.FC = () => {
   const { width, height } = useWindowDimensions();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredAnimals, setFilteredAnimals] = useState(animals);
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const router = useRouter();
 
-  const handleSearch = (text: string) => {
-    setSearchQuery(text);
-    const filtered = animals.filter((animal) => {
-      const matchesSearch =
-        animal.name.toLowerCase().includes(text.toLowerCase()) ||
-        animal.breed.toLowerCase().includes(text.toLowerCase());
-      const matchesFilter = activeFilter === 'All' || animal.type === activeFilter;
-      return matchesSearch && matchesFilter;
-    });
-    setFilteredAnimals(filtered);
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('All');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pets, setPets] = useState<ShelterPet[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFilterPress = (filter: string) => {
+  useEffect(() => {
+    setTabsUI();
+  }, []);
+
+
+  const fetchPets = useCallback(async () => {
+    setError(null);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+       
+        console.log('FRONTEND: No token found, showing empty state for new user');
+        setPets([]);
+        return;
+      }
+      
+      const res = await axios.get(`${API_BASE_URL}/pets/shelter/my-pets`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+
+      console.log('FRONTEND: Raw backend response:', JSON.stringify(res.data, null, 2));
+      
+      const mappedPets: ShelterPet[] = res.data.map((pet: any) => {
+        console.log(`FRONTEND: Mapping pet ${pet.id}:`, {
+          name: pet.name,
+          breed: pet.breed,
+          type: pet.type,
+          currentMonthDonations: pet.currentMonthDonations,
+          adoptionRequestsCount: pet.adoptionRequestsCount,
+          status: pet.status,
+          mainImage: pet.mainImage
+        });
+        
+        return {
+          id: pet.id,
+          name: pet.name,
+          breed: pet.breed,
+          type: pet.type === 'dog' ? 'Dogs' : pet.type === 'cat' ? 'Cats' : 'Other',
+          donations: pet.currentMonthDonations ?? 0, 
+          donorCount: pet.adoptionRequestsCount ?? 0, 
+          image: pet.mainImage ? { uri: pet.mainImage } : require('../../assets/images/placeholder.png'),
+        };
+      });
+      
+      console.log('FRONTEND: Mapped pets:', mappedPets);
+      setPets(mappedPets);
+    } catch (err: any) {
+      console.error('FRONTEND: Error fetching pets:', err);
+      
+     
+      if (err.response?.status === 401) {
+      
+        console.log('🔍 FRONTEND: Authentication error, clearing pets and showing empty state');
+        setPets([]);
+       
+      } else if (err.message === 'Not authenticated') {
+        
+        console.log('🔍 FRONTEND: No authentication token, showing empty state');
+        setPets([]);
+      } else {
+        
+        setError('Unable to load pets. Please check your connection and try again.');
+      }
+    }
+  }, []);
+
+
+  useEffect(() => {
+    fetchPets();
+  }, [fetchPets]);
+
+
+  const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
+  const searchTextFontSize = width * FONT_RATIOS.SEARCH_TEXT;
+  const cardTitleFontSize = width * FONT_RATIOS.CARD_TITLE;
+  const cardSubtitleFontSize = width * FONT_RATIOS.CARD_SUBTITLE;
+  const cardBodyFontSize = width * FONT_RATIOS.CARD_BODY;
+  const buttonTextFontSize = width * FONT_RATIOS.BUTTON_TEXT;
+
+  const filteredPets = useMemo(() => {
+    let filtered = pets;
+    if (activeFilter !== 'All') {
+      filtered = filtered.filter(pet => pet.type === activeFilter);
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(pet =>
+        pet.name.toLowerCase().includes(query) ||
+        pet.breed.toLowerCase().includes(query)
+      );
+    }
+    return filtered;
+  }, [searchQuery, activeFilter, pets]);
+
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFilterPress = useCallback(() => {
+    setModalVisible(true);
+  }, []);
+
+  const handleFilterSelect = useCallback((filter: FilterType) => {
     setActiveFilter(filter);
-    setSearchQuery('');
-    const filtered = animals.filter((animal) =>
-      filter === 'All' ? true : animal.type === filter
-    );
-    setFilteredAnimals(filtered);
-  };
+    setModalVisible(false);
+  }, []);
 
-  const displayedFilters = filtersExpanded ? allFilters : allFilters.slice(0, 4);
+  const handlePetManage = useCallback((pet: ShelterPet) => {
+    router.push(`/manage-pet/${pet.id}` as any);
+  }, [router]);
+  
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPets();
+    setRefreshing(false);
+  }, [fetchPets]);
+  
+  
+  const renderPetCard = useCallback(({ item: pet }: { item: ShelterPet }) => (
+    <ShelterPetCard
+      pet={pet}
+      onPress={handlePetManage}
+      cardTitleFontSize={cardTitleFontSize}
+      cardSubtitleFontSize={cardSubtitleFontSize}
+      cardBodyFontSize={cardBodyFontSize}
+      buttonTextFontSize={buttonTextFontSize}
+    />
+  ), [handlePetManage, cardTitleFontSize, cardSubtitleFontSize, cardBodyFontSize, buttonTextFontSize]);
 
-  return (
-    <View style={[styles.background, { width, height }]}>
-      <View style={[styles.container, { paddingTop: height * 0.05 }]}>
-                {/* Search Bar */}
-        <View style={styles.searchBar}>
-          <TextInput
-            placeholder="Search by pet name or breed..."
-            placeholderTextColor="#797979"
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-          <View style={styles.searchIconWrapper}>
-            <Image source={require('../../assets/images/search.png')} style={{ width: 25, height: 25, tintColor: '#797979' }} />
-          </View>
-        </View>
-
-        {/* Filters */}
-        <View style={styles.filtersContainer}>
-          {displayedFilters.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButtonTab,
-                filter === activeFilter && styles.activeFilter,
-              ]}
-              onPress={() => handleFilterPress(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterTextTab,
-                  filter === activeFilter && styles.activeFilterText,
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          {allFilters.length > 4 && (
-            <TouchableOpacity
-              style={styles.moreButton}
-              onPress={() => setFiltersExpanded(!filtersExpanded)}
-            >
-              <Text style={styles.moreButtonText}>
-                {filtersExpanded ? 'Less ▲' : 'More ▼'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Animal List */}
-        <FlatList
-          data={filteredAnimals}
-          showsVerticalScrollIndicator={false}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.animalCard}>
-              <Image source={item.image} style={styles.animalImage} />
-              <View style={styles.cardContent}>
-                <Text style={styles.animalName}>{item.name}</Text>
-                <Text style={styles.animalBreed}>{item.breed}</Text>
-                <Text style={styles.animalDonations}>
-                  Donations: ${item.donations}
-                </Text>
-                <TouchableOpacity
-                  style={styles.manageButton}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/shelter-pets-manage',
-                      params: {
-                        name: item.name,
-                        breed: item.breed,
-                        donations: item.donations,
-                        image: Image.resolveAssetSource(item.image).uri,
-                      },
-                    })
-                  }
-                >
-                  <Text style={styles.manageButtonText}>Manage</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          contentContainerStyle={styles.listContent}
-        />
-
-        {/* Navigation Bar */}
-        <ShelterNavBar />
-      </View>
+  
+  const renderEmptyState = useCallback(() => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="paw-outline" size={80} color={COLORS.LIGHT_BROWN} />
+      <Text style={[styles.emptyTitle, { fontSize: cardTitleFontSize }]}>
+        No Pets Found
+      </Text>
+      <Text style={[styles.emptySubtitle, { fontSize: cardBodyFontSize }]}>
+        {searchQuery || activeFilter !== 'All' 
+          ? 'Try adjusting your search or filter' 
+          : 'Start by adding your first pet to the shelter'}
+      </Text>
+      {!searchQuery && activeFilter === 'All' && (
+        <TouchableOpacity 
+          style={styles.addPetButton}
+          onPress={() => router.push('/shelter-pets-add')}
+        >
+          <Text style={[styles.addPetButtonText, { fontSize: buttonTextFontSize }]}>
+            Add Your First Pet
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
+  ), [searchQuery, activeFilter, cardTitleFontSize, cardBodyFontSize, buttonTextFontSize, router]);
+  
+  return (
+    <SafeAreaView style={styles.container}>
+      
+      <View style={[styles.mainContent, { paddingTop: height * 0.05 }]}>
+        <Text style={[styles.headerTitle, { fontSize: headerTitleFontSize }]}>
+          My Shelter Dashboard
+        </Text>
+
+        
+        <View style={styles.searchFilterRow}>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color={COLORS.GRAY_DARK} style={styles.searchIcon} />
+            <TextInput
+              placeholder="Search pets by name or breed..."
+              placeholderTextColor={COLORS.GRAY_DARK}
+              style={[styles.searchInput, { fontSize: searchTextFontSize }]}
+              value={searchQuery}
+              onChangeText={handleSearch}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.GRAY_DARK} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={handleFilterPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="options-outline" size={20} color={COLORS.GRAY_DARK} />
+          </TouchableOpacity>
+        </View>
+
+
+        {activeFilter !== 'All' && (
+          <View style={styles.activeFilterContainer}>
+            <Text style={[styles.activeFilterText, { fontSize: searchTextFontSize }]}>
+              Showing: {activeFilter}
+            </Text>
+            <TouchableOpacity onPress={() => setActiveFilter('All')} style={styles.clearFilterButton}>
+              <Ionicons name="close" size={16} color={COLORS.GRAY_DARK} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {error && (
+        <View style={{ padding: 16 }}>
+          <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+        </View>
+      )}
+
+   
+      <FlatList
+        data={filteredPets}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPetCard}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.listContent,
+          filteredPets.length === 0 && styles.emptyListContent
+        ]}
+        ListEmptyComponent={renderEmptyState}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.LIGHT_BROWN]}
+            tintColor={COLORS.LIGHT_BROWN}
+          />
+        }
+        ItemSeparatorComponent={() => <View style={{ height: DESIGN_CONSTANTS.CARD_SPACING }} />}
+        
+      />
+
+      <FilterDropdownModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        activeFilter={activeFilter}
+        onFilterSelect={handleFilterSelect}
+      />
+    </SafeAreaView>
   );
 };
 
+
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: '#E4E0E1', 
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.BACKGROUND,
   },
-  searchBar: {
+  
+
+  mainContent: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingBottom: SPACING.MEDIUM,
+  },
+  
+
+  headerTitle: {
+    fontFamily: 'PoppinsBold',
+    color: COLORS.PRIMARY_BROWN,
+    textAlign: 'center',
+    marginBottom: SPACING.EXTRA_LARGE,
+  },
+  
+  
+  searchFilterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
-    width: '80%',
-    borderWidth: 1,
-    borderColor: '#797979',
-    borderRadius: 10,
-    backgroundColor: '#E4E0E1',
-    marginVertical: 10,
-    paddingHorizontal: 10,
+    gap: SPACING.MEDIUM,
+    marginBottom: SPACING.MEDIUM,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    paddingHorizontal: SPACING.MEDIUM,
+    height: DESIGN_CONSTANTS.SEARCH_BAR_HEIGHT,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  searchIcon: {
+    marginRight: SPACING.SMALL,
   },
   searchInput: {
     flex: 1,
-    fontSize: 12,
     fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
-    padding: 8,
+    color: COLORS.PRIMARY_BROWN,
   },
-  searchIconWrapper: {
-    paddingRight: 10,
+  clearButton: {
+    padding: SPACING.SMALL,
+  },
+  filterButton: {
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.MEDIUM,
+    height: DESIGN_CONSTANTS.SEARCH_BAR_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   
-  filters: {
+  
+  activeFilterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginBottom: 10,
-    width: '100%',
-  },
-  filterButtonTab: {
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 25,
-    backgroundColor: 'transparent',
-    alignContent: 'center',
-    justifyContent: 'center',
-  },
-  activeFilter: {
-    backgroundColor: '#3F4F44',
-    alignContent: 'center',
-    justifyContent: 'center',
-  },
-  filterTextTab: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#1F2029',
+    alignItems: 'center',
+    backgroundColor: COLORS.LIGHT_BROWN,
+    paddingHorizontal: SPACING.MEDIUM,
+    paddingVertical: SPACING.SMALL,
+    borderRadius: SPACING.MEDIUM,
+    alignSelf: 'flex-start',
+    marginBottom: SPACING.MEDIUM,
   },
   activeFilterText: {
-    color: '#E4E0E1',
-    fontFamily: 'PoppinsBold',
+    fontFamily: 'PoppinsSemiBold',
+    color: COLORS.CARD_BACKGROUND,
+    marginRight: SPACING.SMALL,
+  },
+  clearFilterButton: {
+    padding: 2,
+  },
   
-  },
+  
   listContent: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingBottom: 140,
+  },
+  emptyListContent: {
     flexGrow: 1,
-    paddingBottom: 100,
-    paddingHorizontal: 25,
-  },
-  animalCard: {
-    flexDirection: 'row',
-    backgroundColor: '#E4E0E1',
-    borderRadius: 15,
-    marginBottom: 15,
-    overflow: 'hidden',
-    elevation: 3,
-  },
-  animalImage: {
-    width: '45%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  cardContent: {
-    flex: 1,
-    padding: 10,
     justifyContent: 'center',
   },
-  animalName: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#493628',
-    marginBottom: 5,
-  },
-  animalBreed: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    marginBottom: 5,
-  },
-  animalDonations: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#AB886D',
-    marginBottom: 10,
-  },
-  manageButton: {
-    backgroundColor: '#AB886D',
-    borderRadius: 20,
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    alignSelf: 'flex-start',
-  },
-  manageButtonText: {
-    fontSize: 14,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-  },
-  filtersContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  
+
+  emptyContainer: {
+    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
-    paddingHorizontal: 15,
+    paddingVertical: SPACING.EXTRA_LARGE * 3,
   },
-  moreButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    margin: 5,
+  emptyTitle: {
+    fontFamily: 'PoppinsBold',
+    color: COLORS.PRIMARY_BROWN,
+    marginTop: SPACING.LARGE,
+    textAlign: 'center',
   },
-  moreButtonText: {
-    fontSize: 14,
+  emptySubtitle: {
     fontFamily: 'PoppinsRegular',
-    color: '#797979',
+    color: COLORS.GRAY_DARK,
+    textAlign: 'center',
+    marginTop: SPACING.SMALL,
+    paddingHorizontal: SPACING.EXTRA_LARGE,
+    lineHeight: 20,
+  },
+  addPetButton: {
+    backgroundColor: COLORS.PRIMARY_BROWN,
+    paddingHorizontal: SPACING.EXTRA_LARGE,
+    paddingVertical: SPACING.MEDIUM,
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    marginTop: SPACING.EXTRA_LARGE,
+  },
+  addPetButtonText: {
+    fontFamily: 'PoppinsBold',
+    color: COLORS.CARD_BACKGROUND,
+    textAlign: 'center',
+  },
+  bottomSpacing: {
+    height: 140,
   },
 });
 
-export default ShelterHome;
+export default ShelterHomePage;
+

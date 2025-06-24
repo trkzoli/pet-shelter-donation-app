@@ -1,349 +1,555 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
   ScrollView,
-  Modal,
-  Platform,
   useWindowDimensions,
-  FlatList,
+  SafeAreaView,
+  Platform,
+  Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { AlertModal } from '../../components/modals';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import { setTabsUI } from '../../config/systemUI';
+
+const DESIGN_CONSTANTS = {
+  HORIZONTAL_PADDING: 20,
+  BORDER_RADIUS: 20,
+  BACK_BUTTON_TOP: 50,
+  BUTTON_HEIGHT: 55,
+  HEADER_HEIGHT: 100,
+  INPUT_HEIGHT: 60,
+} as const;
+
+const SPACING = {
+  SMALL: 8,
+  MEDIUM: 12,
+  LARGE: 16,
+  EXTRA_LARGE: 20,
+} as const;
+
+const FONT_RATIOS = {
+  HEADER_TITLE: 0.06,
+  AMOUNT_TEXT: 0.08,
+  BUTTON_TEXT: 0.045,
+  BODY_TEXT: 0.035,
+} as const;
+
+const QUICK_AMOUNTS = [5, 10, 25, 50, 100];
 
 const DonatePage: React.FC = () => {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-  const [payAmount, setPayAmount] = useState('');
-  const [receiveAmount, setReceiveAmount] = useState('0.0');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [alertVisible, setAlertVisible] = useState(false);
+  const { width } = useWindowDimensions();
+  const params = useLocalSearchParams();
+  const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
 
-  // $5 = 1 PTK
-  const conversionRate = 5;
+  const type = (params.type as string) || 'pet';
+  const petId = params.petId as string;
+  const campaignId = params.bannerId as string;
+  const petName = params.petName as string || 'this pet';
+  const campaignTitle = params.title as string || 'this campaign';
+  const shelterName = params.shelterName as string || 'the shelter';
 
-  const handlePayAmountChange = (value: string) => {
-    setPayAmount(value);
-    const usdValue = parseFloat(value) || 0;
-    const convertedValue = (usdValue / conversionRate).toFixed(4); // Convert USD to PTK
-    setReceiveAmount(convertedValue);
+  const [donationAmount, setDonationAmount] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setTabsUI();
+  }, []);
+
+
+  const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
+  const amountTextFontSize = width * FONT_RATIOS.AMOUNT_TEXT;
+  const buttonTextFontSize = width * FONT_RATIOS.BUTTON_TEXT;
+  const bodyTextFontSize = width * FONT_RATIOS.BODY_TEXT;
+
+  const isValidAmount = useCallback((amount: string): boolean => {
+    const numAmount = parseFloat(amount);
+    return !isNaN(numAmount) && numAmount >= 1 && numAmount <= 10000;
+  }, []);
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleAmountChange = useCallback((value: string) => {   
+    const cleanValue = value.replace(/[^0-9.]/g, '');
+    
+    const parts = cleanValue.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    if (parts[1] && parts[1].length > 2) {
+      return;
+    }
+    
+    setDonationAmount(cleanValue);
+  }, []);
+
+  const handleQuickAmount = useCallback((amount: number) => {
+    setDonationAmount(amount.toString());
+  }, []);
+
+  const handleProceed = useCallback(async () => {
+    if (!isValidAmount(donationAmount)) {
+      showAlert({
+        title: 'Invalid Amount',
+        message: 'Please enter a donation amount between $1 and $10,000.',
+        type: 'warning',
+        buttonText: 'OK'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      router.push({
+        pathname: '/payment/payment-methods',
+        params: {
+          amount: donationAmount,
+          petId: type === 'pet' ? petId : '',
+          campaignId: type === 'campaign' ? campaignId : '',
+          petName: petName,
+          campaignTitle: campaignTitle,
+          shelterName: shelterName,
+          type: type,
+        },
+      });
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      showAlert({
+        title: 'Navigation Error',
+        message: 'Something went wrong. Please try again.',
+        type: 'error',
+        buttonText: 'OK'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [donationAmount, petId, campaignId, petName, campaignTitle, shelterName, router, showAlert, isValidAmount, type]);
+
+  
+  const formatCurrency = (amount: string): string => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(numAmount);
   };
 
   return (
-    <View style={[styles.background, { width, height }]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <SafeAreaView style={styles.container}>
+
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={handleBack} 
+          style={styles.headerBackButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Image
+            source={require('../../assets/images/backB.png')}
+            style={styles.backIcon}
+          />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { fontSize: headerTitleFontSize }]}>
+          Make a Donation
+        </Text>
+      </View>
+
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.container}>
-            {/* Back Button */}
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <Text style={styles.backButtonText}>←</Text>
-            </TouchableOpacity>
 
-            {/* Logo and PetToken Information */}
-            <View style={styles.tokenInfoContainer}>
-              <Image
-                source={require('../../assets/images/LogoWhite.png')}
-                style={styles.tokenLogo}
-              />
-              <Text style={styles.tokenTitle}>PetToken</Text>
-              <Text style={styles.tokenSubtitle}>1.0000 PTK (~$5.00)</Text>
-            </View>
-
-            {/* How It Works Section */}
-            <View style={styles.infoSection}>
-              <Text style={styles.infoText}>How it works</Text>
-              <TouchableOpacity onPress={() => setModalVisible(!modalVisible)}>
-                <Image
-                  source={require('../../assets/images/info.png')}
-                  style={styles.infoIcon}
-                />
+  
+        <View style={styles.quickAmountsCard}>
+          <Text style={styles.quickAmountsTitle}>Quick Select</Text>
+          <View style={styles.quickAmountsGrid}>
+            {QUICK_AMOUNTS.map((amount) => (
+              <TouchableOpacity
+                key={amount}
+                style={[
+                  styles.quickAmountButton,
+                  donationAmount === amount.toString() && styles.quickAmountButtonSelected
+                ]}
+                onPress={() => handleQuickAmount(amount)}
+                accessibilityRole="button"
+                accessibilityLabel={`Select $${amount} donation`}
+              >
+                <Text style={[
+                  styles.quickAmountText,
+                  donationAmount === amount.toString() && styles.quickAmountTextSelected
+                ]}>
+                  ${amount}
+                </Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Swap Section */}
-            <View style={styles.swapContainer}>
-              <Text style={styles.swapTitle}>Amount to donate:</Text>
-              <View style={styles.amountRow}>
-                <TextInput
-                  style={styles.largeInput}
-                  keyboardType="numeric"
-                  value={payAmount}
-                  onChangeText={handlePayAmountChange}
-                  placeholder="Minimum 0.5$"
-                  placeholderTextColor="#797979"
-                  maxLength={12}
-                />
-                {payAmount && <Text style={styles.currencyText}>USD ($)</Text>}
-              </View>
-              <Text style={styles.smallText}>You will get:</Text>
-              <Text style={styles.tokenAmount}>{receiveAmount} PTK</Text>
-            </View>
-
-            {/* Donate Button */}
-            <TouchableOpacity
-              style={styles.donateButton}
-              onPress={() => {
-                const usdValue = parseFloat(payAmount);
-                if (usdValue < 0.5 || isNaN(usdValue)) {
-                  setAlertVisible(true);
-                  return;
-                }
-                router.push(`/payment/payment-methods?amount=${payAmount}&tokens=${receiveAmount}`);
-              }}
-            >
-              <Text style={styles.donateButtonText}>PROCEED</Text>
-            </TouchableOpacity>
+            ))}
           </View>
-        </ScrollView>
+        </View>
 
-        {/* Modal for Information */}
-        <Modal
-          animationType="fade"
-          transparent
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalBackground}>
-            <View style={[styles.modalContainer, { width: width * 0.8 }]}>
-              <Text style={styles.modalText}>
-                The token donation system allows you to support a cause or organization using
-                digital currency. When you donate, your funds are converted into PetTokens, which
-                support the adoption program or shelter. The value of each PetToken aligns with
-                traditional currencies, so each token represents a specific amount of money. These
-                tokens remain on the blockchain, ensuring transparency and security for every
-                donation.
+
+        <View style={styles.customAmountCard}>
+          <Text style={styles.customAmountTitle}>Custom Amount</Text>
+          <View style={styles.amountInputContainer}>
+            <Text style={styles.currencySymbol}>$</Text>
+            <TextInput
+              style={[styles.amountInput, { fontSize: amountTextFontSize }]}
+              value={donationAmount}
+              onChangeText={handleAmountChange}
+              placeholder="0.00"
+              placeholderTextColor="#797979"
+              keyboardType="decimal-pad"
+              maxLength={8}
+              returnKeyType="done"
+              accessibilityLabel="Enter custom donation amount"
+              accessibilityHint="Enter amount in dollars"
+            />
+          </View>
+          
+
+  
+          <TouchableOpacity
+            style={[
+              styles.proceedButton,
+              (!donationAmount || !isValidAmount(donationAmount)) && styles.proceedButtonDisabled
+            ]}
+            onPress={handleProceed}
+            disabled={!donationAmount || !isValidAmount(donationAmount) || isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Proceed to payment methods"
+            accessibilityState={{ disabled: !donationAmount || !isValidAmount(donationAmount) || isLoading }}
+          >
+            {isLoading ? (
+              <Text style={[styles.proceedButtonText, { fontSize: buttonTextFontSize }]}>
+                Processing...
               </Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.modalCloseButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+            ) : (
+              <>
+                <Ionicons name="card-outline" size={20} color="#E4E0E1" style={{ marginRight: 8 }} />
+                <Text style={[styles.proceedButtonText, { fontSize: buttonTextFontSize }]}>
+                  Proceed to Payment
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
 
-        {/* Custom Alert Modal */}
-        <Modal
-          animationType="fade"
-          transparent
-          visible={alertVisible}
-          onRequestClose={() => setAlertVisible(false)}
-        >
-          <View style={styles.alertBackground}>
-            <View style={[styles.alertContainer, { width: width * 0.8 }]}>
-              <Text style={styles.alertText}>Minimum donation amount is $0.5.</Text>
-              <TouchableOpacity
-                style={styles.alertButton}
-                onPress={() => setAlertVisible(false)}
-              >
-                <Text style={styles.alertButtonText}>OK</Text>
-              </TouchableOpacity>
+
+        <View style={styles.infoCard}>
+          <View style={styles.infoHeader}>
+            <Ionicons name="information-circle-outline" size={24} color="#AB886D" />
+            <Text style={styles.infoTitle}>Donation Information</Text>
+          </View>
+          <View style={styles.infoItems}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>• 90% of your donation goes directly to the shelter</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>• 10% supports app development & maintenance</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>• All donations are tax-deductible</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>• Donations help you qualify for real adoption</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>• Earn PawPoints: 1 point per $25 donated</Text>
             </View>
           </View>
-        </Modal>
-      </KeyboardAvoidingView>
-    </View>
+        </View>
+
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+
+      <AlertModal
+        visible={isVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttonText={alertConfig.buttonText}
+        type={alertConfig.type}
+        onClose={hideAlert}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: '#E4E0E1', 
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#E4E0E1',
   },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
-  backButtonText: {
-    fontSize: 24,
-    fontFamily: 'PoppinsBold',
-    color: '#797979',
-  },
-  tokenInfoContainer: {
+  
+
+  header: {
+    height: DESIGN_CONSTANTS.HEADER_HEIGHT,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 10,
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingTop: DESIGN_CONSTANTS.BACK_BUTTON_TOP,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D6C0B3',
   },
-  tokenLogo: {
-    width: 50,
-    height: 50,
+  headerBackButton: {
+    padding: 8,
+    marginRight: SPACING.MEDIUM,
+  },
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#797979',
     resizeMode: 'contain',
-    marginTop: 20,
-    tintColor: '#AB886D',
   },
-  tokenTitle: {
+  headerTitle: {
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    flex: 1,
+  },
+  
+  
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
+    paddingTop: SPACING.LARGE,
+    paddingBottom: SPACING.EXTRA_LARGE,
+  },
+  
+
+  donationInfoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  donationInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.MEDIUM,
+  },
+  donationInfoTitle: {
     fontSize: 18,
     fontFamily: 'PoppinsBold',
     color: '#493628',
+    marginLeft: SPACING.SMALL,
   },
-  tokenSubtitle: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-  },
-  infoSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  infoIcon: {
-    width: 30,
-    height: 30,
-    marginLeft: 10,
-    tintColor: '#1F2029',
-  },
-  infoText: {
+  donationInfoText: {
     fontSize: 14,
     fontFamily: 'PoppinsRegular',
     color: '#1F2029',
+    lineHeight: 20,
+    marginBottom: SPACING.LARGE,
   },
-  swapContainer: {
-    borderColor: '#797979',
-    backgroundColor: '#3F4F44',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+  impactInfo: {
+    gap: SPACING.SMALL,
+  },
+  impactItem: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  swapTitle: {
-    fontSize: 18,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-    marginBottom: 10,
+  impactText: {
+    fontSize: 13,
+    fontFamily: 'PoppinsRegular',
+    color: '#1F2029',
+    marginLeft: SPACING.SMALL,
   },
-  amountRow: {
+  
+  quickAmountsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  quickAmountsTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginBottom: SPACING.MEDIUM,
+  },
+  quickAmountsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.SMALL,
+  },
+  quickAmountButton: {
+    flex: 1,
+    minWidth: '18%',
+    backgroundColor: '#F8F9FA',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: SPACING.MEDIUM,
+    paddingVertical: SPACING.MEDIUM,
+    alignItems: 'center',
+  },
+  quickAmountButtonSelected: {
+    backgroundColor: '#AB886D',
+    borderColor: '#AB886D',
+  },
+  quickAmountText: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+  },
+  quickAmountTextSelected: {
+    color: '#E4E0E1',
+  },
+
+  customAmountCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  customAmountTitle: {
+    fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginBottom: SPACING.MEDIUM,
+  },
+  amountInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: SPACING.MEDIUM,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    paddingHorizontal: SPACING.LARGE,
+    height: DESIGN_CONSTANTS.INPUT_HEIGHT,
+  },
+  currencySymbol: {
+    fontSize: 24,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginRight: SPACING.SMALL,
+  },
+  amountInput: {
+    flex: 1,
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
+    paddingVertical: 0,
+  },
+  
+  
+  proceedButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderRadius: 10,
-    borderColor: '#2C3930',
-  },
-  largeInput: {
-    flex: 1,
-    fontSize: 20,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-    paddingLeft: 10,
-  },
-  currencyText: {
-    fontSize: 18,
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    paddingRight: 10,
-  },
-  smallText: {
-    fontSize: 14,
-    fontFamily: 'PoppinsRegular',
-    color: '#797979',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  tokenAmount: {
-    fontSize: 18,
-    fontFamily: 'PoppinsBold',
-    color: '#E4E0E1',
-  },
-  donateButton: {
+    height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
     backgroundColor: '#AB886D',
-    borderRadius: 20,
-    width: '100%',
-    height: 60,
-    marginVertical: 20,
-    bottom: 20,
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    marginTop: SPACING.LARGE,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  donateButtonText: {
-    fontSize: 16,
+  proceedButtonDisabled: {
+    backgroundColor: '#D6C0B3',
+    opacity: 0.6,
+  },
+  proceedButtonText: {
     fontFamily: 'PoppinsBold',
     color: '#E4E0E1',
   },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  infoCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    padding: SPACING.LARGE,
+    marginBottom: SPACING.LARGE,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  modalContainer: {
-    backgroundColor: '#3F4F44',
-    borderRadius: 15,
-    padding: 20,
+  infoHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: SPACING.MEDIUM,
   },
-  modalText: {
+  infoTitle: {
     fontSize: 16,
+    fontFamily: 'PoppinsBold',
+    color: '#493628',
+    marginLeft: SPACING.SMALL,
+  },
+  infoItems: {
+    gap: SPACING.SMALL,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoLabel: {
+    fontSize: 13,
     fontFamily: 'PoppinsRegular',
-    color: '#E4E0E1',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalCloseButton: {
-    backgroundColor: '#D6C0B3',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-  },
-  modalCloseButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#3F4F44',
-  },
-  alertBackground: {
+    color: '#1F2029',
+    lineHeight: 18,
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  alertContainer: {
-    backgroundColor: '#3F4F44',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  alertText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#FF6F61',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  alertButton: {
-    backgroundColor: '#D6C0B3',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-  },
-  alertButtonText: {
-    fontSize: 16,
-    fontFamily: 'PoppinsBold',
-    color: '#3F4F44',
+  
+  
+  bottomSpacing: {
+    height: 20,
   },
 });
 
 export default DonatePage;
+
