@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # (Pawner)
+=======
+# (Applikáció Neve - még nincs kiválasztva)
+>>>>>>> 4930d6240f1538155cde35bd6ec8ae352023e0be
 
 
 ## Projekt rövid leírása
@@ -21,6 +25,6 @@ Technikai megvalósítás
 - **AR:** *ViroReact*
 
 Link a Figma design projekthez:
-- https://www.figma.com/design/BlR0PvuFG8RdR7Q0n1GORH/%C3%81llamvizsga?t=JZjy1tmAypefyxwK-1
+- https://www.figma.com/design/BlR0PvuFG8RdR7Q0n1GORH/%C3%81llamvizsga?node-id=0-1&t=WlmJs4M5lN7d9rE7-1
 
 > Fejlesztés alatt: *Török Zoltán*
