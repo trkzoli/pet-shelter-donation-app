@@ -373,17 +373,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     padding: SPACING.EXTRA_LARGE,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   summaryNumber: {
     fontFamily: 'PoppinsBold',

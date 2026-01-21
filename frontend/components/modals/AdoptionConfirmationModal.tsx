@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import  AlertModal  from './AlertModal';
 import { useAlertModal } from '../../hooks/useAlertModal';
+import * as DocumentPicker from 'expo-document-picker';
 
 
 const DESIGN_CONSTANTS = {
@@ -52,7 +53,7 @@ const FONT_RATIOS = {
 interface AdoptionConfirmationData {
   adoptionType: 'app' | 'external';
   selectedAdopterId?: string;
-  adoptionDocument?: any; 
+  adoptionDocument?: { uri: string; name: string; mimeType?: string } | null; 
   notes?: string;
 }
 
@@ -83,6 +84,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
   const [adoptionType, setAdoptionType] = useState<'app' | 'external' | null>(null);
   const [selectedAdopterId, setSelectedAdopterId] = useState<string | null>(null);
   const [hasDocument, setHasDocument] = useState<boolean>(false);
+  const [adoptionDocument, setAdoptionDocument] = useState<{ uri: string; name: string; mimeType?: string } | null>(null);
 
   const titleFontSize = width * FONT_RATIOS.TITLE;
   const bodyTextFontSize = width * FONT_RATIOS.BODY_TEXT;
@@ -94,10 +96,35 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
     hasDocument;
 
 
-  const handleDocumentUpload = useCallback(() => {
+  const handleDocumentUpload = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*'],
+        copyToCacheDirectory: true,
+      });
 
-    setHasDocument(true);
-  }, []);
+      if (result.canceled) return;
+
+      const file = result.assets?.[0];
+      if (!file?.uri) {
+        throw new Error('No document selected');
+      }
+
+      setAdoptionDocument({
+        uri: file.uri,
+        name: file.name ?? 'adoption-proof',
+        mimeType: file.mimeType,
+      });
+      setHasDocument(true);
+    } catch (error) {
+      showAlert({
+        title: 'Upload Failed',
+        message: 'Could not select document. Please try again.',
+        type: 'error',
+        buttonText: 'OK',
+      });
+    }
+  }, [showAlert]);
 
   const handleConfirm = useCallback(() => {
     if (!isFormValid) {
@@ -113,7 +140,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
     const confirmationData: AdoptionConfirmationData = {
       adoptionType: adoptionType!,
       selectedAdopterId: adoptionType === 'app' ? selectedAdopterId! : undefined,
-      adoptionDocument: hasDocument ? 'mock-document' : undefined,
+      adoptionDocument: hasDocument ? adoptionDocument : undefined,
     };
 
     onConfirm(confirmationData);
@@ -123,6 +150,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
     setAdoptionType(null);
     setSelectedAdopterId(null);
     setHasDocument(false);
+    setAdoptionDocument(null);
     onClose();
   }, [onClose]);
 
@@ -249,7 +277,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
               Adoption Documentation *
             </Text>
             <Text style={[styles.sectionDescription, { fontSize: labelTextFontSize }]}>
-              Please upload adoption papers or documentation to verify the adoption
+              Please upload a signed adoption declaration (photo of the signed document)
             </Text>
 
             <TouchableOpacity
@@ -269,12 +297,12 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
                 { fontSize: bodyTextFontSize },
                 hasDocument && styles.documentUploadTextSuccess
               ]}>
-                {hasDocument ? 'Document Uploaded' : 'Upload Documents'}
+                {hasDocument ? 'Declaration Uploaded' : 'Upload Signed Declaration'}
               </Text>
             </TouchableOpacity>
 
             <Text style={[styles.documentNote, { fontSize: labelTextFontSize }]}>
-              Upload adoption contracts, certificates, or any official documentation
+              Upload a clear photo of the signed declaration as proof
             </Text>
           </View>
 

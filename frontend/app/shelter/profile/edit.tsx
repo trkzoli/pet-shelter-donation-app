@@ -140,15 +140,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof ShelterProfileFormData, string>>>({});
   const [saving, setSaving] = useState(false);
 
-  React.useEffect(() => {
-    console.log('=== FORM DATA STATE CHANGED ===');
-    console.log('Email in state:', formData.email);
-    console.log('Phone in state:', formData.phone);
-    console.log('Shelter name in state:', formData.shelterName);
-    console.log('Full form data:', formData);
-
-  }, [formData]);
-
   const titleFontSize = width * 0.055;
   const sectionTitleFontSize = width * 0.045;
   const bodyFontSize = width * 0.035;
@@ -157,7 +148,7 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
   const completionPercentage = useMemo(() => {
     const requiredFields = Object.keys(FIELD_VALIDATION).filter(field => {
       const rules = FIELD_VALIDATION[field as keyof typeof FIELD_VALIDATION];
-      return rules.required && !('readOnly' in rules && rules.readOnly);
+      return rules.required;
     });
     
     const completedFields = requiredFields.filter(field => {
@@ -180,7 +171,8 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
       return `Must be at least ${rules.minLength} characters`;
     }
 
-    if ('pattern' in rules && rules.pattern && !rules.pattern.test(value)) {
+    const pattern = 'pattern' in rules ? (rules as { pattern?: RegExp }).pattern : undefined;
+    if (pattern && !pattern.test(value)) {
       if (field === 'email') return 'Invalid email format';
       return 'Invalid format';
     }
@@ -224,14 +216,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
         });
         
         const d = res.data;
-        console.log('=== SHELTER PROFILE DEBUG ===');
-        console.log('Full API response:', JSON.stringify(d, null, 2));
-        console.log('User object:', d.user);
-        console.log('Email from API:', d.user?.email);
-        console.log('Phone from API:', d.user?.phone);
-        console.log('Shelter name from API:', d.shelterName);
-
-        
         const formDataToSet = {
           shelterName: d.shelterName || '',
           email: d.user?.email || '',
@@ -248,16 +232,10 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
           specializations: d.petSpecialization || '',
           contactPersonName: d.contactPerson || '',
           contactPersonTitle: d.contactTitle || '',
-          operatingHours: d.operatingHours || '',
+          operatingHours: typeof d.operatingHours === 'string' ? d.operatingHours : (d.operatingHours ? JSON.stringify(d.operatingHours) : ''),
           facebookUrl: d.facebook || '',
           instagramUrl: d.instagram || '',
         };
-        
-        console.log('Form data being set:', {
-          email: formDataToSet.email,
-          phone: formDataToSet.phone,
-          shelterName: formDataToSet.shelterName
-        });
         
         setFormData(formDataToSet);
       } catch (err: any) {
@@ -274,16 +252,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
   }, [showAlert]);
 
   const handleSave = useCallback(async () => {
-    console.log('SAVE ATTEMPT START');
-    console.log('Current form data:', formData);
-
-    const filledRequiredFields = Object.keys(FIELD_VALIDATION).filter(field => {
-      const rules = FIELD_VALIDATION[field as keyof typeof FIELD_VALIDATION];
-      if (!rules.required || ('readOnly' in rules && rules.readOnly)) return false;
-      const value = formData[field as keyof ShelterProfileFormData];
-      return value !== '' && value !== undefined && value !== null;
-    });
-    
     if (!formData.shelterName || formData.shelterName.trim() === '') {
       showAlert({
         title: 'Shelter Name Required',
@@ -299,8 +267,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not authenticated');
       
-      console.log('Sending shelter profile update...');
-
       let petSpecialization = formData.specializations;
       if (petSpecialization === 'Dogs') petSpecialization = 'dogs';
       else if (petSpecialization === 'Cats') petSpecialization = 'cats';
@@ -326,14 +292,9 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
         }
       });
       
-      console.log('Shelter update payload:', shelterUpdateData);
-
-      const shelterResponse = await axios.put(`${API_BASE_URL}/shelters/profile`, shelterUpdateData, {
+      await axios.put(`${API_BASE_URL}/shelters/profile`, shelterUpdateData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Shelter update response:', shelterResponse.data);
-
-      console.log('Sending user profile update...');
       const userUpdateData = {
         street: formData.street || undefined,
         city: formData.city || undefined,
@@ -348,16 +309,11 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
         }
       });
       
-      console.log('User update payload:', userUpdateData);
-      
       if (Object.keys(userUpdateData).length > 0) {
-        const userResponse = await axios.put(`${API_BASE_URL}/users/profile`, userUpdateData, {
+        await axios.put(`${API_BASE_URL}/users/profile`, userUpdateData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('User update response:', userResponse.data);
       }
-      
-      console.log('Updates successful!');
       showAlert({
         title: 'Profile Updated',
         message: 'Your shelter profile has been updated successfully.',
@@ -366,8 +322,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
       });
       setTimeout(() => router.replace('/(shelter-tabs)/shelter-profile'), 1000);
     } catch (err: any) {
-      console.error('Profile update failed:', err.response?.data || err.message);
-      console.error('Full error object:', err);
       showAlert({
         title: 'Update Failed',
         message: err?.response?.data?.message || 'Failed to update profile. Please try again.',
@@ -376,7 +330,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
       });
     } finally {
       setSaving(false);
-      console.log('SAVE ATTEMPT END');
     }
   }, [formData, router, showAlert]);
 
@@ -405,16 +358,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
     isReadOnly: boolean = false
   ) => {
 
-    if (field === 'email' || field === 'phone') {
-      console.log(`=== ${field.toUpperCase()} FIELD DEBUG ===`);
-      console.log(`Value: "${formData[field]}"`);
-      console.log(`Value length: ${formData[field]?.length || 0}`);
-      console.log(`Value type: ${typeof formData[field]}`);
-      console.log(`Is empty: ${!formData[field] || formData[field] === ''}`);
-      console.log(`Placeholder: "${placeholder}"`);
-
-    }
-    
     return (
       <View style={styles.inputGroup}>
         <Text style={[styles.inputLabel, { fontSize: labelFontSize }]}>
@@ -460,7 +403,7 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
             Edit Shelter Profile
           </Text>
           <Text style={[styles.headerSubtitle, { fontSize: bodyFontSize }]}>
-            {completionPercentage}% Complete • {completionPercentage >= 90 ? 'Verification Ready!' : 'Almost Done!'}
+            {completionPercentage}% Complete
           </Text>
         </View>
         <View style={styles.headerPlaceholder} />
@@ -498,7 +441,7 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
               {renderInputField('city', 'City *', 'Enter city')}
               {renderInputField('state', 'State/Province *', 'Enter state or province')}
               {renderInputField('zipCode', 'ZIP/Postal Code *', 'Enter ZIP or postal code')}
-              {renderInputField('country', 'Country', 'Enter country')}
+              {renderInputField('country', 'Country *', 'Enter country')}
             </>
           ))}
 
@@ -672,17 +615,6 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 3,
     borderColor: COLORS.CARD_BACKGROUND,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   profileImageOverlay: {
     position: 'absolute',
@@ -712,17 +644,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: SPACING.MASSIVE, 
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   buttonDisabled: {
     opacity: 0.6,

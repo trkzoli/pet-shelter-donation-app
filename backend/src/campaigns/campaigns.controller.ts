@@ -133,11 +133,6 @@ export class CampaignsController {
     @Query('status', new ParseEnumPipe(CampaignStatus, { optional: true }))
     status?: CampaignStatus,
   ): Promise<CampaignListResponseDto> {
-    console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - getMyCampaigns called');
-    console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - userId:', userId);
-    console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - pageParam:', pageParam, 'limitParam:', limitParam, 'status:', status);
-    
-    
     const page = pageParam ? parseInt(pageParam, 10) : 1;
     const limit = limitParam ? parseInt(limitParam, 10) : 10;
     
@@ -145,15 +140,7 @@ export class CampaignsController {
     const validPage = Math.max(1, isNaN(page) ? 1 : page);
     const validLimit = Math.min(Math.max(1, isNaN(limit) ? 10 : limit), 50);
     
-    console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - validPage:', validPage, 'validLimit:', validLimit);
-
     const result = await this.campaignsService.getShelterCampaigns(userId, validPage, validLimit, status);
-    console.log('🔍 CAMPAIGNS CONTROLLER DEBUG - result:', {
-      total: result.total,
-      campaignsCount: result.campaigns?.length,
-      currentPage: result.currentPage
-    });
-    
     return result;
   }
 

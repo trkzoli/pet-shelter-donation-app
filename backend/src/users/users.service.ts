@@ -90,10 +90,13 @@ export class UsersService {
     if (updateProfileDto.workSchedule) user.workSchedule = updateProfileDto.workSchedule;
     if (updateProfileDto.housingType) user.housingType = updateProfileDto.housingType;
     if (updateProfileDto.housingOwnership) user.housingOwnership = updateProfileDto.housingOwnership;
-    if (typeof updateProfileDto.hasYard === 'boolean') user.hasYard = updateProfileDto.hasYard;
-    if (typeof updateProfileDto.isFenced === 'boolean') user.isFenced = updateProfileDto.isFenced;
+    if (updateProfileDto.ownershipStatus) user.ownershipStatus = updateProfileDto.ownershipStatus;
+    if (updateProfileDto.hasYard) user.hasYard = updateProfileDto.hasYard;
+    if (updateProfileDto.isFenced) user.isFenced = updateProfileDto.isFenced;
     if (updateProfileDto.currentPets) user.currentPets = updateProfileDto.currentPets;
     if (updateProfileDto.petExperience) user.petExperience = updateProfileDto.petExperience;
+    if (updateProfileDto.experienceLevel) user.experienceLevel = updateProfileDto.experienceLevel;
+    if (updateProfileDto.whyAdopt) user.whyAdopt = updateProfileDto.whyAdopt;
 
     const updatedUser = await this.userRepository.save(user);
 

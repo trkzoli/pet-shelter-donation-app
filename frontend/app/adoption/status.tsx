@@ -12,7 +12,7 @@ import {
   RefreshControl,
   Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AlertModal, LogoutModal } from '../../components/modals';
 import { useAlertModal } from '../../hooks/useAlertModal';
@@ -59,6 +59,7 @@ interface AdoptionRequest {
 
 const AdoptionStatusPage: React.FC = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
   const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
   
@@ -86,7 +87,12 @@ const AdoptionStatusPage: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      const backendRequest = res.data && res.data.length > 0 ? res.data[0] : null;
+      const petIdParam = params.petId as string | undefined;
+      const backendRequest = res.data && res.data.length > 0
+        ? (petIdParam
+          ? res.data.find((req: any) => req.petId === petIdParam) || res.data[0]
+          : res.data[0])
+        : null;
       
       if (backendRequest) {
 
@@ -554,17 +560,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   statusHeader: {
     flexDirection: 'row',
@@ -650,17 +645,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cardTitle: {
     fontSize: 16,
@@ -713,17 +697,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   timelineItem: {
     flexDirection: 'row',
@@ -831,17 +804,6 @@ const styles = StyleSheet.create({
     height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
     backgroundColor: '#AB886D',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   profileButtonText: {
     fontSize: 16,

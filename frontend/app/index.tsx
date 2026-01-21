@@ -10,6 +10,7 @@ import {
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useRouter } from 'expo-router';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // All fonts load
 const ALL_APP_FONTS = {
@@ -36,6 +37,24 @@ const SplashScreenComponent: React.FC = () => {
   const screenOpacity = useRef(new Animated.Value(1)).current;
   
   const { width, height } = useWindowDimensions();
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const hideNavigationBar = async () => {
+      try {
+        await NavigationBar.setVisibilityAsync('hidden');
+      } catch (error) {
+        console.warn('Could not hide navigation bar:', error);
+      }
+    };
+
+    hideNavigationBar();
+
+    return () => {
+      NavigationBar.setVisibilityAsync('visible').catch(() => undefined);
+    };
+  }, []);
 
   useEffect(() => {
     async function prepare() {

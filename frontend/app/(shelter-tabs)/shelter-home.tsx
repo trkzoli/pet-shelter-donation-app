@@ -129,13 +129,9 @@ const ShelterHomePage: React.FC = () => {
       
      
       if (err.response?.status === 401) {
-      
-        console.log('🔍 FRONTEND: Authentication error, clearing pets and showing empty state');
         setPets([]);
        
       } else if (err.message === 'Not authenticated') {
-        
-        console.log('🔍 FRONTEND: No authentication token, showing empty state');
         setPets([]);
       } else {
         
@@ -362,17 +358,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     paddingHorizontal: SPACING.MEDIUM,
     height: DESIGN_CONSTANTS.SEARCH_BAR_HEIGHT,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   searchIcon: {
     marginRight: SPACING.SMALL,
@@ -392,17 +377,6 @@ const styles = StyleSheet.create({
     height: DESIGN_CONSTANTS.SEARCH_BAR_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   
   

@@ -10,8 +10,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const FILTER_OPTIONS = [
-  'All', 'Dogs', 'Cats'
+export const FILTER_OPTIONS = [
+  'All',
+  'Dogs',
+  'Cats',
+  'Hamsters',
+  'Rabbits',
+  'Fish',
+  'Birds',
+  'Reptiles',
+  'Guinea Pigs',
+  'Ferrets',
 ] as const;
 
 export type FilterType = typeof FILTER_OPTIONS[number];

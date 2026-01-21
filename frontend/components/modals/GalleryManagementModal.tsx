@@ -89,11 +89,7 @@ const GalleryManagementModal: React.FC<GalleryManagementModalProps> = ({
   const [galleryData, setGalleryData] = useState<GalleryData>(initialData);
 
   useEffect(() => {
-    console.log('🔍 GALLERY MODAL: Received initialData:', initialData);
-    console.log('🔍 GALLERY MODAL: Setting galleryData to:', {
-      mainImage: initialData.mainImage,
-      galleryImages: initialData.galleryImages
-    });
+    console.log("GALLERY MODAL opened");
     setGalleryData(initialData);
   }, [initialData]);
 
@@ -127,16 +123,18 @@ const GalleryManagementModal: React.FC<GalleryManagementModalProps> = ({
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
-        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
+        const filename = asset.fileName || asset.uri.split('/').pop() || 'pet-main.jpg';
         setGalleryData(prev => ({
           ...prev,
           mainImage: { 
             uri: asset.uri,
-            base64: asset.base64 
+            mimeType: asset.mimeType,
+            name: filename,
+            isLocal: true,
           },
         }));
         
@@ -177,18 +175,20 @@ const GalleryManagementModal: React.FC<GalleryManagementModalProps> = ({
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
-        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const asset = result.assets[0];
+        const filename = asset.fileName || asset.uri.split('/').pop() || 'pet-gallery.jpg';
         setGalleryData(prev => ({
           ...prev,
           galleryImages: [
             ...prev.galleryImages,
             { 
               uri: asset.uri,
-              base64: asset.base64 
+              mimeType: asset.mimeType,
+              name: filename,
+              isLocal: true,
             },
           ],
         }));
@@ -563,17 +563,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.ERROR_RED,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.3,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   addImageButton: {
     borderWidth: 2,

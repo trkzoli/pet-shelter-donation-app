@@ -162,17 +162,6 @@ const styles = StyleSheet.create({
     padding: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
     marginHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
     marginVertical: SPACING.MEDIUM,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
  
   shelterName: {

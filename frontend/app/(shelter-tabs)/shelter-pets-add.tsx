@@ -18,6 +18,7 @@ import { setTabsUI } from '../../config/systemUI';
 import axios from 'axios';
 import { API_BASE_URL } from '../../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
 import EditPetInfoModal from '../../components/modals/EditPetInfoModal';
 import MonthlyGoalsModal from '../../components/modals/MonthlyGoalModal';
 import GalleryManagementModal from '../../components/modals/GalleryManagementModal';
@@ -74,7 +75,7 @@ interface PetFormData {
   description: string;
   story: string;
   microchipNumber?: string;
-  vetDocument?: { name: string; uri: string } | null;
+  vetDocument?: { name: string; uri: string; mimeType?: string } | null;
 }
 
 interface MonthlyGoalsData {
@@ -105,7 +106,7 @@ const ShelterPetsAddPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
 
-  const [vetDocument, setVetDocument] = useState<{ name: string; uri: string } | null>(null);
+  const [vetDocument, setVetDocument] = useState<{ name: string; uri: string; mimeType?: string } | null>(null);
 
   
   const [petInfoData, setPetInfoData] = useState<PetFormData>({
@@ -226,19 +227,45 @@ const ShelterPetsAddPage: React.FC = () => {
   }, [showAlert]);
 
   
-  const handleDocumentUpload = useCallback(() => {
-    
-    setVetDocument({ 
-      name: 'pet-verification-document.pdf', 
-      uri: 'document://verified' 
-    });
-    
-    showAlert({
-      title: 'Document Uploaded',
-      message: 'Veterinary document has been uploaded successfully.',
-      type: 'success',
-      buttonText: 'OK',
-    });
+  const handleDocumentUpload = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'image/*',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const file = result.assets?.[0];
+      if (!file?.uri) {
+        throw new Error('No document selected');
+      }
+
+      setVetDocument({
+        name: file.name ?? 'vet-record',
+        uri: file.uri,
+        mimeType: file.mimeType,
+      });
+
+      showAlert({
+        title: 'Document Selected',
+        message: 'Veterinary document has been selected successfully.',
+        type: 'success',
+        buttonText: 'OK',
+      });
+    } catch (error) {
+      showAlert({
+        title: 'Upload Failed',
+        message: 'Could not select document. Please try again.',
+        type: 'error',
+        buttonText: 'OK',
+      });
+    }
   }, [showAlert]);
 
   const handleAddPet = useCallback(async () => {
@@ -259,36 +286,38 @@ const ShelterPetsAddPage: React.FC = () => {
       console.log('Token found:', token ? 'YES' : 'NO');
       
       let mainImageUrl = '';
+
       if (galleryData.mainImage?.uri) {
         console.log('Uploading main image...');
+        
+        console.log('Upload URL:', `${API_BASE_URL}/uploads/image?type=pet_image`);
+        console.log('Main image URI:', galleryData.mainImage.uri);
+
         try {
-          const response = await fetch(galleryData.mainImage.uri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          const base64Data = await new Promise<string>((resolve) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-          
-          const uploadResponse = await fetch(`${API_BASE_URL}/uploads/base64-image?type=pet_image`, {
+          const formData = new FormData();
+          formData.append(
+            'image',
+            {
+              uri: galleryData.mainImage.uri,
+              name: `pet-main-${Date.now()}.jpg`,
+              type: 'image/jpeg',
+            } as any
+          );
+
+          const uploadResponse = await fetch(`${API_BASE_URL}/uploads/image?type=pet_image`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ 
-              image: base64Data.split(',')[1], 
-              mimeType: 'image/jpeg',
-              filename: `pet-main-${Date.now()}.jpg`
-            }),
+            body: formData,
           });
-          
+
           if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text();
             console.error('Main image upload failed:', errorText);
             throw new Error(`Image upload failed: ${uploadResponse.status}`);
           }
-          
+
           const uploadResult = await uploadResponse.json();
           mainImageUrl = uploadResult.secureUrl;
           console.log('Main image uploaded successfully:', mainImageUrl);
@@ -299,33 +328,36 @@ const ShelterPetsAddPage: React.FC = () => {
       }
 
       let galleryImageUrls: string[] = [];
-      if (galleryData.galleryImages.length > 0) {
-        for (const img of galleryData.galleryImages) {
- 
-          const response = await fetch(img.uri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          const base64Data = await new Promise<string>((resolve) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-          
-          const uploadResponse = await fetch(`${API_BASE_URL}/uploads/base64-image?type=pet_image`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ 
-              image: base64Data.split(',')[1], 
-              mimeType: 'image/jpeg',
-              filename: `pet-gallery-${Date.now()}-${galleryImageUrls.length}.jpg`
-            }),
-          });
-          
-          const uploadResult = await uploadResponse.json();
-          galleryImageUrls.push(uploadResult.secureUrl);
+      
+      for (let i = 0; i < galleryData.galleryImages.length; i++) {
+        const img = galleryData.galleryImages[i];
+        
+        console.log('Gallery upload URL:', `${API_BASE_URL}/uploads/image?type=pet_image`);
+        console.log('Gallery image URI:', img.uri);
+        
+        const formData = new FormData();
+        formData.append(
+          'image',
+          {
+            uri: img.uri,
+            name: `pet-gallery-${Date.now()}-${i}.jpg`,
+            type: 'image/jpeg',
+          } as any
+        );
+
+        const uploadResponse = await fetch(`${API_BASE_URL}/uploads/image?type=pet_image`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          throw new Error(`Gallery image upload failed: ${errorText}`);
         }
+
+        const uploadResult = await uploadResponse.json();
+        galleryImageUrls.push(uploadResult.secureUrl);
       }
     
       let vetDocUrl = '';
@@ -363,7 +395,7 @@ const ShelterPetsAddPage: React.FC = () => {
         gender: petInfoData.gender.toLowerCase(), 
         type: petInfoData.category.toLowerCase(),
         vaccinated: petInfoData.vaccinated,
-        dewormed: false,
+        dewormed: petInfoData.vaccinated,
         spayedNeutered: petInfoData.spayedNeutered,
         adoptionFee: parseFloat(petInfoData.adoptionFee),
         description: petInfoData.description,
@@ -384,6 +416,38 @@ const ShelterPetsAddPage: React.FC = () => {
           'Content-Type': 'application/json'
         },
       });
+
+      const createdPetId = petRes.data?.id;
+      if (vetDocument?.uri && createdPetId) {
+        const formData = new FormData();
+        formData.append(
+          'document',
+          {
+            uri: vetDocument.uri,
+            name: vetDocument.name || `vet-record-${Date.now()}`,
+            type: vetDocument.mimeType || 'application/pdf',
+          } as any
+        );
+
+        try {
+          const uploadResponse = await fetch(`${API_BASE_URL}/pets/${createdPetId}/vet-records`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error('Vet records upload failed');
+          }
+        } catch (uploadError) {
+          showAlert({
+            title: 'Upload Failed',
+            message: 'Pet was created, but vet record upload failed. You can upload it later.',
+            type: 'warning',
+            buttonText: 'OK',
+          });
+        }
+      }
       
       console.log('Pet created successfully:', petRes.data);
       showAlert({
@@ -675,17 +739,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     padding: SPACING.EXTRA_LARGE,
     marginBottom: SPACING.LARGE,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   sectionTitle: {
     fontFamily: 'PoppinsBold',
@@ -822,17 +875,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: SPACING.LARGE,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   submitButtonDisabled: {
     backgroundColor: COLORS.GRAY_LIGHT,

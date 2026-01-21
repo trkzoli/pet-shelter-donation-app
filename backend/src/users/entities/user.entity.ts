@@ -279,12 +279,6 @@ export class User {
       this.profileCompleteness = Math.round((filledFields.length / requiredFields.length) * 100);
       
       
-      console.log('🔍 BACKEND Profile Completion:', {
-        requiredFields: requiredFields.length,
-        filledFields: filledFields.length,
-        percentage: this.profileCompleteness,
-        filledFieldNames: filledFields
-      });
     } else {
       
       this.profileCompleteness = 0;

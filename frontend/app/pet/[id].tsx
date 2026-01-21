@@ -634,17 +634,6 @@ const styles = StyleSheet.create({
   petImage: {
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     resizeMode: 'cover',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   
   petName: {
@@ -702,17 +691,6 @@ const styles = StyleSheet.create({
     height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
     backgroundColor: '#AB886D',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   supportButtonText: {
     fontFamily: 'PoppinsBold',

@@ -155,7 +155,7 @@ const LoginScreen: React.FC = () => {
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        
+        keyboardVerticalOffset={Platform.OS === 'android' ? 40 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -360,17 +360,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     marginBottom: SPACING.VERTICAL_MEDIUM,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   buttonDisabled: {
     opacity: 0.6,

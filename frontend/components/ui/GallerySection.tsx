@@ -31,10 +31,14 @@ const GallerySection: React.FC<GallerySectionProps> = ({ images, petName }) => {
   const totalSpacing = (IMAGES_PER_ROW - 1) * IMAGE_SPACING;
   const imageSize = (availableWidth - totalSpacing) / IMAGES_PER_ROW;
 
+  const normalizedImages = images.map((image) =>
+    typeof image === 'string' ? { uri: image } : image
+  );
+
   return (
     <>
       <View style={[styles.galleryGrid, { width: availableWidth }]}>
-        {images.map((image, index) => (
+        {normalizedImages.map((image, index) => (
           <TouchableOpacity 
             key={index} 
             activeOpacity={0.8} 
@@ -56,7 +60,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({ images, petName }) => {
       
       <ImageGalleryModal
         visible={galleryVisible}
-        images={[...images]}
+        images={[...normalizedImages]}
         initialIndex={selectedImageIndex}
         petName={petName}
         onClose={handleCloseGallery}
@@ -76,17 +80,6 @@ const styles = StyleSheet.create({
   imageContainer: {
     borderRadius: 12,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   gridImage: {
     width: '100%',

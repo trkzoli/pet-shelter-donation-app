@@ -225,34 +225,12 @@ const styles = StyleSheet.create({
     borderRadius: 20, 
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   loginButton: {
     backgroundColor: '#D6C0B3',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   buttonText: {
     fontFamily: 'PoppinsBold',

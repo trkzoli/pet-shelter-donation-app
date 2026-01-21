@@ -11,7 +11,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AlertModal } from '../../components/modals';
 import { useAlertModal } from '../../hooks/useAlertModal';
@@ -20,6 +20,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { setTabsUI } from '../../config/systemUI';
 
 const DESIGN_CONSTANTS = {
   HORIZONTAL_PADDING: 20,
@@ -74,8 +75,6 @@ const ShelterProfilePage: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        
-        console.log('🔍 SHELTER PROFILE: No token found, showing default state for new user');
         setShelterData(null);
         setLoading(false);
         return;
@@ -91,8 +90,6 @@ const ShelterProfilePage: React.FC = () => {
       
     
       if (err.response?.status === 401) {
-        
-        console.log('🔍 SHELTER PROFILE: Authentication error, showing default state');
         setShelterData(null);
         setLoading(false);
         
@@ -113,14 +110,73 @@ const ShelterProfilePage: React.FC = () => {
     fetchShelterProfile();
   }, [fetchShelterProfile]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        setTabsUI();
+      }
+    }, [])
+  );
+
 
   const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
   const profileImageSize = Math.min(width * 0.25, DESIGN_CONSTANTS.PROFILE_IMAGE_SIZE);
   const sectionTitleFontSize = width * FONT_RATIOS.SECTION_TITLE;
   const bodyFontSize = width * FONT_RATIOS.BODY_TEXT;
 
-  
-  const isProfileComplete = shelterData?.profileCompleteness ? shelterData.profileCompleteness >= 100 : false;
+  const profileCompletion = useMemo(() => {
+    if (!shelterData) return 0;
+
+    const requiredShelterFields = [
+      'shelterName',
+      'description',
+      'petSpecialization',
+      'licenseNumber',
+      'yearEstablished',
+      'contactPerson',
+    ];
+    const requiredUserFields = ['email', 'phone', 'street', 'city', 'state', 'zip', 'country'];
+
+    const petSpecialization = String(shelterData.petSpecialization || '').toLowerCase();
+    const contactPerson = String(shelterData.contactPerson || '').toLowerCase();
+    const licenseNumber = String(shelterData.licenseNumber || '');
+    const yearEstablished = Number(shelterData.yearEstablished || 0);
+    const shelterName = String(shelterData.shelterName || '');
+    const userName = String(shelterData.user?.name || '');
+
+    const isDefaultShelterProfile =
+      (!shelterData.description || shelterData.description === '') &&
+      (petSpecialization === 'both' || petSpecialization === '') &&
+      licenseNumber.startsWith('TEMP-') &&
+      yearEstablished === 2000 &&
+      contactPerson === 'to be completed';
+
+    const isShelterFieldFilled = (field: string) => {
+      const value = shelterData[field];
+      if (value === null || value === undefined || value === '') return false;
+      if (!isDefaultShelterProfile) return true;
+
+      if (field === 'shelterName' && shelterName === userName) return false;
+      if (field === 'petSpecialization' && (petSpecialization === 'both' || petSpecialization === '')) return false;
+      if (field === 'licenseNumber' && licenseNumber.startsWith('TEMP-')) return false;
+      if (field === 'yearEstablished' && yearEstablished === 2000) return false;
+      if (field === 'contactPerson' && contactPerson === 'to be completed') return false;
+      return true;
+    };
+
+    const filledShelterFields = requiredShelterFields.filter(isShelterFieldFilled);
+
+    const filledUserFields = requiredUserFields.filter((field) => {
+      const value = shelterData.user?.[field];
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    const totalRequired = requiredShelterFields.length + requiredUserFields.length;
+    const totalFilled = filledShelterFields.length + filledUserFields.length;
+    return Math.round((totalFilled / totalRequired) * 100);
+  }, [shelterData]);
+
+  const isProfileComplete = profileCompletion >= 100;
 
   
   const handleRefresh = useCallback(async () => {
@@ -159,39 +215,41 @@ const ShelterProfilePage: React.FC = () => {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
-      base64: true,
     });
-    if (result.canceled) return;
+    if (result.canceled) {
+      if (Platform.OS === 'android') {
+        setTabsUI();
+      }
+      return;
+    }
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Not authenticated');
       
       const asset = result.assets?.[0];
-      if (!asset || !asset.base64) {
+      if (!asset?.uri) {
         throw new Error('No image data available');
       }
-      
-      const fileExtension = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const mimeType = fileExtension === 'png' ? 'image/png' : 'image/jpeg';
-      
-      console.log('Uploading image via base64:', {
-        type: mimeType,
-        name: `profile.${fileExtension}`,
-        size: asset.base64.length,
-      });
-      
-    
-      const response = await fetch(`${API_BASE_URL}/users/profile-image-base64`, {
+
+      const fileName = asset.fileName || asset.uri.split('/').pop() || `profile-${Date.now()}.jpg`;
+      const mimeType = asset.mimeType || (fileName.endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+      const formData = new FormData();
+      formData.append(
+        'image',
+        {
+          uri: asset.uri,
+          name: fileName,
+          type: mimeType,
+        } as any
+      );
+
+      const response = await fetch(`${API_BASE_URL}/users/profile-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          image: asset.base64,
-          mimeType: mimeType,
-          filename: `profile.${fileExtension}`,
-        }),
+        body: formData,
       });
       
       if (!response.ok) {
@@ -221,6 +279,10 @@ const ShelterProfilePage: React.FC = () => {
         type: 'error',
         buttonText: 'OK',
       });
+    } finally {
+      if (Platform.OS === 'android') {
+        setTabsUI();
+      }
     }
   }, [showAlert]);
 
@@ -277,7 +339,7 @@ const ShelterProfilePage: React.FC = () => {
         <View style={styles.profileHeader}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={shelterData?.user?.profileImage ? { uri: shelterData.user.profileImage } : require('../../assets/images/placeholder.png')}
+              source={shelterData?.user?.profileImage ? { uri: shelterData.user.profileImage } : require('../../assets/images/pphr.png')}
               style={[styles.profileImage, { width: profileImageSize, height: profileImageSize }]}
             />
             <TouchableOpacity style={styles.profileImageOverlay} onPress={handleProfileImagePress}>
@@ -372,7 +434,7 @@ const ShelterProfilePage: React.FC = () => {
                   styles.verificationBadgeText,
                   isProfileComplete ? styles.verificationBadgeTextComplete : styles.verificationBadgeTextIncomplete
                 ]}>
-                  {isProfileComplete ? "Verified" : `${shelterData?.profileCompleteness || 0}%`}
+                  {isProfileComplete ? "Verified" : `${profileCompletion}%`}
                 </Text>
               </View>
             </View>
@@ -482,17 +544,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   headerTitle: {
     fontFamily: 'PoppinsBold',
@@ -523,17 +574,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.PROFILE_IMAGE_SIZE / 2,
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   profileImageOverlay: {
     position: 'absolute',
@@ -579,17 +619,6 @@ const styles = StyleSheet.create({
     padding: SPACING.LARGE,
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     backgroundColor: '#FFFFFF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   adoptionsCard: {
     borderWidth: 1,
@@ -707,17 +736,6 @@ const styles = StyleSheet.create({
   donationCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   donationContent: {
     flexDirection: 'row',
@@ -755,17 +773,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     marginBottom: SPACING.LARGE,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   actionButtonContent: {
     flexDirection: 'row',

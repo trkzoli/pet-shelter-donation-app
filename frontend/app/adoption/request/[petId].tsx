@@ -888,17 +888,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   petHeader: {
     flexDirection: 'row',
@@ -950,17 +939,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cardTitle: {
     fontSize: 16,
@@ -1028,17 +1006,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   shelterInfo: {
     marginBottom: SPACING.LARGE,
@@ -1085,17 +1052,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   contactSubtitle: {
     fontSize: 13,
@@ -1185,17 +1141,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#AB886D',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     marginBottom: SPACING.MEDIUM,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   submitButtonDisabled: {
     backgroundColor: '#D6C0B3',
@@ -1257,17 +1202,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   feeInfo: {
     fontSize: 14,

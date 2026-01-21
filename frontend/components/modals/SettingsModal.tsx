@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,11 +23,23 @@ import { LegalContentModal, LogoutModal } from './';
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  userData: {
-    name: string;
-    email: string;
-    profileCompleteness: number;
-  };
+  userData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    housingType?: string;
+    ownershipStatus?: string;
+    currentPets?: string;
+    experienceLevel?: string;
+    occupation?: string;
+    workSchedule?: string;
+    whyAdopt?: string;
+  } | null;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, userData }) => {
@@ -116,12 +128,51 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, userDat
     console.log(`Settings section ${sectionKey} is now ${isExpanded ? 'expanded' : 'collapsed'}`);
   }, []);
 
+  const profileCompletion = useMemo(() => {
+    if (!userData) return 0;
+    const requiredFields = [
+      'name',
+      'email',
+      'phone',
+      'street',
+      'city',
+      'state',
+      'zip',
+      'country',
+      'housingType',
+      'ownershipStatus',
+      'currentPets',
+      'experienceLevel',
+      'occupation',
+      'workSchedule',
+      'whyAdopt',
+    ];
+
+    const registrationOnlyFields = requiredFields.filter(
+      (field) => !['name', 'email', 'phone'].includes(field)
+    );
+    const isRegistrationOnly = registrationOnlyFields.every((field) => {
+      const value = (userData as any)[field];
+      return value === null || value === undefined || value === '';
+    });
+
+    const filledRequired = requiredFields.filter((field) => {
+      if (isRegistrationOnly && field === 'name') {
+        return false;
+      }
+      const value = (userData as any)[field];
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    return Math.round((filledRequired.length / requiredFields.length) * 100);
+  }, [userData]);
+
   const getProfileStatus = () => {
-    if (!userData || typeof userData.profileCompleteness !== 'number') {
+    if (!userData) {
       return { text: 'Loading...', color: '#797979', icon: 'time' };
     }
-    if (userData.profileCompleteness >= 90) return { text: 'Complete', color: '#51CF66', icon: 'checkmark-circle' };
-    if (userData.profileCompleteness >= 50) return { text: 'In Progress', color: '#FFD43B', icon: 'time' };
+    if (profileCompletion >= 90) return { text: 'Complete', color: '#51CF66', icon: 'checkmark-circle' };
+    if (profileCompletion >= 50) return { text: 'In Progress', color: '#FFD43B', icon: 'time' };
     return { text: 'Incomplete', color: '#FF6B6B', icon: 'alert-circle' };
   };
 
@@ -193,7 +244,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, userDat
                   color={profileStatus.color} 
                 />
                 <Text style={[styles.profileStatusText, { color: profileStatus.color }]}>
-                  Profile {profileStatus.text} ({userData?.profileCompleteness || 0}%)
+                  Profile {profileStatus.text} ({profileCompletion}%)
                 </Text>
               </View>
             </View>

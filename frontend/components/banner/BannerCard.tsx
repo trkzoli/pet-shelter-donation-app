@@ -76,17 +76,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cardContent: {
     flex: 1,

@@ -223,16 +223,9 @@ export class CampaignsService {
     limit: number = 10,
     status?: CampaignStatus,
   ): Promise<CampaignListResponseDto> {
-    console.log('🔍 CAMPAIGNS SERVICE DEBUG - getShelterCampaigns called');
-    console.log('🔍 CAMPAIGNS SERVICE DEBUG - userId:', userId);
-    
-    
     const shelter = await this.shelterRepository.findOne({
       where: { userId },
     });
-
-    console.log('🔍 CAMPAIGNS SERVICE DEBUG - shelter found:', !!shelter);
-    console.log('🔍 CAMPAIGNS SERVICE DEBUG - shelter ID:', shelter?.id);
 
     if (!shelter) {
       throw new NotFoundException('Shelter profile not found');
@@ -254,7 +247,6 @@ export class CampaignsService {
 
     
     const total = await queryBuilder.getCount();
-    console.log('🔍 CAMPAIGNS SERVICE DEBUG - total campaigns found:', total);
 
     
     const campaigns = await queryBuilder

@@ -125,7 +125,7 @@ const FIELD_VALIDATION = {
   occupation: { required: true, minLength: 2 },
   workSchedule: { required: true, minLength: 1 }, 
   adoptionReason: { required: true, minLength: 10 }, 
-  country: { required: false },
+  country: { required: true, minLength: 2 },
   hasYard: { required: false }, 
   yardFenced: { required: false }, 
   experienceLevel: { required: true, minLength: 1 }, 
@@ -140,7 +140,6 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
 
   const [formData, setFormData] = useState<DonorProfileFormData>(INITIAL_FORM_DATA);
   const [saving, setSaving] = useState(false);
-  const [profileCompleteness, setProfileCompleteness] = useState<number>(0);
 
   const titleFontSize = width * 0.055;
   const sectionTitleFontSize = width * 0.045;
@@ -148,7 +147,6 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
   const labelFontSize = width * 0.032;
 
   const completionPercentage = useMemo(() => {
-
     const requiredFields = Object.keys(FIELD_VALIDATION).filter(field => {
       const rules = FIELD_VALIDATION[field as keyof typeof FIELD_VALIDATION];
       return rules.required;
@@ -159,23 +157,9 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
       return value !== '' && value !== undefined && value !== null && value.trim() !== '';
     });
     
-    console.log('COMPLETION CALCULATION');
-    console.log('Required fields:', requiredFields.length);
-    console.log('Completed required fields:', completedRequiredFields.length);
-    console.log('Percentage:', Math.round((completedRequiredFields.length / requiredFields.length) * 100));
-   
-    
     return Math.round((completedRequiredFields.length / requiredFields.length) * 100);
   }, [formData]);
 
-  const getCompletionStatus = () => {
-    if (completionPercentage >= 90) return { text: 'Verification Ready!', color: COLORS.SUCCESS_GREEN };
-    if (completionPercentage >= 70) return { text: 'Almost Done!', color: '#FFD43B' };
-    if (completionPercentage >= 50) return { text: 'Good Progress', color: COLORS.LIGHT_BROWN };
-    return { text: 'Getting Started', color: COLORS.GRAY_DARK };
-  };
-
-  const completionStatus = getCompletionStatus();
 
   const handleInputChange = useCallback((field: keyof DonorProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -209,9 +193,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
           workSchedule: d.workSchedule || '',
           adoptionReason: d.whyAdopt || '',
         });
-        setProfileCompleteness(d.profileCompleteness || 0);
       } catch (err) {
-        setProfileCompleteness(0);
       }
     };
     fetchProfile();
@@ -356,7 +338,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
             Edit Donor Profile
           </Text>
           <Text style={[styles.headerSubtitle, { fontSize: bodyFontSize }]}>
-            {completionPercentage}% Complete • {completionStatus.text}
+            {completionPercentage}% Complete
           </Text>
         </View>
         <View style={styles.headerPlaceholder} />
@@ -388,7 +370,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
               {renderInputField('city', 'City *', 'Enter your city')}
               {renderInputField('state', 'State/Province *', 'Enter your state or province')}
               {renderInputField('zipCode', 'ZIP/Postal Code *', 'Enter your ZIP or postal code')}
-              {renderInputField('country', 'Country', 'Enter your country')}
+              {renderInputField('country', 'Country *', 'Enter your country')}
             </>
           ))}
 
@@ -568,18 +550,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: SPACING.MASSIVE, 
-
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -604,17 +574,6 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 3,
     borderColor: COLORS.CARD_BACKGROUND,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   profileImageOverlay: {
     position: 'absolute',

@@ -39,6 +39,6 @@ import { CloudinaryConfigService } from './config/cloudinary.config';
   ],
   controllers: [UploadsController],
   providers: [UploadsService, CloudinaryConfigService],
-  exports: [UploadsService],
+  exports: [UploadsService, MulterModule],
 })
 export class UploadsModule {}

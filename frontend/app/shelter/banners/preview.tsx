@@ -65,7 +65,7 @@ const BannerPreviewPage: React.FC<BannerPreviewPageProps> = () => {
 
   const [creating, setCreating] = useState(false);
   const [shelterData, setShelterData] = useState<any>(null);
-  const [selectedImage, setSelectedImage] = useState<{uri: string; base64: string; mimeType: string} | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ uri: string; mimeType?: string; name?: string } | null>(null);
 
 
   useEffect(() => {
@@ -104,18 +104,17 @@ const BannerPreviewPage: React.FC<BannerPreviewPageProps> = () => {
         allowsEditing: true,
         aspect: [16, 9],
         quality: 0.8,
-        base64: true, 
       });
 
       if (result.canceled) return;
 
       const selectedImageData = result.assets[0];
 
-      if (selectedImageData.uri && selectedImageData.base64) {
+      if (selectedImageData.uri) {
         setSelectedImage({
           uri: selectedImageData.uri,
-          base64: selectedImageData.base64,
           mimeType: selectedImageData.mimeType || 'image/jpeg',
+          name: selectedImageData.fileName || selectedImageData.uri.split('/').pop() || 'campaign.jpg',
         });
         
         console.log('IMAGE SELECTED:', selectedImageData.uri);
@@ -228,19 +227,24 @@ const BannerPreviewPage: React.FC<BannerPreviewPageProps> = () => {
       if (!token) throw new Error('Not authenticated');
       let imageUrl = undefined;
 
-      if (selectedImage && selectedImage.base64) {
+      if (selectedImage?.uri) {
         try {
-          const uploadRes = await fetch(`${API_BASE_URL}/uploads/base64-image?type=campaign_image`, {
+          const formData = new FormData();
+          formData.append(
+            'image',
+            {
+              uri: selectedImage.uri,
+              name: selectedImage.name || `campaign-${Date.now()}.jpg`,
+              type: selectedImage.mimeType || 'image/jpeg',
+            } as any
+          );
+
+          const uploadRes = await fetch(`${API_BASE_URL}/uploads/image?type=campaign_image`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({ 
-              image: selectedImage.base64,
-              mimeType: selectedImage.mimeType || 'image/jpeg',
-              filename: `campaign-${Date.now()}.jpg`
-            }),
+            body: formData,
           });
           
           if (!uploadRes.ok) {

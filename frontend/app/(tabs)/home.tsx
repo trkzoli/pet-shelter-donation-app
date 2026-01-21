@@ -15,14 +15,12 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { setTabsUI } from '../../config/systemUI';
-import { FilterDropdownModal } from '../../components/modals';
+import FilterDropdownModal, { FilterType } from '../../components/modals/FilterDropdownModal';
 import { BannerCard } from '../../components/banner';
 import DonorPetCard from '../../components/pet/DonorPetCard';
 import axios from 'axios';
 import { API_BASE_URL } from '../../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-type FilterType = 'All' | 'Dogs' | 'Cats' | 'Hamsters' | 'Rabbits' | 'Fish' | 'Birds' | 'Reptiles' | 'Guinea Pigs' | 'Ferrets';
 
 const DESIGN_CONSTANTS = {
   HORIZONTAL_PADDING: 16,
@@ -145,7 +143,6 @@ const HomePage: React.FC = () => {
         priority: banner.priority,
         image: banner.image,
       })) || [];
-      console.log('🔍 HOME PAGE: Mapped banners:', mappedBanners.length);
       setBanners(mappedBanners);
     } catch (err: any) {
       console.error('Error fetching data:', err);
@@ -393,17 +390,6 @@ const styles = StyleSheet.create({
     height: DESIGN_CONSTANTS.SEARCH_BAR_HEIGHT,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   searchIcon: {
     marginRight: SPACING.SMALL,
@@ -426,17 +412,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   
  

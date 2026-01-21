@@ -115,6 +115,11 @@ interface SuccessStory {
   canDismiss: boolean;
 }
 
+interface AdoptionRequestInfo {
+  id: string;
+  status: string;
+}
+
 const SupportedPetsPage: React.FC = () => {
   const { width, height } = useWindowDimensions();
   const router = useRouter();
@@ -123,6 +128,7 @@ const SupportedPetsPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [successStories, setSuccessStories] = useState<SuccessStory[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [adoptionRequestsByPetId, setAdoptionRequestsByPetId] = useState<Record<string, AdoptionRequestInfo>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissedStoryIds, setDismissedStoryIds] = useState<string[]>([]);
@@ -162,13 +168,16 @@ const SupportedPetsPage: React.FC = () => {
         return;
       }
       
-      const [petsResponse, successResponse] = await Promise.all([
+      const [petsResponse, successResponse, adoptionResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/donations/supported-pets`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         axios.get(`${API_BASE_URL}/donations/success-stories`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        axios.get(`${API_BASE_URL}/adoptions/my-requests`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => ({ data: [] })),
       ]);
       
    
@@ -234,9 +243,20 @@ const SupportedPetsPage: React.FC = () => {
         notificationsSent: story.notificationsSent || {},
         canDismiss: story.canDismiss !== false,
       }));
+
+      const requestMap: Record<string, AdoptionRequestInfo> = {};
+      (adoptionResponse.data || []).forEach((request: any) => {
+        if (request?.petId) {
+          requestMap[request.petId] = {
+            id: request.id,
+            status: request.status,
+          };
+        }
+      });
       
       setPets(petsData);
       setSuccessStories(storiesData);
+      setAdoptionRequestsByPetId(requestMap);
     } catch (err: any) {
       setError('Failed to load supported pets. Please try again.');
       console.error('Error fetching supported pets:', err);
@@ -430,6 +450,16 @@ const SupportedPetsPage: React.FC = () => {
           <Text style={styles.quickStatLabel}>Adoption Fee</Text>
         </View>
       </View>
+
+      {adoptionRequestsByPetId[pet.id] && (
+        <TouchableOpacity
+          style={[styles.adoptionStatusButton, { marginBottom: SPACING.LARGE }]}
+          onPress={() => router.push({ pathname: '/adoption/status', params: { petId: pet.id } })}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.adoptionStatusButtonText}>View Adoption Status</Text>
+        </TouchableOpacity>
+      )}
 
       
       <View style={styles.staticSection}>
@@ -771,17 +801,6 @@ const styles = StyleSheet.create({
   petImage: {
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     resizeMode: 'cover',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   petName: {
     fontFamily: 'PoppinsBold',
@@ -817,6 +836,18 @@ const styles = StyleSheet.create({
 
   staticSection: {
     marginBottom: SPACING.LARGE,
+  },
+  adoptionStatusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#AB886D',
+    borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
+    paddingVertical: SPACING.SMALL,
+  },
+  adoptionStatusButtonText: {
+    fontFamily: 'PoppinsBold',
+    color: '#E4E0E1',
   },
   staticSectionTitle: {
     fontFamily: 'PoppinsBold',
@@ -893,17 +924,6 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.MEDIUM,
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     alignSelf: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   donationButtonText: {
     fontSize: 16,

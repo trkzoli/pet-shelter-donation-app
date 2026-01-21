@@ -230,17 +230,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.LARGE,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -287,17 +276,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   cardPaymentContent: {
     flexDirection: 'row',

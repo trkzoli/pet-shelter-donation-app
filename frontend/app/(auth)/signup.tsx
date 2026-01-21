@@ -94,17 +94,9 @@ const SignUpScreen: React.FC = () => {
     if (!password) return '';
     
     const validation = validatePassword(password);
-    const missing = [];
+    if (validation.isValid) return 'Strong password!';
     
-    if (!validation.requirements.length) missing.push('8+ characters');
-    if (!validation.requirements.uppercase) missing.push('uppercase letter');
-    if (!validation.requirements.lowercase) missing.push('lowercase letter');
-    if (!validation.requirements.number) missing.push('number');
-    if (!validation.requirements.special) missing.push('special character');
-    
-    if (missing.length === 0) return 'Strong password!';
-    
-    return `Need: ${missing.join(', ')}`;
+    return 'Requirements: 8+ characters, at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.';
   };
 
   const getEmailBorderColor = () => {
@@ -169,7 +161,7 @@ const SignUpScreen: React.FC = () => {
     if (!validatePassword(formData.password).isValid) {
       showAlert({
         title: 'Password Requirements',
-        message: 'Please ensure your password meets all security requirements.',
+        message: 'Requirements: 8+ characters, at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.',
         type: 'warning',
         buttonText: 'OK'
       });
@@ -258,7 +250,8 @@ const SignUpScreen: React.FC = () => {
         </TouchableOpacity>
         <KeyboardAvoidingView 
           style={{ flex: 1 }} 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}         
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'android' ? 40 : 0}
         >
         {/* Main Content */}
         <ScrollView
@@ -282,14 +275,14 @@ const SignUpScreen: React.FC = () => {
           </Text>
           
           {/* Email Input */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { width: availableWidth * 0.9 }]}>
             <TextInput
               placeholder="Email"
               placeholderTextColor="#6B6B6B"
               style={[
                 styles.input, 
                 { 
-                  width: availableWidth * 0.9,
+                  width: '100%',
                   borderColor: getEmailBorderColor()
                 }
               ]}
@@ -308,8 +301,8 @@ const SignUpScreen: React.FC = () => {
           </View>
           
           {/* Password Input with Validation */}
-          <View style={styles.inputContainer}>
-            <View style={[styles.passwordContainer, { width: availableWidth * 0.9 }]}>
+          <View style={[styles.inputContainer, { width: availableWidth * 0.9 }]}>
+            <View style={[styles.passwordContainer, { width: '100%' }]}>
               <TextInput
                 placeholder="Password"
                 placeholderTextColor="#6B6B6B"
@@ -344,7 +337,9 @@ const SignUpScreen: React.FC = () => {
                 style={[
                   styles.passwordRequirementText,
                   { 
-                    color: validatePassword(formData.password).isValid ? '#51CF66' : '#FF6B6B' 
+                    color: validatePassword(formData.password).isValid ? '#51CF66' : '#FF6B6B',
+                    width: '100%',
+                    textAlign: 'left',
                   }
                 ]}
               >
@@ -516,17 +511,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     marginBottom: SPACING.VERTICAL_MEDIUM,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   buttonDisabled: {
     opacity: 0.6,

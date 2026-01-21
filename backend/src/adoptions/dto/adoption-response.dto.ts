@@ -16,6 +16,9 @@ export class UserBasicInfoDto {
   phone: string;
 
   @Expose()
+  profileImage?: string;
+
+  @Expose()
   @Transform(({ value }) => parseFloat(value))
   totalDonatedToPet: number;
 }

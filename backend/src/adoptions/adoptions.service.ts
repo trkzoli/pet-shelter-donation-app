@@ -74,30 +74,8 @@ export class AdoptionsService {
     const reasons: string[] = [];
     let isEligible = true;
 
-    // Debug: Log current user data
-    console.log('🔍 ADOPTION ELIGIBILITY: User data:', {
-      userId: user.id,
-      pawPoints: user.pawPoints,
-      storedProfileCompleteness: user.profileCompleteness,
-      name: user.name,
-      phone: user.phone,
-      street: user.street,
-      city: user.city,
-      state: user.state,
-      zip: user.zip,
-      country: user.country,
-      housingType: user.housingType,
-      ownershipStatus: user.ownershipStatus,
-      currentPets: user.currentPets,
-      experienceLevel: user.experienceLevel,
-      occupation: user.occupation,
-      workSchedule: user.workSchedule,
-      whyAdopt: user.whyAdopt,
-    });
-
     // Check profile completion (100% required)
     const profileCompleteness = this.calculateProfileCompletion(user);
-    console.log('🔍 ADOPTION ELIGIBILITY: Calculated profile completion:', profileCompleteness);
     
     if (profileCompleteness < 100) {
       isEligible = false;
@@ -153,8 +131,6 @@ export class AdoptionsService {
     // }
 
     // Get pets user has donated to that are still published
-    console.log('🔍 ELIGIBLE PETS QUERY: Searching donations for user:', userId);
-    
     const donatedPets = await this.donationRepository
       .createQueryBuilder('donation')
       .leftJoinAndSelect('donation.pet', 'pet')
@@ -164,16 +140,6 @@ export class AdoptionsService {
       .andWhere('pet.status = :petStatus', { petStatus: PetStatus.PUBLISHED })
       .andWhere('donation.petId IS NOT NULL')
       .getMany();
-
-    console.log('🔍 ELIGIBLE PETS QUERY: Found donations:', donatedPets.length);
-    console.log('🔍 ELIGIBLE PETS QUERY: Donation details:', donatedPets.map(d => ({
-      id: d.id,
-      amount: d.amount,
-      petId: d.petId,
-      petName: d.pet?.name,
-      donationStatus: d.status,
-      petStatus: d.pet?.status
-    })));
 
     // Group donations by pet and calculate totals
     const petStatsMap = new Map();
@@ -851,14 +817,8 @@ export class AdoptionsService {
       query.andWhere('donation.userId != :excludeUserId', { excludeUserId });
     }
 
-    console.log(`🔍 AFFECTED DONORS: Query for pet ${petId}, excluding ${excludeUserId || 'none'}`);
-    console.log(`🔍 AFFECTED DONORS: SQL:`, query.getSql());
-
     const results = await query.getRawMany();
     const donorIds = results.map(result => result.userId);
-    
-    console.log(`🔍 AFFECTED DONORS: Found ${donorIds.length} donors:`, donorIds);
-    
     return donorIds;
   }
 

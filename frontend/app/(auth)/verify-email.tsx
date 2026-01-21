@@ -59,6 +59,9 @@ const VerifyEmailScreen: React.FC = () => {
   
 
   const inputRefs = useRef<TextInput[]>([]);
+  const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasNavigatedRef = useRef(false);
   
   const shakeAnimation = useRef(new Animated.Value(0)).current;
 
@@ -133,15 +136,20 @@ const VerifyEmailScreen: React.FC = () => {
         await AsyncStorage.setItem('token', response.data.accessToken);
       }
       
+      inputRefs.current.forEach((ref) => ref?.blur());
       showAlert({
         title: 'Email Verified!',
         message: 'Your email has been successfully verified. Please log in to continue.',
         type: 'success',
         buttonText: 'Continue'
       });
-      setTimeout(() => {
+      if (navigateTimerRef.current) {
+        clearTimeout(navigateTimerRef.current);
+      }
+      navigateTimerRef.current = setTimeout(() => {
+        if (hasNavigatedRef.current) return;
+        hasNavigatedRef.current = true;
         hideAlert();
-        
         router.replace('/login');
       }, 2000);
     } catch (error: any) {
@@ -216,7 +224,19 @@ const VerifyEmailScreen: React.FC = () => {
     const timer = setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 500);
+    focusTimerRef.current = timer;
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (navigateTimerRef.current) {
+        clearTimeout(navigateTimerRef.current);
+      }
+      if (focusTimerRef.current) {
+        clearTimeout(focusTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {

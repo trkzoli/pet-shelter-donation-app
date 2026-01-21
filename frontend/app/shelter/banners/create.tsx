@@ -250,7 +250,7 @@ const BannerCreatePage: React.FC<BannerCreatePageProps> = () => {
                 style={[styles.textInput, errors.title && styles.inputError]}
                 value={formData.title}
                 onChangeText={(text) => handleInputChange('title', text)}
-                placeholder="e.g., Emergency Medical Fund for Injured Dogs"
+                placeholder="e.g., Emergency Medical Funds"
                 placeholderTextColor={COLORS.GRAY_DARK}
                 maxLength={80}
               />
@@ -497,17 +497,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     padding: SPACING.EXTRA_LARGE,
     marginBottom: SPACING.EXTRA_LARGE,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   sectionTitle: {
     fontFamily: 'PoppinsBold',
@@ -693,6 +682,8 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY_BROWN,
     fontSize: 18,
     paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   
   feeBreakdownContainer: {
@@ -783,17 +774,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     marginTop: SPACING.EXTRA_LARGE,
     gap: SPACING.SMALL,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   nextButtonText: {
     fontFamily: 'PoppinsBold',

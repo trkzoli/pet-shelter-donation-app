@@ -183,7 +183,6 @@ const ProfilePage: React.FC = () => {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
-      base64: true, 
     });
     
     if (result.canceled) return;
@@ -193,31 +192,29 @@ const ProfilePage: React.FC = () => {
       if (!token) throw new Error('Not authenticated');
       
       const asset = result.assets?.[0];
-      if (!asset || !asset.base64) {
+      if (!asset?.uri) {
         throw new Error('No image data available');
       }
 
-      const fileExtension = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const mimeType = fileExtension === 'png' ? 'image/png' : 'image/jpeg';
-      
-      console.log('Uploading donor profile image via base64:', {
-        type: mimeType,
-        name: `profile.${fileExtension}`,
-        size: asset.base64.length,
-      });
-      
-      
-      const response = await fetch(`${API_BASE_URL}/users/profile-image-base64`, {
+      const fileName = asset.fileName || asset.uri.split('/').pop() || `profile-${Date.now()}.jpg`;
+      const mimeType = asset.mimeType || (fileName.endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+      const formData = new FormData();
+      formData.append(
+        'image',
+        {
+          uri: asset.uri,
+          name: fileName,
+          type: mimeType,
+        } as any
+      );
+
+      const response = await fetch(`${API_BASE_URL}/users/profile-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          image: asset.base64,
-          mimeType: mimeType,
-          filename: `profile.${fileExtension}`,
-        }),
+        body: formData,
       });
       
       if (!response.ok) {
@@ -333,9 +330,6 @@ const ProfilePage: React.FC = () => {
                 <Text style={styles.pawPointsLabel}>PawPoints</Text>
               </View>
               <Text style={styles.pawPointsValue}>{pawPoints}</Text>
-              <Text style={styles.pawPointsSubtext}>
-                Next at ${((Math.floor(pawPoints) + 1) * 25).toFixed(0)}
-              </Text>
             </View>
 
           
@@ -404,7 +398,7 @@ const ProfilePage: React.FC = () => {
       <SettingsModal 
         visible={settingsVisible} 
         onClose={() => setSettingsVisible(false)} 
-        userData={userData || MOCK_USER_DATA}
+        userData={userData}
       />
 
 
@@ -439,17 +433,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   headerTitle: {
     fontFamily: 'PoppinsBold',
@@ -480,17 +463,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.PROFILE_IMAGE_SIZE / 2,
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
   profileImageOverlay: {
     position: 'absolute',
@@ -535,17 +507,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: SPACING.LARGE,
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   pawPointsCard: {
     backgroundColor: '#493628',
@@ -576,6 +537,7 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
     color: '#E4E0E1',
     marginBottom: 2,
+    textAlign: 'center',
   },
   pawPointsSubtext: {
     fontSize: 10,
@@ -592,6 +554,7 @@ const styles = StyleSheet.create({
     fontFamily: 'PoppinsBold',
     color: '#493628',
     marginBottom: 2,
+    textAlign: 'center',
   },
 
   actionsContainer: {
@@ -602,17 +565,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   actionButtonDisabled: {
     backgroundColor: '#F5F5F5',

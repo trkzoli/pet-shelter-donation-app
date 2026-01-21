@@ -1,5 +1,5 @@
 import { Platform, AppState } from 'react-native';
-import * as SystemUI from 'expo-system-ui';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // Navigation bar 
 export const NAVIGATION_BAR_CONFIG = {
@@ -11,13 +11,15 @@ export const NAVIGATION_BAR_CONFIG = {
 } as const;
 
 let navigationBarColorSet = false;
+let lastNavigationBarColor = NAVIGATION_BAR_CONFIG.defaultColor;
 let appStateListener: any = null;
 
 const setNavigationBarColor = async (color: string = NAVIGATION_BAR_CONFIG.defaultColor) => {
   if (Platform.OS === 'android') {
     try {
-      await SystemUI.setBackgroundColorAsync(color);
+      await NavigationBar.setBackgroundColorAsync(color);
       navigationBarColorSet = true;
+      lastNavigationBarColor = color;
       return true;
     } catch (error) {
       console.warn('Could not set navigation bar color:', error);
@@ -35,7 +37,7 @@ export const initializeNavigationBar = async () => {
   if (!appStateListener) {
     const handleAppStateChange = (nextAppState: string) => {
       if (nextAppState === 'active' && navigationBarColorSet) {
-        setNavigationBarColor();
+        setNavigationBarColor(lastNavigationBarColor);
       }
     };
     

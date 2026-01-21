@@ -359,14 +359,6 @@ const ShelterPetManagePage = () => {
 
   useEffect(() => {
     if (petData) {
-      console.log('🔍 FRONTEND MODAL: Updating form states with petData:', {
-        name: petData.name,
-        breed: petData.breed,
-        description: petData.description,
-        story: petData.story,
-        monthlyGoal: petData.monthlyGoal
-      });
-      
       setEditFormData({
         name: petData.name || '',
         breed: petData.breed || '',
@@ -393,20 +385,6 @@ const ShelterPetManagePage = () => {
         galleryImages: petData.galleryImages || [],
       });
       
-      console.log('🔍 FRONTEND MODAL: Form states updated:', {
-        editFormData: {
-          name: petData.name,
-          breed: petData.breed,
-          description: petData.description,
-          story: petData.story
-        },
-        goalFormData: {
-          vaccination: petData.monthlyGoal?.vaccination,
-          food: petData.monthlyGoal?.food,
-          medical: petData.monthlyGoal?.medical,
-          other: petData.monthlyGoal?.other
-        }
-      });
     }
   }, [petData]); 
 
@@ -666,6 +644,7 @@ const ShelterPetManagePage = () => {
         description: data.description,
         story: data.story,
         vaccinated: data.vaccinated,
+        dewormed: data.vaccinated,
         spayedNeutered: data.spayedNeutered,
       }, {
         headers: { Authorization: `Bearer ${token}` },
@@ -830,7 +809,6 @@ const ShelterPetManagePage = () => {
     if (!petData) return;
     setIsLoading(true);
     
-    console.log('GALLERY SAVE: Received data:', data);
     
     try {
       const token = await AsyncStorage.getItem('token');
@@ -840,18 +818,28 @@ const ShelterPetManagePage = () => {
       let additionalImagesUpdated = false;
       
       
-      if (data.mainImage && data.mainImage.base64) {
-        console.log('GALLERY SAVE: Uploading new main image with base64');
+      const isLocalImage = (img: any) =>
+        !!img?.uri && !/^https?:/i.test(img.uri);
+
+      if (data.mainImage && isLocalImage(data.mainImage)) {
+        console.log('GALLERY SAVE: Uploading new main image with FormData');
         
-        const uploadResponse = await fetch(`${API_BASE_URL}/pets/${petData.id}/images/main-base64`, {
+        const formData = new FormData();
+        formData.append(
+          'image',
+          {
+            uri: data.mainImage.uri,
+            name: data.mainImage.name || `pet-main-${Date.now()}.jpg`,
+            type: data.mainImage.mimeType || 'image/jpeg',
+          } as any
+        );
+
+        const uploadResponse = await fetch(`${API_BASE_URL}/pets/${petData.id}/images/main`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            image: data.mainImage.base64
-          }),
+          body: formData,
         });
         
         if (!uploadResponse.ok) {
@@ -865,22 +853,29 @@ const ShelterPetManagePage = () => {
       
 
       if (data.galleryImages && data.galleryImages.length > 0) {
-        const newImages = data.galleryImages.filter((img: any) => img.base64);
+        const newImages = data.galleryImages.filter(isLocalImage);
         
         if (newImages.length > 0) {
           console.log(`GALLERY SAVE: Uploading ${newImages.length} new additional images`);
-          
-          const base64Images = newImages.map((img: any) => img.base64);
-          
-          const uploadResponse = await fetch(`${API_BASE_URL}/pets/${petData.id}/images/additional-base64`, {
+
+          const formData = new FormData();
+          newImages.forEach((img: any, index: number) => {
+            formData.append(
+              'images',
+              {
+                uri: img.uri,
+                name: img.name || `pet-gallery-${Date.now()}-${index}.jpg`,
+                type: img.mimeType || 'image/jpeg',
+              } as any
+            );
+          });
+
+          const uploadResponse = await fetch(`${API_BASE_URL}/pets/${petData.id}/images/additional`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              images: base64Images
-            }),
+            body: formData,
           });
           
           if (!uploadResponse.ok) {
@@ -907,7 +902,7 @@ const ShelterPetManagePage = () => {
         });
         const pet = res.data;
         
-        console.log('GALLERY SAVE: Refreshed pet data:', pet);
+      
         
 
         setPetData({
@@ -986,10 +981,43 @@ const ShelterPetManagePage = () => {
       if (!token) throw new Error('Not authenticated');
 
       if (data.adoptionType === 'app' && data.selectedAdopterId) {
-
         await axios.put(`${API_BASE_URL}/adoptions/${data.selectedAdopterId}/approve`, {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (data.adoptionDocument?.uri) {
+          const formData = new FormData();
+          formData.append(
+            'image',
+            {
+              uri: data.adoptionDocument.uri,
+              name: data.adoptionDocument.name || `adoption-proof-${Date.now()}.jpg`,
+              type: data.adoptionDocument.mimeType || 'image/jpeg',
+            } as any
+          );
+
+          const uploadResponse = await fetch(`${API_BASE_URL}/uploads/adoption/${data.selectedAdopterId}/proof`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
+
+          if (uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json();
+            await axios.post(`${API_BASE_URL}/adoptions/${data.selectedAdopterId}/proof`, {
+              imageUrl: uploadResult.secureUrl,
+            }, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } else {
+            showAlert({
+              title: 'Proof Upload Failed',
+              message: 'Adoption was confirmed, but the proof document failed to upload. You can try again later.',
+              type: 'warning',
+              buttonText: 'OK',
+            });
+          }
+        }
       } else if (data.adoptionType === 'external') {
         
         await axios.patch(`${API_BASE_URL}/pets/${petData.id}`, {
@@ -1376,7 +1404,6 @@ const ShelterPetManagePage = () => {
               onPress={handlePublishPet}
               disabled={isLoading}
             >
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.CARD_BACKGROUND} />
               <Text style={[styles.managementButtonText, { fontSize: buttonTextFontSize }]}>Publish Pet</Text>
             </TouchableOpacity>
           )}
@@ -1385,7 +1412,6 @@ const ShelterPetManagePage = () => {
             style={[styles.managementButton, { backgroundColor: COLORS.PRIMARY_BROWN}]}
             onPress={handleMarkAdopted}
           >
-            <Ionicons name="heart" size={20} color={COLORS.CARD_BACKGROUND} />
             <Text style={[styles.managementButtonText, { fontSize: buttonTextFontSize }]}>
               Mark as Adopted
             </Text>
@@ -1395,7 +1421,6 @@ const ShelterPetManagePage = () => {
             style={[styles.managementButton, { backgroundColor: COLORS.ERROR_RED }]}
             onPress={handleRemovePet}
           >
-            <Ionicons name="trash-outline" size={20} color={COLORS.CARD_BACKGROUND} />
             <Text style={[styles.managementButtonText, { fontSize: buttonTextFontSize }]}>
               Remove Pet
             </Text>
@@ -1535,17 +1560,6 @@ const styles = StyleSheet.create({
     padding: SPACING.MEDIUM,
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   statCardFull: {},
   statValue: {
@@ -1592,17 +1606,6 @@ const styles = StyleSheet.create({
     marginBottom: DESIGN_CONSTANTS.CARD_SPACING,
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     padding: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   sectionTitle: {
     fontFamily: 'PoppinsBold',
@@ -1702,17 +1705,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.MEDIUM,
     borderWidth: 1,
     borderColor: COLORS.LIGHT_BROWN,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   requestHeader: {
     flexDirection: 'row',

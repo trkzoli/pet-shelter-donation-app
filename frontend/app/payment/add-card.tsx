@@ -22,7 +22,7 @@ import { setTabsUI } from '../../config/systemUI';
 import axios from 'axios';
 import { API_BASE_URL } from '../../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useStripe, CardField } from '@stripe/stripe-react-native';
+import { useStripe, CardForm } from '@stripe/stripe-react-native';
 
 
 const DESIGN_CONSTANTS = {
@@ -47,9 +47,20 @@ const FONT_RATIOS = {
   BODY_TEXT: 0.035,
 } as const;
 
+const CARD_FORM_STYLE = {
+  backgroundColor: '#D6C0B3',
+  textColor: '#1F2029',
+  placeholderColor: '#797979',
+  fontSize: 16,
+  fontFamily: 'PoppinsRegular',
+  textErrorColor: '#D14343',
+  cursorColor: '#AB886D',
+  borderWidth: 0,
+};
+
 const AddCardPage: React.FC = () => {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const params = useLocalSearchParams();
   const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
   const { confirmPayment, createPaymentMethod } = useStripe();
@@ -76,10 +87,12 @@ const AddCardPage: React.FC = () => {
     setTabsUI();
   }, []);
 
+
   
   const headerTitleFontSize = width * FONT_RATIOS.HEADER_TITLE;
   const buttonTextFontSize = width * FONT_RATIOS.BUTTON_TEXT;
   const bodyTextFontSize = width * FONT_RATIOS.BODY_TEXT;
+  const cardFormHeight = Math.max(275, Math.round(height * 0.32));
 
   
   const handleBack = useCallback(() => {
@@ -87,7 +100,6 @@ const AddCardPage: React.FC = () => {
   }, [router]);
 
   const handleProceed = useCallback(async () => {
-   
     if (!cardDetails?.complete || isProcessing) {
       showAlert({
         title: 'Incomplete Card Details',
@@ -175,9 +187,12 @@ const AddCardPage: React.FC = () => {
         router.replace('/profile');
       }, 2500);
     } catch (error: any) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message || error.message
+        : error.message;
       showAlert({
         title: 'Payment Failed',
-        message: error.message || 'Something went wrong with your payment. Please try again.',
+        message: message || 'Something went wrong with your payment. Please try again.',
         type: 'error',
         buttonText: 'Try Again',
       });
@@ -220,9 +235,9 @@ const AddCardPage: React.FC = () => {
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? 20 : 0}
       >
         <ScrollView
-          style={styles.content}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -253,12 +268,12 @@ const AddCardPage: React.FC = () => {
               <TextInput
                 style={[
                   styles.input,
-                  nameOnCard.trim().length > 0 && styles.inputValid,
                 ]}
                 value={nameOnCard}
                 onChangeText={setNameOnCard}
-                placeholder="John Doe"
+                placeholder=""
                 placeholderTextColor="#797979"
+                selectionColor="#AB886D"
                 autoCapitalize="words"
                 autoComplete="cc-name"
                 accessibilityLabel="Name on card"
@@ -268,15 +283,21 @@ const AddCardPage: React.FC = () => {
          
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Card Details</Text>
-              <View style={styles.cardFieldContainer}>
-                <CardField
-                  postalCodeEnabled={false}
-                  style={styles.cardField}
-                  onCardChange={(details) => {
-                    setCardDetails(details);
-                  }}
-                />
-              </View>
+            <View style={[styles.cardFormContainer, { minHeight: cardFormHeight }]}>
+              <CardForm
+                style={[styles.cardForm, { height: cardFormHeight }]}
+                placeholders={{
+                  number: 'Card number',
+                  expiration: 'MM / YY',
+                  cvc: 'CVC',
+                  postalCode: 'ZIP',
+                }}
+                cardStyle={CARD_FORM_STYLE}
+                onFormComplete={(details) => {
+                  setCardDetails(details);
+                }}
+              />
+            </View>
             </View>
           </View>
 
@@ -369,10 +390,8 @@ const styles = StyleSheet.create({
   },
   
   
-  content: {
-    flex: 1,
-  },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: DESIGN_CONSTANTS.HORIZONTAL_PADDING,
     paddingTop: SPACING.LARGE,
     paddingBottom: SPACING.EXTRA_LARGE,
@@ -386,17 +405,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.LARGE,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -451,7 +459,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: DESIGN_CONSTANTS.INPUT_HEIGHT,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#D6C0B3',
     borderWidth: 2,
     borderColor: '#E0E0E0',
     borderRadius: SPACING.MEDIUM,
@@ -466,17 +474,17 @@ const styles = StyleSheet.create({
     borderColor: '#51CF66',
   },
   
-  cardFieldContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
+  cardFormContainer: {
+    backgroundColor: '#D6C0B3',
     borderRadius: SPACING.MEDIUM,
-    paddingHorizontal: SPACING.LARGE,
-    paddingVertical: SPACING.SMALL,
-    minHeight: 60,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    minHeight: 275,
+    overflow: 'hidden',
   },
-  cardField: {
-    height: 40, 
+  cardForm: {
+    height: 275,
+    width: '100%',
   },
   
   payButtonContainer: {
@@ -489,17 +497,6 @@ const styles = StyleSheet.create({
     height: DESIGN_CONSTANTS.BUTTON_HEIGHT,
     backgroundColor: '#AB886D',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   payButtonDisabled: {
     backgroundColor: '#D6C0B3',

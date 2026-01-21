@@ -540,8 +540,10 @@ export class PaymentsService {
       const currentTotal = parseFloat(pet.totalDonationsReceived?.toString() || '0');
       const currentMonth = parseFloat(pet.currentMonthDonations?.toString() || '0');
       
-      const newTotalDonationsReceived = currentTotal + donation.amount;
-      const newCurrentMonthDonations = currentMonth + donation.getShelterAmount();
+      const donationAmount = parseFloat(donation.amount?.toString() || '0');
+      const shelterAmount = parseFloat(donation.getShelterAmount()?.toString() || '0');
+      const newTotalDonationsReceived = currentTotal + donationAmount;
+      const newCurrentMonthDonations = currentMonth + shelterAmount;
 
       if (newTotalDonationsReceived > 1000000) {
         this.logger.error(`SUSPICIOUS CALCULATION DETECTED:`);
@@ -552,8 +554,8 @@ export class PaymentsService {
       }
 
       this.logger.log(`CALCULATION RESULTS:`);
-      this.logger.log(`  New totalDonationsReceived: $${currentTotal} + $${donation.amount} = $${newTotalDonationsReceived}`);
-      this.logger.log(`  New currentMonthDonations: $${currentMonth} + $${donation.getShelterAmount()} = $${newCurrentMonthDonations}`);
+      this.logger.log(`  New totalDonationsReceived: $${currentTotal} + $${donationAmount} = $${newTotalDonationsReceived}`);
+      this.logger.log(`  New currentMonthDonations: $${currentMonth} + $${shelterAmount} = $${newCurrentMonthDonations}`);
 
       await manager.update(Pet, { id: donation.petId }, {
         totalDonationsReceived: newTotalDonationsReceived,

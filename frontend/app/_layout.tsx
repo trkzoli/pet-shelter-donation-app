@@ -12,13 +12,15 @@ export default function RootLayout() {
     initializeSystemUI(); // Ez beállítja mindent egyszer
   }, []);
 
-  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string>(
+    'pk_test_51Nw...your_test_key_here'
+  );
 
   useEffect(() => {
     // Stripe
     const fetchKey = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/payments/config`);
+        const res = await axios.get(`${API_BASE_URL}/payments/config`, { timeout: 5000 });
         setPublishableKey(res.data.publishableKey);
       } catch (err) {
         setPublishableKey('pk_test_51Nw...your_test_key_here');
@@ -26,8 +28,6 @@ export default function RootLayout() {
     };
     fetchKey();
   }, []);
-
-  if (!publishableKey) return null;
 
   return (
     <StripeProvider publishableKey={publishableKey}>

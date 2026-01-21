@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -143,12 +143,64 @@ const ShelterSettingsModal: React.FC<ShelterSettingsModalProps> = ({
   }, []);
 
 
+  const profileCompletion = useMemo(() => {
+    if (!shelterData) return 0;
+
+    const requiredShelterFields = [
+      'shelterName',
+      'description',
+      'petSpecialization',
+      'licenseNumber',
+      'yearEstablished',
+      'contactPerson',
+    ];
+    const requiredUserFields = ['email', 'phone', 'street', 'city', 'state', 'zip', 'country'];
+
+    const petSpecialization = String((shelterData as any).petSpecialization || '').toLowerCase();
+    const contactPerson = String((shelterData as any).contactPerson || '').toLowerCase();
+    const licenseNumber = String((shelterData as any).licenseNumber || '');
+    const yearEstablished = Number((shelterData as any).yearEstablished || 0);
+    const shelterName = String((shelterData as any).shelterName || '');
+    const userName = String(shelterData.user?.name || '');
+
+    const isDefaultShelterProfile =
+      (!(shelterData as any).description || (shelterData as any).description === '') &&
+      (petSpecialization === 'both' || petSpecialization === '') &&
+      licenseNumber.startsWith('TEMP-') &&
+      yearEstablished === 2000 &&
+      contactPerson === 'to be completed';
+
+    const isShelterFieldFilled = (field: string) => {
+      const value = (shelterData as any)[field];
+      if (value === null || value === undefined || value === '') return false;
+      if (!isDefaultShelterProfile) return true;
+
+      if (field === 'shelterName' && shelterName === userName) return false;
+      if (field === 'petSpecialization' && (petSpecialization === 'both' || petSpecialization === '')) return false;
+      if (field === 'licenseNumber' && licenseNumber.startsWith('TEMP-')) return false;
+      if (field === 'yearEstablished' && yearEstablished === 2000) return false;
+      if (field === 'contactPerson' && contactPerson === 'to be completed') return false;
+      return true;
+    };
+
+    const filledShelterFields = requiredShelterFields.filter(isShelterFieldFilled);
+
+    const filledUserFields = requiredUserFields.filter((field) => {
+      const value = shelterData.user?.[field as keyof typeof shelterData.user];
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    const totalRequired = requiredShelterFields.length + requiredUserFields.length;
+    const totalFilled = filledShelterFields.length + filledUserFields.length;
+    return Math.round((totalFilled / totalRequired) * 100);
+  }, [shelterData]);
+
   const getProfileStatus = () => {
-    if (!shelterData || typeof shelterData.profileCompleteness !== 'number') {
+    if (!shelterData) {
       return { text: 'Loading...', color: '#797979', icon: 'time' };
     }
-    if (shelterData.profileCompleteness >= 90) return { text: 'Complete', color: '#51CF66', icon: 'checkmark-circle' };
-    if (shelterData.profileCompleteness >= 50) return { text: 'In Progress', color: '#FFD43B', icon: 'time' };
+    if (profileCompletion >= 90) return { text: 'Complete', color: '#51CF66', icon: 'checkmark-circle' };
+    if (profileCompletion >= 50) return { text: 'In Progress', color: '#FFD43B', icon: 'time' };
     return { text: 'Incomplete', color: '#FF6B6B', icon: 'alert-circle' };
   };
 
@@ -221,7 +273,7 @@ const ShelterSettingsModal: React.FC<ShelterSettingsModalProps> = ({
                   color={profileStatus.color} 
                 />
                 <Text style={[styles.profileStatusText, { color: profileStatus.color }]}>
-                  Profile {profileStatus.text} ({shelterData?.profileCompleteness || 0}%)
+                  Profile {profileStatus.text} ({profileCompletion}%)
                 </Text>
               </View>
             </View>
