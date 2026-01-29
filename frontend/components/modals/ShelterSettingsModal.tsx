@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ExpandableSection } from '../ui';
 import { LegalContentModal, LogoutModal } from './';
+import { applyStatusBarConfig, setAuthUI } from '../../config/systemUI';
 
 
 interface ShelterData {
@@ -127,7 +128,8 @@ const ShelterSettingsModal: React.FC<ShelterSettingsModalProps> = ({
     
     try {
       await AsyncStorage.clear();
-      
+      await setAuthUI();
+      applyStatusBarConfig('auth');
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('SHELTER LOGOUT ERROR: Failed to clear storage:', error);

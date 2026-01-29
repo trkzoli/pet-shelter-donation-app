@@ -63,8 +63,7 @@ export default function RootLayout() {
           name="(auth)" 
           options={{ 
             headerShown: false,
-            animation: 'fade',
-            animationDuration: 300,
+            animation: 'none',
             gestureEnabled: false,
           }} 
         />

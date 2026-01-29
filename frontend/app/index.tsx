@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   View, 
-  StatusBar, 
   StyleSheet, 
   useWindowDimensions, 
   Animated,
@@ -10,7 +9,6 @@ import {
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useRouter } from 'expo-router';
-import * as NavigationBar from 'expo-navigation-bar';
 
 // All fonts load
 const ALL_APP_FONTS = {
@@ -34,27 +32,8 @@ const SplashScreenComponent: React.FC = () => {
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoTranslateY = useRef(new Animated.Value(30)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const screenOpacity = useRef(new Animated.Value(1)).current;
   
   const { width, height } = useWindowDimensions();
-
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-
-    const hideNavigationBar = async () => {
-      try {
-        await NavigationBar.setVisibilityAsync('hidden');
-      } catch (error) {
-        console.warn('Could not hide navigation bar:', error);
-      }
-    };
-
-    hideNavigationBar();
-
-    return () => {
-      NavigationBar.setVisibilityAsync('visible').catch(() => undefined);
-    };
-  }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -101,18 +80,12 @@ const SplashScreenComponent: React.FC = () => {
       ]).start();
 
       const timer = setTimeout(() => {
-        Animated.timing(screenOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          router.replace('/welcome');
-        });
+        router.replace('/welcome');
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [appIsReady, logoOpacity, logoTranslateY, titleOpacity, screenOpacity, router]);
+  }, [appIsReady, logoOpacity, logoTranslateY, titleOpacity, router]);
 
   if (!appIsReady) {
     return null;
@@ -123,51 +96,42 @@ const SplashScreenComponent: React.FC = () => {
   const dynamicNegativeMargin = -logoSize * 0.25;
 
   return (
-    <>
-      <StatusBar 
-        translucent 
-        backgroundColor="transparent" 
-        barStyle="dark-content" 
-        hidden={Platform.OS === 'android'}
-      />
-      <Animated.View 
-        style={[
-          styles.background, 
-          { 
-            width, 
-            height,
-            opacity: screenOpacity,
-          }
-        ]}
-      >
-        <View style={styles.centerContainer}>
-          <Animated.Image
-            source={require("../assets/images/LogoWhite.png")}
-            style={[
-              styles.logo,
-              {
-                opacity: logoOpacity,
-                transform: [{ translateY: logoTranslateY }],
-                width: logoSize,
-                height: logoSize,
-                marginBottom: dynamicNegativeMargin,
-              },
-            ]}
-          />
-          <Animated.Text
-            style={[
-              styles.title,
-              {
-                opacity: titleOpacity,
-                fontSize: titleFontSize,
-              },
-            ]}
-          >
-            Pawner
-          </Animated.Text>
-        </View>
-      </Animated.View>
-    </>
+    <Animated.View 
+      style={[
+        styles.background, 
+        { 
+          width, 
+          height,
+        }
+      ]}
+    >
+      <View style={styles.centerContainer}>
+        <Animated.Image
+          source={require("../assets/images/LogoWhite.png")}
+          style={[
+            styles.logo,
+            {
+              opacity: logoOpacity,
+              transform: [{ translateY: logoTranslateY }],
+              width: logoSize,
+              height: logoSize,
+              marginBottom: dynamicNegativeMargin,
+            },
+          ]}
+        />
+        <Animated.Text
+          style={[
+            styles.title,
+            {
+              opacity: titleOpacity,
+              fontSize: titleFontSize,
+            },
+          ]}
+        >
+          Pawner
+        </Animated.Text>
+      </View>
+    </Animated.View>
   );
 };
 

@@ -164,17 +164,6 @@ const styles = StyleSheet.create({
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     padding: SPACING.HUGE,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
   },
   
   iconContainer: {
@@ -227,17 +216,6 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: COLORS.ERROR_RED,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   confirmButtonText: {
     fontFamily: 'PoppinsBold',
