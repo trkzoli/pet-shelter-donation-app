@@ -19,6 +19,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import EditPetInfoModal from '../../components/modals/EditPetInfoModal';
 import MonthlyGoalsModal from '../../components/modals/MonthlyGoalModal';
 import GalleryManagementModal from '../../components/modals/GalleryManagementModal';
@@ -294,13 +295,33 @@ const ShelterPetsAddPage: React.FC = () => {
         console.log('Main image URI:', galleryData.mainImage.uri);
 
         try {
+          const mainImageInfo = await FileSystem.getInfoAsync(galleryData.mainImage.uri);
+          if (!mainImageInfo.exists) {
+            throw new Error('Main image file is missing. Please reselect the image.');
+          }
+          const mainImageName =
+            (galleryData.mainImage as any)?.name ||
+            galleryData.mainImage.uri.split('/').pop() ||
+            `pet-main-${Date.now()}.jpg`;
+          const mainImageType =
+            (galleryData.mainImage as any)?.mimeType ||
+            (mainImageName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+          const safeMainImageUri = `${FileSystem.cacheDirectory}pet-main-${Date.now()}.${mainImageName
+            .split('.')
+            .pop() || 'jpg'}`;
+          await FileSystem.copyAsync({
+            from: galleryData.mainImage.uri,
+            to: safeMainImageUri,
+          });
+
           const formData = new FormData();
           formData.append(
             'image',
             {
-              uri: galleryData.mainImage.uri,
-              name: `pet-main-${Date.now()}.jpg`,
-              type: 'image/jpeg',
+              uri: safeMainImageUri,
+              name: mainImageName,
+              type: mainImageType,
             } as any
           );
 
@@ -315,15 +336,18 @@ const ShelterPetsAddPage: React.FC = () => {
           if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text();
             console.error('Main image upload failed:', errorText);
-            throw new Error(`Image upload failed: ${uploadResponse.status}`);
+            throw new Error(`Main image upload failed (${uploadResponse.status}): ${errorText || 'Unknown error'}`);
           }
 
           const uploadResult = await uploadResponse.json();
           mainImageUrl = uploadResult.secureUrl;
+          if (!mainImageUrl) {
+            throw new Error('Main image upload failed: missing secureUrl');
+          }
           console.log('Main image uploaded successfully:', mainImageUrl);
         } catch (imageError) {
           console.error('Main image upload error:', imageError);
-          throw new Error('Failed to upload main image');
+          throw imageError;
         }
       }
 
@@ -334,14 +358,34 @@ const ShelterPetsAddPage: React.FC = () => {
         
         console.log('Gallery upload URL:', `${API_BASE_URL}/uploads/image?type=pet_image`);
         console.log('Gallery image URI:', img.uri);
+        const galleryImageInfo = await FileSystem.getInfoAsync(img.uri);
+        if (!galleryImageInfo.exists) {
+          throw new Error('One of the gallery images is missing. Please reselect the images.');
+        }
         
+        const galleryImageName =
+          (img as any)?.name ||
+          img.uri.split('/').pop() ||
+          `pet-gallery-${Date.now()}-${i}.jpg`;
+        const galleryImageType =
+          (img as any)?.mimeType ||
+          (galleryImageName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+        const safeGalleryUri = `${FileSystem.cacheDirectory}pet-gallery-${Date.now()}-${i}.${galleryImageName
+          .split('.')
+          .pop() || 'jpg'}`;
+        await FileSystem.copyAsync({
+          from: img.uri,
+          to: safeGalleryUri,
+        });
+
         const formData = new FormData();
         formData.append(
           'image',
           {
-            uri: img.uri,
-            name: `pet-gallery-${Date.now()}-${i}.jpg`,
-            type: 'image/jpeg',
+            uri: safeGalleryUri,
+            name: galleryImageName,
+            type: galleryImageType,
           } as any
         );
 
@@ -456,6 +500,32 @@ const ShelterPetsAddPage: React.FC = () => {
         type: 'success',
         buttonText: 'OK',
       });
+      setPetInfoData({
+        name: '',
+        breed: '',
+        age: '',
+        gender: '',
+        category: '',
+        vaccinated: false,
+        spayedNeutered: false,
+        adoptionFee: '',
+        description: '',
+        story: '',
+        microchipNumber: '',
+        vetDocument: null,
+      });
+      setMonthlyGoalsData({
+        vaccination: 0,
+        food: 0,
+        medical: 0,
+        other: 0,
+        total: 0,
+      });
+      setGalleryData({
+        mainImage: null,
+        galleryImages: [],
+      });
+      setVetDocument(null);
       setTimeout(() => router.replace('/(shelter-tabs)/shelter-home'), 1000);
     } catch (err: any) {
       console.error('=== PET CREATION ERROR ===');

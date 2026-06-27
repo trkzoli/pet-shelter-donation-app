@@ -28,6 +28,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/user.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { DonationsService } from './donations.service';
+import { SuccessStoriesService } from '../success-stories/success-stories.service';
 import { PaymentsService } from '../payments/payments.service';
 import { CreateDonationDto, ConfirmDonationDto, RefundDonationDto } from './dto/create-donation.dto';
 import {
@@ -52,6 +53,7 @@ export class DonationsController {
   constructor(
     private readonly donationsService: DonationsService,
     private readonly paymentsService: PaymentsService,
+    private readonly successStoriesService: SuccessStoriesService,
   ) {}
 
  
@@ -250,7 +252,8 @@ export class DonationsController {
   async getUserSuccessStories(
     @GetUser('id') userId: string,
   ): Promise<any[]> {
-    return await this.donationsService.getUserSuccessStories(userId);
+    const result = await this.successStoriesService.getUserSuccessStories(userId, {});
+    return result.stories;
   }
 
   

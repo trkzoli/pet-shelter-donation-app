@@ -12,9 +12,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Pet, PetStatus, MonthlyGoals, DonationDistribution } from './entities/pet.entity';
 import { Shelter } from '../shelters/entities/shelter.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { SuccessStory, SuccessStoryType } from '../success-stories/entities/success-story.entity';
+import { SuccessStoriesService } from '../success-stories/success-stories.service';
 import { Donation } from '../donations/entities/donation.entity';
-import { AdoptionRequest } from '../adoptions/entities/adoption-request.entity';
+import { PawPointTransaction } from '../donations/entities/pawpoint-transaction.entity';
+import { AdoptionRequest, AdoptionStatus, EXTERNAL_ADOPTION_DECLINE_REASON } from '../adoptions/entities/adoption-request.entity';
 import { CreatePetDto, RemovePetDto, ConfirmAdoptionDto } from './dto/create-pet.dto';
 import { SetMonthlyGoalsDto } from './dto/monthly-goals.dto';
 import { UpdatePetDto, UpdatePetPhotosDto, PetFiltersDto } from './dto/update-pet.dto';
@@ -31,13 +32,14 @@ export class PetsService {
     private readonly shelterRepository: Repository<Shelter>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(SuccessStory)
-    private readonly successStoryRepository: Repository<SuccessStory>,
     @InjectRepository(Donation)
     private readonly donationRepository: Repository<Donation>,
     @InjectRepository(AdoptionRequest)
     private readonly adoptionRequestRepository: Repository<AdoptionRequest>,
+    @InjectRepository(PawPointTransaction)
+    private readonly pawPointTransactionRepository: Repository<PawPointTransaction>,
     private readonly uploadsService: UploadsService,
+    private readonly successStoriesService: SuccessStoriesService,
   ) {}
 
   async createPet(userId: string, createPetDto: CreatePetDto): Promise<Pet> {
@@ -329,12 +331,7 @@ export class PetsService {
       where: { userId },
     });
 
-    const donations = await this.donationRepository.find({
-      where: { petId: pet.id },
-      select: ['userId'],
-    });
     if (!shelter) throw new NotFoundException('Shelter not found');
-    const affectedUserIds = [...new Set(donations.map(d => d.userId))];
 
     const oldStatus = pet.status;
     pet.status = PetStatus.REMOVED;
@@ -346,18 +343,24 @@ export class PetsService {
     }
 
 
-    const successStory = this.successStoryRepository.create({
-      petId: pet.id,
-      type: removeDto.reason === 'deceased' ? SuccessStoryType.DECEASED : SuccessStoryType.ERROR,
-      affectedUserIds,
-      errorReason: removeDto.reason === 'other' ? removeDto.explanation : undefined,
-    });
-
     await Promise.all([
       this.petRepository.save(pet),
       this.shelterRepository.save(shelter),
-      this.successStoryRepository.save(successStory),
     ]);
+
+    
+    try {
+      if (removeDto.reason === 'deceased') {
+        await this.successStoriesService.createDeceasedStory(shelter.id, { petId: pet.id });
+      } else {
+        await this.successStoriesService.createErrorStory(shelter.id, {
+          petId: pet.id,
+          errorReason: removeDto.explanation || 'The listing has been removed.',
+        });
+      }
+    } catch (storyError) {
+      console.error('Success story creation failed (pet still removed):', storyError);
+    }
 
     return {
       message: `Pet removed successfully. ${
@@ -380,28 +383,70 @@ export class PetsService {
       where: { userId },
     });
     if (!shelter) throw new NotFoundException('Shelter not found');
-    const donations = await this.donationRepository.find({
-      where: { petId: pet.id },
-      select: ['userId'],
-    });
-    
-    const affectedUserIds = [...new Set(donations.map(d => d.userId))];
-
     pet.status = PetStatus.ADOPTED;
     shelter.currentPublishedPets = Math.max(0, shelter.currentPublishedPets - 1);
     shelter.adoptionsCompleted++;
 
-    const successStory = this.successStoryRepository.create({
-      petId: pet.id,
-      type: SuccessStoryType.ADOPTED_EXTERNAL,
-      affectedUserIds,
-    });
-
     await Promise.all([
       this.petRepository.save(pet),
       this.shelterRepository.save(shelter),
-      this.successStoryRepository.save(successStory),
     ]);
+
+    // External adoption eseten
+    try {
+      const pendingRequests = await this.adoptionRequestRepository.find({
+        where: { petId: pet.id, status: AdoptionStatus.PENDING },
+      });
+
+      for (const request of pendingRequests) {
+        try {
+          request.deny(EXTERNAL_ADOPTION_DECLINE_REASON);
+
+          if (request.pawPointsUsedForReduction > 0) {
+            const requester = await this.userRepository.findOne({
+              where: { id: request.userId },
+            });
+
+            if (requester) {
+              requester.pawPoints += request.pawPointsUsedForReduction;
+              await this.userRepository.save(requester);
+
+              try {
+                const refundTx = PawPointTransaction.createSpentTransaction(
+                  request.userId,
+                  -request.pawPointsUsedForReduction,
+                  `Refund from adoption request (pet adopted externally): ${pet.name}`,
+                  requester.pawPoints,
+                );
+                await this.pawPointTransactionRepository.save(refundTx);
+              } catch (txError) {
+                console.error(
+                  `Failed to log PawPoint refund for user ${request.userId} on pet ${pet.id}:`,
+                  txError,
+                );
+              }
+            }
+          }
+
+          await this.adoptionRequestRepository.save(request);
+        } catch (requestError) {
+          console.error(
+            `Failed to auto-decline pending adoption request ${request.id} for pet ${pet.id}:`,
+            requestError,
+          );
+        }
+      }
+    } catch (declineError) {
+      console.error(
+        `Failed to process pending adoption requests for externally adopted pet ${pet.id}:`,
+        declineError,
+      );
+    }
+
+    await this.successStoriesService.createAdoptionSuccessStory(shelter.id, {
+      petId: pet.id,
+      isInternal: false,
+    });
 
     return pet;
   }
@@ -672,7 +717,8 @@ export class PetsService {
       pet.mainImage = mainImageUrl;
     }
     if (additionalImageUrls && additionalImageUrls.length > 0) {
-      pet.additionalImages = additionalImageUrls;
+      
+      pet.additionalImages = [...(pet.additionalImages || []), ...additionalImageUrls];
     }
     await this.petRepository.save(pet);
   }

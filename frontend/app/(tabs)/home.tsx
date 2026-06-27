@@ -179,25 +179,45 @@ const HomePage: React.FC = () => {
       return matchesSearch && matchesFilter;
     });
   }, [searchQuery, activeFilter, pets]);
+
+  const sortedBanners = useMemo(() => {
+    const priorityOrder: Record<string, number> = {
+      critical: 1,
+      high: 2,
+      medium: 3,
+      low: 4,
+    };
+    return [...banners].sort((a, b) => {
+      const aOrder = priorityOrder[a.priority] ?? 99;
+      const bOrder = priorityOrder[b.priority] ?? 99;
+      return aOrder - bOrder;
+    });
+  }, [banners]);
   
   const mixedContent = useMemo(() => {
     const result: (Pet | BannerData)[] = [];
     let bannerIndex = 0;
+
+    if (sortedBanners.length > 0) {
+      result.push(sortedBanners[bannerIndex]);
+      bannerIndex++;
+    }
+
     filteredPets.forEach((pet, index) => {
-  
-      if (index > 0 && index % 6 === 0 && bannerIndex < banners.length) {
-        result.push(banners[bannerIndex]);
+      if (index > 0 && index % 6 === 0 && bannerIndex < sortedBanners.length) {
+        result.push(sortedBanners[bannerIndex]);
         bannerIndex++;
       }
       result.push(pet);
     });
-   
-    while (bannerIndex < banners.length) {
-      result.push(banners[bannerIndex]);
+
+    while (bannerIndex < sortedBanners.length) {
+      result.push(sortedBanners[bannerIndex]);
       bannerIndex++;
     }
+
     return result;
-  }, [filteredPets, banners]);
+  }, [filteredPets, sortedBanners]);
   
 
   const handleSearch = useCallback((text: string) => {

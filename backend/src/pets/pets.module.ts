@@ -10,8 +10,10 @@ import { Shelter } from '../shelters/entities/shelter.entity';
 import { User } from '../users/entities/user.entity';
 import { SuccessStory } from '../success-stories/entities/success-story.entity';
 import { Donation } from '../donations/entities/donation.entity';
+import { PawPointTransaction } from '../donations/entities/pawpoint-transaction.entity';
 import { AdoptionRequest } from '../adoptions/entities/adoption-request.entity';
 import { UploadsModule } from '../uploads/uploads.module';
+import { SuccessStoriesModule } from '../success-stories/success-stories.module';
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { UploadsModule } from '../uploads/uploads.module';
       User,
       SuccessStory,
       Donation,
+      PawPointTransaction,
       AdoptionRequest
     ]),
     ScheduleModule.forRoot(),
@@ -32,6 +35,7 @@ import { UploadsModule } from '../uploads/uploads.module';
       },
     }),
     UploadsModule,
+    SuccessStoriesModule,
   ],
   controllers: [PetsController],
   providers: [PetsService],

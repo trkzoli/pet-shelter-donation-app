@@ -737,41 +737,67 @@ const AdoptionRequestDetailsPage: React.FC = () => {
         </View>
 
         
-        {petDetails && petDetails.adoptionFee > 0 && userContact && userContact.pawPoints >= 5 && (
-          <View style={styles.feeReductionCard}>
-            <Text style={styles.cardTitle}>Adoption Fee Reduction</Text>
-            <Text style={styles.feeInfo}>
-              Adoption Fee: <Text style={styles.feeAmount}>{formatCurrency(petDetails.adoptionFee)}</Text>
-            </Text>
-            <Text style={styles.feeInfo}>
-              PawPoints Available: <Text style={styles.feeAmount}>{userContact.pawPoints}</Text>
-            </Text>
-            <Slider
-              style={{ width: '100%', height: 40, marginVertical: 20 }}
-              minimumValue={0}
-              maximumValue={userContact.pawPoints - 5}
-              value={bonusPointsToUse}
-              step={1}
-              minimumTrackTintColor="#AB886D"
-              maximumTrackTintColor="#E0E0E0"
-              thumbTintColor="#493628"
-              onValueChange={(value) => {
-                console.log('Bonus points changing to:', value);
-                setBonusPointsToUse(Math.round(value));
-              }}
-              onSlidingComplete={(value) => {
-                console.log('Bonus points completed at:', value);
-                setBonusPointsToUse(Math.round(value));
-              }}
-            />
-            <Text style={styles.feeFinal}>
-              Final Adoption Fee: <Text style={styles.feeAmount}>{formatCurrency(Math.max(0, petDetails.adoptionFee - bonusPointsToUse * 5))}</Text>
-            </Text>
-            <Text style={styles.feeInfoSmall}>
-              5 PawPoints required to unlock adoption (no fee reduction). Additional points reduce the fee by $5 each.
-            </Text>
-          </View>
-        )}
+        {petDetails && petDetails.adoptionFee > 0 && userContact && userContact.pawPoints >= 5 && (() => {
+          const maxBonusPoints = Math.min(
+            userContact.pawPoints - 5,
+            Math.ceil(petDetails.adoptionFee / 5),
+          );
+          const bonusUsed = Math.min(bonusPointsToUse, maxBonusPoints);
+          const pointsUsed = 5 + bonusUsed;
+          const pointsRemaining = userContact.pawPoints - pointsUsed;
+          const finalFee = Math.max(0, petDetails.adoptionFee - bonusUsed * 5);
+
+          return (
+            <View style={styles.feeReductionCard}>
+              <Text style={styles.cardTitle}>Adoption Fee Reduction</Text>
+              <Text style={styles.feeInfo}>
+                Adoption Fee: <Text style={styles.feeAmount}>{formatCurrency(petDetails.adoptionFee)}</Text>
+              </Text>
+
+              <View style={styles.pawMeterRow}>
+                {Array.from({ length: userContact.pawPoints }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.pawMeterDot,
+                      i < 5 && styles.pawMeterDotBase,
+                      i >= 5 && i < pointsUsed && styles.pawMeterDotBonus,
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.feeInfo}>
+                PawPoints used: <Text style={styles.feeAmount}>{pointsUsed}</Text> of {userContact.pawPoints}
+                {'   ·   '}Remaining: <Text style={styles.feeAmount}>{pointsRemaining}</Text>
+              </Text>
+
+              {maxBonusPoints > 0 ? (
+                <Slider
+                  style={{ width: '100%', height: 40, marginVertical: 12 }}
+                  minimumValue={0}
+                  maximumValue={maxBonusPoints}
+                  value={bonusUsed}
+                  step={1}
+                  minimumTrackTintColor="#AB886D"
+                  maximumTrackTintColor="#E0E0E0"
+                  thumbTintColor="#493628"
+                  onValueChange={(value) => setBonusPointsToUse(Math.round(value))}
+                />
+              ) : (
+                <Text style={styles.feeInfoSmall}>
+                  You have just enough PawPoints to unlock this adoption.
+                </Text>
+              )}
+
+              <Text style={styles.feeFinal}>
+                Final Adoption Fee: <Text style={styles.feeAmount}>{formatCurrency(finalFee)}</Text>
+              </Text>
+              <Text style={styles.feeInfoSmall}>
+                5 PawPoints unlock adoption (no fee reduction). Each extra point reduces the fee by $5.
+              </Text>
+            </View>
+          );
+        })()}
 
        
         <View style={styles.messageCard}>
@@ -1234,6 +1260,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'PoppinsRegular',
     color: '#797979',
+  },
+  pawMeterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: SPACING.SMALL,
+    marginBottom: SPACING.SMALL,
+  },
+  pawMeterDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E0E0E0',
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  pawMeterDotBase: {
+    backgroundColor: '#AB886D',
+  },
+  pawMeterDotBonus: {
+    backgroundColor: '#2E7D32',
   },
 });
 

@@ -381,15 +381,22 @@ export class SuccessStoriesService {
       user.pawPoints += bonusPoints;
       await this.userRepository.save(user);
 
-      const transaction = this.pawPointTransactionRepository.create({
-        userId: user.id,
-        points: bonusPoints,
-        type: this.getTransactionType(story.type),
-        relatedPetId: story.petId,
-        description: this.getTransactionDescription(story.type, story.pet?.name || 'pet'),
-      });
+      try {
+        const transaction = this.pawPointTransactionRepository.create({
+          userId: user.id,
+          points: bonusPoints,
+          type: this.getTransactionType(story.type),
+          relatedPetId: story.petId,
+          description: this.getTransactionDescription(story.type, story.pet?.name || 'pet'),
+          balanceAfter: user.pawPoints,
+        });
 
-      await this.pawPointTransactionRepository.save(transaction);
+        await this.pawPointTransactionRepository.save(transaction);
+      } catch (txError) {
+        this.logger.error(
+          `Failed to record PawPoint transaction for user ${user.id} on story ${story.id}: ${txError?.message ?? txError}`,
+        );
+      }
     }
 
     this.logger.log(`Awarded ${bonusPoints} PawPoints to ${users.length} users for story ${story.id}`);

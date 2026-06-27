@@ -173,6 +173,7 @@ const BannerCreatePage: React.FC<BannerCreatePageProps> = () => {
 
     if (!formData.targetAmount) newErrors.targetAmount = 'Target amount is required';
     else if (parseFloat(formData.targetAmount) < 50) newErrors.targetAmount = 'Minimum target amount is $50';
+    else if (parseFloat(formData.targetAmount) > 50000) newErrors.targetAmount = 'Maximum target amount is $50,000';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -206,6 +207,7 @@ const BannerCreatePage: React.FC<BannerCreatePageProps> = () => {
       <KeyboardAvoidingView 
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 40}
       >
 
         <View style={styles.header}>

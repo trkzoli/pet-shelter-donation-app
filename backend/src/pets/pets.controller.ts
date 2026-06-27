@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -151,6 +152,24 @@ export class PetsController {
     @Body() confirmDto: ConfirmAdoptionDto,
   ): Promise<Pet> {
     return this.petsService.confirmAdoption(userId, petId, confirmDto);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.SHELTER)
+  @ApiOperation({ summary: 'Update pet status' })
+  async updatePetStatus(
+    @GetUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) petId: string,
+    @Body() body: { status?: string; adoptionProofImage?: string; notes?: string },
+  ): Promise<Pet> {
+    if (body?.status === 'adopted') {
+      return this.petsService.confirmAdoption(userId, petId, {
+        adoptionProofImage: body.adoptionProofImage,
+        notes: body.notes,
+      });
+    }
+    throw new BadRequestException('Unsupported status update');
   }
 
   

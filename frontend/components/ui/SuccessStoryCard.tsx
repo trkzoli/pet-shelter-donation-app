@@ -24,7 +24,7 @@ const SPACING = {
 
 interface SuccessStory {
   id: string;
-  type: 'adopter_success' | 'supporter_success';
+  type: 'adopter_success' | 'supporter_success' | 'adopted_internal' | 'adopted_external' | 'deceased' | 'error';
   originalPetId: string;
   petName: string;
   petImage: any;
@@ -65,6 +65,7 @@ const SuccessStoryCard: React.FC<SuccessStoryCardProps> = ({
   };
 
   const cardStyle = getCardStyle();
+  const petImageSource = story.petImage || require('../../assets/images/pphr.png');
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -93,35 +94,53 @@ const SuccessStoryCard: React.FC<SuccessStoryCardProps> = ({
       }
     ]}>
 
-      <Image source={story.petImage} style={styles.petImage} />
+      <Image source={petImageSource} style={styles.petImage} />
 
       <View style={styles.cardContent}>
 
-        <Text style={styles.successMessage}>
-          {story.message}
-        </Text>
-
-        <Text style={styles.petName}>{story.petName}</Text>
+        {story.type === 'deceased' ? (
+          <Text style={styles.successMessage}>
+            We're sad to share that{' '}
+            <Text style={styles.highlightName}>{story.petName}</Text> has passed away.
+            {story.userContribution > 0 && (
+              <Text>
+                {' '}Your{' '}
+                <Text style={styles.highlightAmount}>{formatCurrency(story.userContribution)}</Text>
+                {' '}gave them comfort and care during their time at the shelter.
+              </Text>
+            )}
+            {' '}Thank you for your kindness.
+          </Text>
+        ) : story.type === 'error' ? (
+          <Text style={styles.successMessage}>
+            {story.message}
+          </Text>
+        ) : (
+          <Text style={styles.successMessage}>
+            Great news — <Text style={styles.highlightName}>{story.petName}</Text> has found a loving home!
+            {story.userContribution > 0 && (
+              <Text>
+                {' '}Your{' '}
+                <Text style={styles.highlightAmount}>{formatCurrency(story.userContribution)}</Text>
+                {' '}helped make this happy ending possible.
+              </Text>
+            )}
+            {' '}Thank you for your support.
+          </Text>
+        )}
 
         <View style={styles.adoptionDetails}>
           <Text style={styles.adoptionDate}>
-            Adopted {formatDate(story.adoptionDate)}
+            {story.type === 'deceased'
+              ? `Passed away on ${formatDate(story.adoptionDate)}`
+              : story.type === 'error'
+              ? `Removed on ${formatDate(story.adoptionDate)}`
+              : `Adopted on ${formatDate(story.adoptionDate)}`}
           </Text>
           <Text style={styles.shelterName}>
             from {story.shelterName}
           </Text>
         </View>
-
-        {/*ONLY for supporter stories */}
-        {story.type === 'supporter_success' && (
-          <View style={styles.contributionSection}>
-            <Text style={styles.contributionLabel}>Your Support:</Text>
-            <Text style={styles.contributionAmount}>
-              {formatCurrency(story.userContribution)}
-            </Text>
-          </View>
-        )}
-
 
         {story.pawPointsEarned > 0 && (
           <View style={styles.rewardSection}>
@@ -135,7 +154,9 @@ const SuccessStoryCard: React.FC<SuccessStoryCardProps> = ({
               </Text>
             </View>
             <Text style={styles.rewardSubtext}>
-              You helped save a life! 
+              {story.type === 'deceased'
+                ? 'Thank you for your compassion and support.'
+                : 'You helped save a life!'}
             </Text>
           </View>
         )}
@@ -207,6 +228,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.SMALL,
     lineHeight: 20,
+  },
+  highlightName: {
+    fontFamily: 'PoppinsBold',
+    color: '#1F2029',
+  },
+  highlightAmount: {
+    fontFamily: 'PoppinsBold',
+    color: '#2E7D32',
   },
   petName: {
     fontSize: 20,

@@ -194,8 +194,17 @@ const ShelterProfilePage: React.FC = () => {
   }, [router]);
 
   const handleCreateBannerPress = useCallback(() => {
+    if (!isProfileComplete) {
+      showAlert({
+        title: 'Profile Incomplete',
+        message: 'Complete and verify your shelter profile before creating campaigns.',
+        type: 'warning',
+        buttonText: 'OK',
+      });
+      return;
+    }
     router.push('/shelter/banners/create');
-  }, [router]);
+  }, [router, isProfileComplete, showAlert]);
 
   const handleProfileImagePress = useCallback(async () => {
   
@@ -426,17 +435,6 @@ const ShelterProfilePage: React.FC = () => {
                   }
                 </Text>
               </View>
-              <View style={[
-                styles.verificationBadge,
-                isProfileComplete ? styles.verificationBadgeComplete : styles.verificationBadgeIncomplete
-              ]}>
-                <Text style={[
-                  styles.verificationBadgeText,
-                  isProfileComplete ? styles.verificationBadgeTextComplete : styles.verificationBadgeTextIncomplete
-                ]}>
-                  {isProfileComplete ? "Verified" : `${profileCompletion}%`}
-                </Text>
-              </View>
             </View>
           </View>
 
@@ -465,18 +463,24 @@ const ShelterProfilePage: React.FC = () => {
 
           {/* Create Banner Campaign */}
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, !isProfileComplete && styles.actionButtonDisabled]}
             onPress={handleCreateBannerPress}
             activeOpacity={0.8}
           >
             <View style={styles.actionButtonContent}>
-              <Ionicons name="megaphone-outline" size={24} color="#493628" />
+              <Ionicons
+                name={isProfileComplete ? 'megaphone-outline' : 'lock-closed-outline'}
+                size={24}
+                color="#493628"
+              />
               <View style={styles.actionButtonTextContainer}>
                 <Text style={[styles.actionButtonTitle, { fontSize: sectionTitleFontSize }]}>
                   Create Banner Campaign
                 </Text>
                 <Text style={[styles.actionButtonSubtitle, { fontSize: bodyFontSize }]}>
-                  Promote urgent needs and special campaigns to donors
+                  {isProfileComplete
+                    ? 'Promote urgent needs and special campaigns to donors'
+                    : 'Complete and verify your shelter profile before creating campaigns.'}
                 </Text>
               </View>
             </View>
@@ -773,6 +777,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: DESIGN_CONSTANTS.BORDER_RADIUS,
     marginBottom: SPACING.LARGE,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
   },
   actionButtonContent: {
     flexDirection: 'row',

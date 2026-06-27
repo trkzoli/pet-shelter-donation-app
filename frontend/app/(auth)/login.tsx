@@ -79,11 +79,18 @@ const LoginScreen: React.FC = () => {
 
   const handleLogin = useCallback(async () => {
     setIsLoading(true);
+    console.log('LOGIN: API_BASE_URL constant =', API_BASE_URL);
+    console.log('LOGIN: axios.defaults.baseURL =', axios.defaults.baseURL);
+    console.log('LOGIN: Starting request to', `${API_BASE_URL}/auth/login`);
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-        email: formData.email,
-        password: formData.password,
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/login`,
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        { timeout: 15000 }
+      );
       const { accessToken, user } = response.data;
       if (!accessToken) throw new Error('No token returned');
       await AsyncStorage.setItem('token', accessToken);
@@ -96,22 +103,40 @@ const LoginScreen: React.FC = () => {
         router.replace('/(tabs)/home');
       }
     } catch (error: any) {
-      if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data?.message || 'Login failed. Please try again.';
-        showAlert({
-          title: 'Login Failed',
-          message: Array.isArray(message) ? message.join(' ') : message,
-          type: 'error',
-          buttonText: 'Try Again',
+      if (axios.isAxiosError(error)) {
+        console.log('LOGIN: Axios error', {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          data: error.response?.data,
         });
-      } else {
-        showAlert({
-          title: 'Network Error',
-          message: 'Could not connect to the server. Please try again.',
-          type: 'error',
-          buttonText: 'OK',
-        });
+        if (error.code === 'ECONNABORTED') {
+          showAlert({
+            title: 'Request Timed Out',
+            message: 'The server took too long to respond. Please try again.',
+            type: 'error',
+            buttonText: 'OK',
+          });
+          return;
+        }
+        if (error.response) {
+          const message = error.response.data?.message || 'Login failed. Please try again.';
+          showAlert({
+            title: 'Login Failed',
+            message: Array.isArray(message) ? message.join(' ') : message,
+            type: 'error',
+            buttonText: 'Try Again',
+          });
+          return;
+        }
       }
+      console.log('LOGIN: Unknown error', error);
+      showAlert({
+        title: 'Network Error',
+        message: 'Could not connect to the server. Please try again.',
+        type: 'error',
+        buttonText: 'OK',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +201,7 @@ const LoginScreen: React.FC = () => {
           <Text style={[styles.title, { fontSize: titleFontSize }]}>
             Welcome, Friend!
           </Text>
+
           
          
           <TextInput
@@ -259,6 +285,7 @@ const LoginScreen: React.FC = () => {
               Sign Up
             </Text>
           </Text>
+
         </ScrollView>
         </KeyboardAvoidingView>
       </View>

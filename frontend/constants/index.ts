@@ -39,4 +39,5 @@ export const COMMON_STYLES = {
   },
 } as const;
 
-export const API_BASE_URL = 'http://192.168.1.9:3000'; 
+// A backend elérési címe. Ezt kell cserélni a saját gép helyi IP-jére.
+export const API_BASE_URL = 'http://YOUR_LOCAL_IP:3000'; 

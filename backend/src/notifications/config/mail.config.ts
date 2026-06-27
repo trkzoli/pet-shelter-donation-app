@@ -88,7 +88,7 @@ export class MailConfigService {
 
   
   getDefaultSender(): { name: string; email: string } {
-    const fromName = this.configService.get<string>('MAIL_FROM_NAME') || 'Project Eden';
+    const fromName = this.configService.get<string>('MAIL_FROM_NAME') || 'Pawner';
     const fromEmail =
       this.configService.get<string>('MAIL_FROM_EMAIL') ||
       this.configService.get<string>('MAIL_USER') ||

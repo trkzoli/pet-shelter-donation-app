@@ -58,12 +58,6 @@ const REMOVAL_REASONS = [
     description: 'The pet has sadly crossed the rainbow bridge',
     requiresExplanation: false,
   },
-  {
-    id: 'other',
-    label: 'Other reasons',
-    description: 'Posted by mistake, wrong information, or other circumstances',
-    requiresExplanation: true,
-  },
 ];
 
 interface RemovalConfirmationData {
@@ -169,7 +163,7 @@ const RemovePetModal: React.FC<RemovePetModalProps> = ({
 
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           <Text style={[styles.modalDescription, { fontSize: bodyTextFontSize }]}>
-            Please provide a reason for removing {petName} from the platform. This will help us understand the situation and notify donors appropriately.
+            Warning: marking {petName} as passed away removes them permanently. This action cannot be undone, and {petName} can never be added back to the app.
           </Text>
 
           <View style={styles.section}>
@@ -225,32 +219,10 @@ const RemovePetModal: React.FC<RemovePetModalProps> = ({
             </View>
           )}
 
-          {totalDonated > 0 && (
-            <View style={styles.warningContainer}>
-              <Ionicons name="warning-outline" size={24} color={COLORS.PRIMARY_BROWN} />
-              <View style={styles.warningTextContainer}>
-
-                <Text style={[styles.warningTitle, { fontSize: bodyTextFontSize }]}>
-                  Donation Impact
-                </Text>
-                <Text style={[styles.warningText, { fontSize: labelTextFontSize }]}>
-                  {petName} has received {formatCurrency(totalDonated)} in donations. 
-                  {selectedReason === 'deceased' 
-                    ? ' Donors will receive a sad story notification explaining the situation.'
-                    : ' Your request will be reviewed, and donors may receive refunds if appropriate.'
-                  }
-                </Text>
-              </View>
-            </View>
-          )}
-
           <View style={styles.infoContainer}>
             <Ionicons name="information-circle-outline" size={20} color={COLORS.PRIMARY_BROWN} />
             <Text style={[styles.infoText, { fontSize: labelTextFontSize }]}>
-              {selectedReason === 'deceased' 
-                ? `Donors will receive a respectful notification about ${petName}'s passing, thanking them for making the pet's life better.`
-                : `Your removal request will be reviewed by our team. If approved, donors will be notified about the situation.`
-              }
+              Donors will receive the news about {petName}'s passing, with a heartfelt thank you for helping make their life better.
             </Text>
           </View>
 

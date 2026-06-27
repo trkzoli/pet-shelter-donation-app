@@ -11,7 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { plainToClass } from 'class-transformer';
 import { ConfigService } from '@nestjs/config';
-import { AdoptionRequest, AdoptionStatus } from './entities/adoption-request.entity';
+import { AdoptionRequest, AdoptionStatus, EXTERNAL_ADOPTION_DECLINE_REASON } from './entities/adoption-request.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Pet, PetStatus } from '../pets/entities/pet.entity';
 import { Shelter } from '../shelters/entities/shelter.entity';
@@ -786,7 +786,15 @@ export class AdoptionsService {
       order: { updatedAt: 'DESC' },
     });
 
-    if (recentRequest && (recentRequest.status === AdoptionStatus.DENIED || recentRequest.status === AdoptionStatus.APPROVED)) {
+    const isExternalAutoDecline =
+      recentRequest?.status === AdoptionStatus.DENIED &&
+      recentRequest.statusReason === EXTERNAL_ADOPTION_DECLINE_REASON;
+
+    if (
+      !isExternalAutoDecline &&
+      recentRequest &&
+      (recentRequest.status === AdoptionStatus.DENIED || recentRequest.status === AdoptionStatus.APPROVED)
+    ) {
       const relevantDate = recentRequest.deniedAt || recentRequest.approvedAt;
       if (relevantDate && relevantDate > oneWeekAgo) {
         const remainingHours = Math.ceil(

@@ -92,7 +92,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, userDat
   const handleSupport = () => {
     const email = 'support@pawnerapp.com';
     const subject = 'Support Request';
-    const body = `Hello Pawner Support,\n\nUser: ${userData.name}\nEmail: ${userData.email}\n\nI need help with:\n\n`;
+    const userName = userData?.name ?? 'N/A';
+    const userEmail = userData?.email ?? 'N/A';
+    const body = `Hello Pawner Support,\n\nUser: ${userName}\nEmail: ${userEmail}\n\nI need help with:\n\n`;
     
     Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
@@ -116,7 +118,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, userDat
     
     try {
       
+      const allKeys = await AsyncStorage.getAllKeys();
+      const dismissedKeys = allKeys.filter((k) => k.startsWith('dismissedStoryIds_'));
+      const preserved = dismissedKeys.length
+        ? await AsyncStorage.multiGet(dismissedKeys)
+        : [];
+
       await AsyncStorage.clear();
+
+      const restore = preserved.filter(
+        ([, v]) => v != null,
+      ) as [string, string][];
+      if (restore.length) {
+        await AsyncStorage.multiSet(restore);
+      }
+
       await setAuthUI();
       applyStatusBarConfig('auth');
       router.replace('/(auth)/login');

@@ -359,7 +359,7 @@ const ProfilePage: React.FC = () => {
             <View style={styles.actionButtonContent}>
               <View style={styles.actionButtonIconContainer}>
                 <Ionicons 
-                  name="home-outline" 
+                  name={isRealAdoptionEligible ? 'home-outline' : 'lock-closed-outline'} 
                   size={22} 
                   color={isRealAdoptionEligible ? '#AB886D' : '#CCCCCC'} 
                 />
@@ -381,11 +381,6 @@ const ProfilePage: React.FC = () => {
                     Begin the real adoption process
                   </Text>
                 )}
-              </View>
-              <View style={styles.actionButtonBadge}>
-                <Text style={styles.actionButtonBadgeText}>
-                  {isRealAdoptionEligible ? "Available" : "Locked"}
-                </Text>
               </View>
             </View>
           </TouchableOpacity>

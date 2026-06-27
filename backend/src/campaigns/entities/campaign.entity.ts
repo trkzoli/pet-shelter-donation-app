@@ -176,7 +176,7 @@ export class Campaign {
   addDonation(amount: number): void {
     this.currentAmount += amount;
     
-    if (this.currentAmount >= this.goalAmount) {
+    if (this.goalAmount > 0 && this.currentAmount >= this.goalAmount) {
       this.status = CampaignStatus.COMPLETED;
       this.completedAt = new Date();
     }

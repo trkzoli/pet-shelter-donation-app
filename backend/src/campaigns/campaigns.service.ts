@@ -516,6 +516,10 @@ export class CampaignsService {
     amount: number,
   ): Promise<void> {
     await this.dataSource.transaction(async manager => {
+      const normalizedAmount = Number(amount);
+      if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+        throw new BadRequestException('Invalid donation amount');
+      }
       
       const campaign = await manager.findOne(Campaign, {
         where: { id: campaignId },
@@ -536,7 +540,9 @@ export class CampaignsService {
       );
 
       
-      campaign.addDonation(amount);
+      campaign.currentAmount = Number(campaign.currentAmount) || 0;
+      campaign.goalAmount = Number(campaign.goalAmount) || 0;
+      campaign.addDonation(normalizedAmount);
 
       
       await manager.save(Campaign, campaign);
@@ -550,6 +556,7 @@ export class CampaignsService {
       .createQueryBuilder('campaign')
       .where('campaign.status = :status', { status: CampaignStatus.ACTIVE })
       .andWhere('campaign.currentAmount >= campaign.goalAmount')
+      .andWhere('campaign.goalAmount > 0')
       .getMany();
 
     for (const campaign of goalReachedCampaigns) {

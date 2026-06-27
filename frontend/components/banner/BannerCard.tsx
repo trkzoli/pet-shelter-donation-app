@@ -24,6 +24,13 @@ const COLORS = {
   BORDER_LIGHT: '#E0E0E0',
 } as const;
 
+const PRIORITY_COLORS: Record<string, string> = {
+  low: '#51CF66',      // green
+  medium: '#FFD43B',   // yellow
+  high: '#FF8C42',     // orange
+  critical: '#FF6B6B', // red
+};
+
 interface BannerCardProps {
   item: {
     id: string;
@@ -43,7 +50,10 @@ interface BannerCardProps {
 
 const BannerCard: React.FC<BannerCardProps> = ({ item, width, height, onPress }) => {
 
-  const borderColor = item.priorityColor || COLORS.PRIORITY_BORDER;
+  const borderColor =
+    item.priorityColor ||
+    (item.priority ? PRIORITY_COLORS[item.priority] : undefined) ||
+    COLORS.PRIORITY_BORDER;
   
   return (
     <TouchableOpacity

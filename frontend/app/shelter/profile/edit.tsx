@@ -139,6 +139,7 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
   const [formData, setFormData] = useState<ShelterProfileFormData>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<Partial<Record<keyof ShelterProfileFormData, string>>>({});
   const [saving, setSaving] = useState(false);
+  const [userName, setUserName] = useState('');
 
   const titleFontSize = width * 0.055;
   const sectionTitleFontSize = width * 0.045;
@@ -146,18 +147,60 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
   const labelFontSize = width * 0.032;
 
   const completionPercentage = useMemo(() => {
-    const requiredFields = Object.keys(FIELD_VALIDATION).filter(field => {
-      const rules = FIELD_VALIDATION[field as keyof typeof FIELD_VALIDATION];
-      return rules.required;
+    const requiredShelterFields: Array<keyof ShelterProfileFormData> = [
+      'shelterName',
+      'description',
+      'specializations',
+      'licenseNumber',
+      'establishedYear',
+      'contactPersonName',
+    ];
+    const requiredUserFields: Array<keyof ShelterProfileFormData> = [
+      'email',
+      'phone',
+      'street',
+      'city',
+      'state',
+      'zipCode',
+      'country',
+    ];
+
+    const petSpecialization = String(formData.specializations || '').toLowerCase();
+    const contactPerson = String(formData.contactPersonName || '').toLowerCase();
+    const licenseNumber = String(formData.licenseNumber || '');
+    const yearEstablished = Number(formData.establishedYear || 0);
+    const shelterName = String(formData.shelterName || '');
+
+    const isDefaultShelterProfile =
+      (!formData.description || formData.description === '') &&
+      (petSpecialization === 'both' || petSpecialization === '') &&
+      licenseNumber.startsWith('TEMP-') &&
+      yearEstablished === 2000 &&
+      contactPerson === 'to be completed';
+
+    const isShelterFieldFilled = (field: keyof ShelterProfileFormData) => {
+      const value = formData[field];
+      if (value === null || value === undefined || value === '') return false;
+      if (!isDefaultShelterProfile) return true;
+
+      if (field === 'shelterName' && userName && shelterName === userName) return false;
+      if (field === 'specializations' && (petSpecialization === 'both' || petSpecialization === '')) return false;
+      if (field === 'licenseNumber' && licenseNumber.startsWith('TEMP-')) return false;
+      if (field === 'establishedYear' && yearEstablished === 2000) return false;
+      if (field === 'contactPersonName' && contactPerson === 'to be completed') return false;
+      return true;
+    };
+
+    const filledShelterFields = requiredShelterFields.filter(isShelterFieldFilled);
+    const filledUserFields = requiredUserFields.filter((field) => {
+      const value = formData[field];
+      return value !== null && value !== undefined && value !== '';
     });
-    
-    const completedFields = requiredFields.filter(field => {
-      const value = formData[field as keyof ShelterProfileFormData];
-      return value !== '' && value !== undefined && value !== null;
-    });
-    
-    return Math.round((completedFields.length / requiredFields.length) * 100);
-  }, [formData]);
+
+    const totalRequired = requiredShelterFields.length + requiredUserFields.length;
+    const totalFilled = filledShelterFields.length + filledUserFields.length;
+    return Math.round((totalFilled / totalRequired) * 100);
+  }, [formData, userName]);
 
   const validateField = useCallback((field: keyof ShelterProfileFormData, value: string): string => {
     const rules = FIELD_VALIDATION[field];
@@ -216,8 +259,50 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
         });
         
         const d = res.data;
+        const petSpecialization = String(d.petSpecialization || '').toLowerCase();
+        const contactPerson = String(d.contactPerson || '').toLowerCase();
+        const licenseNumber = String(d.licenseNumber || '');
+        const yearEstablished = Number(d.yearEstablished || 0);
+        const shelterName = String(d.shelterName || '');
+        const userName = String(d.user?.name || '');
+        const contactTitle = String(d.contactTitle || '').toLowerCase();
+
+        const isDefaultShelterProfile =
+          (!d.description || d.description === '') &&
+          (petSpecialization === 'both' || petSpecialization === '') &&
+          licenseNumber.startsWith('TEMP-') &&
+          yearEstablished === 2000 &&
+          contactPerson === 'to be completed';
+
+        const normalizedShelterName =
+          isDefaultShelterProfile && shelterName === userName ? '' : shelterName || '';
+        const normalizedSpecializations =
+          isDefaultShelterProfile && (petSpecialization === 'both' || petSpecialization === '')
+            ? ''
+            : d.petSpecialization || '';
+        const normalizedLicenseNumber =
+          isDefaultShelterProfile && licenseNumber.startsWith('TEMP-') ? '' : d.licenseNumber || '';
+        const normalizedEstablishedYear =
+          isDefaultShelterProfile && yearEstablished === 2000
+            ? ''
+            : d.yearEstablished
+              ? String(d.yearEstablished)
+              : '';
+        const normalizedContactPerson =
+          isDefaultShelterProfile && contactPerson === 'to be completed' ? '' : d.contactPerson || '';
+        const normalizedContactTitle =
+          isDefaultShelterProfile && contactTitle === 'to be completed' ? '' : d.contactTitle || '';
+        const normalizedOperatingHours =
+          d.operatingHours && Object.keys(d.operatingHours).length === 0
+            ? ''
+            : typeof d.operatingHours === 'string'
+              ? d.operatingHours
+              : d.operatingHours
+                ? JSON.stringify(d.operatingHours)
+                : '';
+
         const formDataToSet = {
-          shelterName: d.shelterName || '',
+          shelterName: normalizedShelterName,
           email: d.user?.email || '',
           phone: d.user?.phone || '',
           website: d.website || '',
@@ -226,17 +311,17 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
           state: d.user?.state || '',
           zipCode: d.user?.zip || '',
           country: d.user?.country || '',
-          licenseNumber: d.licenseNumber || '',
-          establishedYear: d.yearEstablished ? String(d.yearEstablished) : '',
+          licenseNumber: normalizedLicenseNumber,
+          establishedYear: normalizedEstablishedYear,
           description: d.description || '',
-          specializations: d.petSpecialization || '',
-          contactPersonName: d.contactPerson || '',
-          contactPersonTitle: d.contactTitle || '',
-          operatingHours: typeof d.operatingHours === 'string' ? d.operatingHours : (d.operatingHours ? JSON.stringify(d.operatingHours) : ''),
+          specializations: normalizedSpecializations,
+          contactPersonName: normalizedContactPerson,
+          contactPersonTitle: normalizedContactTitle,
+          operatingHours: normalizedOperatingHours,
           facebookUrl: d.facebook || '',
           instagramUrl: d.instagram || '',
         };
-        
+        setUserName(d.user?.name || '');
         setFormData(formDataToSet);
       } catch (err: any) {
         console.error('Failed to load shelter profile:', err.response?.data || err.message);
@@ -292,9 +377,6 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
         }
       });
       
-      await axios.put(`${API_BASE_URL}/shelters/profile`, shelterUpdateData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
       const userUpdateData = {
         street: formData.street || undefined,
         city: formData.city || undefined,
@@ -314,6 +396,9 @@ const ShelterProfileEditPage: React.FC<ShelterProfileEditPageProps> = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
+      await axios.put(`${API_BASE_URL}/shelters/profile`, shelterUpdateData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       showAlert({
         title: 'Profile Updated',
         message: 'Your shelter profile has been updated successfully.',

@@ -162,7 +162,7 @@ export class NotificationsService {
         
         <div class="footer">
           <p>This is an automated message from Pawner.<br>
-          Visit us at <a href="${data.frontendUrl}" style="color: #493628;">${data.frontendUrl}</a></p>
+          </p>
         </div>
       </body>
       </html>
@@ -236,7 +236,7 @@ export class NotificationsService {
         
         <div class="footer">
           <p>This is an automated message from Pawner.<br>
-          Visit us at <a href="${data.frontendUrl}" style="color: #493628;">${data.frontendUrl}</a></p>
+          </p>
         </div>
       </body>
       </html>
@@ -544,8 +544,7 @@ export class NotificationsService {
         
         <div class="footer">
           <p>This adoption request was generated automatically from Pawner.<br>
-          Request ID: ${data.requestId}<br>
-          Visit your dashboard at <a href="${data.frontendUrl}" style="color: #493628;">${data.frontendUrl}</a></p>
+          Request ID: ${data.requestId}</p>
         </div>
       </body>
       </html>

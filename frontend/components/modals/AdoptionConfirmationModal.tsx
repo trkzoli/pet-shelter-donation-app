@@ -99,7 +99,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
   const handleDocumentUpload = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*'],
+        type: ['application/pdf'],
         copyToCacheDirectory: true,
       });
 
@@ -277,7 +277,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
               Adoption Documentation *
             </Text>
             <Text style={[styles.sectionDescription, { fontSize: labelTextFontSize }]}>
-              Please upload a signed adoption declaration (photo of the signed document)
+              Please upload a signed adoption declaration as a PDF document
             </Text>
 
             <TouchableOpacity
@@ -302,7 +302,7 @@ const AdoptionConfirmationModal: React.FC<AdoptionConfirmationModalProps> = ({
             </TouchableOpacity>
 
             <Text style={[styles.documentNote, { fontSize: labelTextFontSize }]}>
-              Upload a clear photo of the signed declaration as proof
+              Upload the signed declaration as a PDF document
             </Text>
           </View>
 

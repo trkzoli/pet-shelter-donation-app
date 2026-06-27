@@ -16,6 +16,25 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { PetSpecialization } from '../entities/shelter.entity';
 
+const normalizeUrl = (value: any): any => {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (trimmed === '') return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
+
+const normalizeSocialUrl = (value: any, domain: string): any => {
+  if (typeof value !== 'string') return value;
+  let trimmed = value.trim();
+  if (trimmed === '') return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  trimmed = trimmed.replace(/^[@/]+/, '');
+  if (trimmed === '') return '';
+  if (trimmed.includes('.')) return `https://${trimmed}`;
+  return `https://${domain}/${trimmed}`;
+};
+
 class OperatingHoursDto {
   @IsOptional()
   @IsObject()
@@ -103,16 +122,19 @@ export class UpdateShelterDto {
   operatingHours?: any;
 
   @IsOptional()
+  @Transform(({ value }) => normalizeUrl(value))
   @ValidateIf((o) => o.website && o.website.trim() !== '')
   @IsUrl({}, { message: 'Invalid website URL format' })
   website?: string;
 
   @IsOptional()
+  @Transform(({ value }) => normalizeSocialUrl(value, 'facebook.com'))
   @ValidateIf((o) => o.facebook && o.facebook.trim() !== '')
   @IsUrl({}, { message: 'Invalid Facebook URL format' })
   facebook?: string;
 
   @IsOptional()
+  @Transform(({ value }) => normalizeSocialUrl(value, 'instagram.com'))
   @ValidateIf((o) => o.instagram && o.instagram.trim() !== '')
   @IsUrl({}, { message: 'Invalid Instagram URL format' })
   instagram?: string;

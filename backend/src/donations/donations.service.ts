@@ -411,8 +411,8 @@ export class DonationsService {
     });
 
     
-    const activePets = Array.from(petMap.values()).filter(petData => 
-      petData.pet.status !== 'adopted'
+    const activePets = Array.from(petMap.values()).filter(petData =>
+      petData.pet.status === PetStatus.PUBLISHED
     );
 
 

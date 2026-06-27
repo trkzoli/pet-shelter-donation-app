@@ -127,7 +127,21 @@ const ShelterSettingsModal: React.FC<ShelterSettingsModalProps> = ({
     onClose();
     
     try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const dismissedKeys = allKeys.filter((k) => k.startsWith('dismissedStoryIds_'));
+      const preserved = dismissedKeys.length
+        ? await AsyncStorage.multiGet(dismissedKeys)
+        : [];
+
       await AsyncStorage.clear();
+
+      const restore = preserved.filter(
+        ([, v]) => v != null,
+      ) as [string, string][];
+      if (restore.length) {
+        await AsyncStorage.multiSet(restore);
+      }
+
       await setAuthUI();
       applyStatusBarConfig('auth');
       router.replace('/(auth)/login');

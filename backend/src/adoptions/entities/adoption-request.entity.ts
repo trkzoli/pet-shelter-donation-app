@@ -28,6 +28,8 @@ export enum AdoptionStatus {
   CANCELLED = 'cancelled',
 }
 
+export const EXTERNAL_ADOPTION_DECLINE_REASON = 'Pet was adopted externally';
+
 @Entity('adoption_requests')
 @Index(['userId', 'status'])
 @Index(['petId', 'status'])

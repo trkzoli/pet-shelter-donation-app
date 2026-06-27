@@ -4,9 +4,10 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { plainToClass } from 'class-transformer';
 import { Shelter } from './entities/shelter.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -131,8 +132,33 @@ export class SheltersService {
       throw new NotFoundException('Shelter profile not found');
     }
 
+    if (
+      updateShelterDto.licenseNumber &&
+      updateShelterDto.licenseNumber !== shelter.licenseNumber
+    ) {
+      const existing = await this.shelterRepository.findOne({
+        where: {
+          licenseNumber: updateShelterDto.licenseNumber,
+          id: Not(shelter.id),
+        },
+      });
+      if (existing) {
+        throw new ConflictException(
+          'This license number is already registered to another shelter.',
+        );
+      }
+    }
+
     // Update shelter fields
     Object.assign(shelter, updateShelterDto);
+
+    // Refresh
+    const freshUser = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (freshUser) {
+      shelter.user = freshUser;
+    }
 
     // Calculate profile completion
     const updatedProfileCompleteness = this.calculateProfileCompletion(shelter);

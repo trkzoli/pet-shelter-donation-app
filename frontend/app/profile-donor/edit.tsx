@@ -139,6 +139,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
   const { isVisible, alertConfig, showAlert, hideAlert } = useAlertModal();
 
   const [formData, setFormData] = useState<DonorProfileFormData>(INITIAL_FORM_DATA);
+  const [prefillName, setPrefillName] = useState('');
   const [saving, setSaving] = useState(false);
 
   const titleFontSize = width * 0.055;
@@ -174,8 +175,9 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const d = res.data;
+        setPrefillName(d.name || '');
         setFormData({
-          fullName: d.name || '',
+          fullName: '',
           email: d.email || '',
           phone: d.phone || '',
           street: d.street || '',
@@ -203,7 +205,8 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
     console.log('SAVE ATTEMPT START ');
     console.log('Current form data:', formData);
     
-    if (!formData.fullName || formData.fullName.trim() === '') {
+    const effectiveName = formData.fullName.trim() || prefillName.trim();
+    if (!effectiveName) {
       showAlert({
         title: 'Name Required',
         message: 'Please enter your full name before saving.',
@@ -221,7 +224,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
       console.log('Sending donor profile update...');
       
       const userUpdateData = {
-        name: formData.fullName,
+        name: effectiveName,
         phone: formData.phone || undefined,
         street: formData.street || undefined,
         city: formData.city || undefined,
@@ -272,7 +275,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
       setSaving(false);
       console.log(' SAVE ATTEMPT END');
     }
-      }, [formData, showAlert, router]);
+      }, [formData, prefillName, showAlert, router]);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -308,7 +311,11 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
         ]}
         value={formData[field]}
         onChangeText={isReadOnly ? undefined : (value) => handleInputChange(field, value)}
-        placeholder={isReadOnly && !formData[field] ? 'Not provided during registration' : placeholder}
+        placeholder={
+          field === 'fullName' && !formData.fullName
+            ? (prefillName || placeholder)
+            : (isReadOnly && !formData[field] ? 'Not provided during registration' : placeholder)
+        }
         placeholderTextColor={COLORS.GRAY_DARK}
         keyboardType={keyboardType}
         multiline={isTextArea}
@@ -319,7 +326,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
       />
 
     </View>
-  ), [formData, handleInputChange, labelFontSize, bodyFontSize]);
+  ), [formData, handleInputChange, labelFontSize, bodyFontSize, prefillName]);
 
 
 
@@ -347,7 +354,7 @@ const DonorProfileEditPage: React.FC<DonorProfileEditPageProps> = () => {
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView 
           style={styles.scrollView}

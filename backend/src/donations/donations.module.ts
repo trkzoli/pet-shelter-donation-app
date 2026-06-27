@@ -12,6 +12,7 @@ import { Campaign } from '../campaigns/entities/campaign.entity';
 import { Shelter } from '../shelters/entities/shelter.entity';
 import { CampaignsModule } from '../campaigns/campaigns.module';
 import { PaymentsModule } from '../payments/payments.module'; 
+import { SuccessStoriesModule } from '../success-stories/success-stories.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PaymentsModule } from '../payments/payments.module';
     ConfigModule, 
     forwardRef(() => CampaignsModule), 
     forwardRef(() => PaymentsModule), 
+    SuccessStoriesModule,
   ],
   controllers: [DonationsController],
   providers: [DonationsService],

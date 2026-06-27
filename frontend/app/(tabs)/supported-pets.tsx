@@ -148,7 +148,7 @@ const SupportedPetsPage: React.FC = () => {
   
     const storyData = successStories
       .filter(story => !dismissedStoryIds.includes(story.id))
-      .map(story => ({ ...story, type: 'success' as const }));
+      .map(story => ({ ...story, storyType: story.type, type: 'success' as const }));
     return [...petData, ...storyData];
   }, [pets, successStories, dismissedStoryIds]);
 
@@ -225,24 +225,31 @@ const SupportedPetsPage: React.FC = () => {
         };
       });
       
-      const storiesData: SuccessStory[] = successResponse.data.map((story: any) => ({
-        id: story.id,
-        type: story.type || 'supporter_success',
-        originalPetId: story.originalPetId || story.petId || story.id,
-        title: story.title,
-        message: story.message,
-        petName: story.petName,
-        petImage: story.petImage,
-        adoptionDate: story.adoptionDate || story.createdAt,
-        shelterName: story.shelterName || 'Unknown Shelter',
-        userContribution: story.userContribution || 0,
-        adopter: story.adopter,
-        pawPointsEarned: story.pawPointsEarned,
-        createdAt: story.createdAt,
-        affectedUserIds: story.affectedUserIds || [],
-        notificationsSent: story.notificationsSent || {},
-        canDismiss: story.canDismiss !== false,
-      }));
+      const storiesData: SuccessStory[] = (successResponse.data || []).map((story: any) => {
+        const petInfo = story.pet || {};
+        const petName = story.petName || petInfo.name || 'Unknown Pet';
+        const petImage =
+          story.petImage ||
+          (petInfo.mainImage ? { uri: petInfo.mainImage } : null);
+        return {
+          id: story.id,
+          type: story.type || 'supporter_success',
+          originalPetId: story.originalPetId || story.petId || petInfo.id || story.id,
+          title: story.title,
+          message: story.message,
+          petName,
+          petImage,
+          adoptionDate: story.adoptionDate || story.createdAt,
+          shelterName: story.shelterName || petInfo.shelterName || 'Unknown Shelter',
+          userContribution: story.userContribution || story.userDonationAmount || 0,
+          adopter: story.adopter,
+          pawPointsEarned: story.pawPointsEarned ?? story.bonusPoints ?? 0,
+          createdAt: story.createdAt,
+          affectedUserIds: story.affectedUserIds || [],
+          notificationsSent: story.notificationsSent || {},
+          canDismiss: story.canDismiss !== false,
+        };
+      });
 
       const requestMap: Record<string, AdoptionRequestInfo> = {};
       (adoptionResponse.data || []).forEach((request: any) => {
@@ -626,7 +633,7 @@ const SupportedPetsPage: React.FC = () => {
   const SuccessStoryContent = React.memo<{ story: SuccessStory }>(({ story }) => (
     <View style={styles.successStoryContainer}>
       <SuccessStoryCard
-        story={story}
+        story={{ ...story, type: (story as any).storyType ?? story.type }}
         onDismiss={handleDismissStory}
         cardWidth={width * 0.85}
         cardHeight={width * 1.2}

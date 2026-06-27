@@ -286,6 +286,7 @@ const AddCardPage: React.FC = () => {
             <View style={[styles.cardFormContainer, { minHeight: cardFormHeight }]}>
               <CardForm
                 style={[styles.cardForm, { height: cardFormHeight }]}
+                defaultValues={{ countryCode: 'RO' }}
                 placeholders={{
                   number: 'Card number',
                   expiration: 'MM / YY',

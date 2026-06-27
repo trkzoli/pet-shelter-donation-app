@@ -580,7 +580,7 @@ export class PaymentsService {
         select: ['currentAmount', 'goalAmount', 'status'],
       });
 
-      if (campaign && campaign.currentAmount >= campaign.goalAmount && 
+      if (campaign && Number(campaign.currentAmount) >= Number(campaign.goalAmount) &&
           campaign.status === CampaignStatus.ACTIVE) {
         await manager.update(
           Campaign,
